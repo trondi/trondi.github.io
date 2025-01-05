@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 const prefix =
-    process.env.NODE_ENV === 'production' ? 'https://trondi.github.io/test/' : ''
+    process.env.NODE_ENV === 'production' ? 'https://trondi.github.io/' : ''
 
 const nextConfig = {
   reactStrictMode: true,
