@@ -9,9 +9,12 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
       <Provider store={store}>
           <PersistGate persistor={persistor} loading={null}>
-      <Layout>
-        <Component {...pageProps} />
-      </Layout>
+              <Layout>
+                  <header   className="flex justify-center items-center h-16 bg-gray-800 text-white">
+                        <h1>Header</h1>
+                    </header>
+                <Component {...pageProps} />
+              </Layout>
           </PersistGate>
       </Provider>
   )

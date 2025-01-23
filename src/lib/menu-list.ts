@@ -39,10 +39,10 @@ export function getMenuList(pathname: string): Group[] {
       groupLabel: '',
       menus: [
         {
-          href: '/javascript',
-          label: 'Javascript',
-          active: pathname.includes('/javascript'),
-          icon: LayoutGrid,
+          href: '/articles',
+          label: 'Articles',
+          active: pathname.includes('/articles'),
+          icon: BookMarked,
           submenus: [],
         },
         {
@@ -66,15 +66,32 @@ export function getMenuList(pathname: string): Group[] {
       ],
     },
     {
-      groupLabel: 'Settings',
+      groupLabel: 'Frontend',
       menus: [
-        {
-          href: '/test-ui',
-          label: 'Test Components',
-          active: pathname.includes('/test-ui'),
-          icon: LayoutGrid,
-          submenus: [],
+        { href: '/front/react', label: 'React', active: pathname.includes('/front/react'), icon: LayoutGrid, submenus: [] },
+        { href: '/front/css', label: 'CSS', active: pathname.includes('/front/css'), icon: Tag, submenus: [] },
+        { href: '/front/js',
+          label: 'JavaScript',
+          active: pathname.includes('/front/css'),
+          icon: Tag,
+          submenus: [
+            {
+              href: '/js/algorithm',
+              label: 'Algorithm',
+              active: pathname === '/js/algorithm',
+            },
+            {
+              href: '/twl',
+              label: 'Today I Learned',
+              active: pathname === '/twl',
+            },
+          ],
         },
+      ],
+    },
+    {
+      groupLabel: 'Develop',
+      menus: [
         {
           href: '/users',
           label: 'Users',
