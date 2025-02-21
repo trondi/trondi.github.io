@@ -21,9 +21,9 @@ function Header(props) {
       <nav className="flex items-center justify-end w-full max-w-7xl p-4 mx-auto">
         <ul className="flex items-center space-x-4">
           <li className="flex items-center">
-            <a className="flex items-center leading-none" href="/">
+            <h1 className="flex items-center leading-none" href="/">
               Home
-            </a>
+            </h1>
           </li>
           <li className="flex items-center">
             <a className="flex items-center leading-none" href="/about">
