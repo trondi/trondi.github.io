@@ -1,26 +1,47 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from "react";
 
+/**
+ * useObserver - Intersection Observer를 활용하여 특정 요소가 화면에 보이는지 감지하는 Hook
+ *
+ * @param {Object} params - 감지를 위한 설정 객체
+ * @param {React.RefObject<HTMLElement>} params.target - 감지할 대상 요소의 ref
+ * @param {IntersectionObserverCallback} params.onIntersect - 대상 요소가 임계점을 충족할 때 실행할 콜백 함수
+ * @param {Element | null} [params.root=null] - 감지할 기준 요소 (기본값: null → 뷰포트 기준)
+ * @param {string} [params.rootMargin='0px'] - root 요소와 target 간의 여백 (CSS Margin 형태)
+ * @param {number} [params.threshold=1.0] - 임계점 값 (0~1 사이, 1.0이면 target이 100% 보일 때 콜백 실행)
+ *
+ * @example
+ * const targetRef = useRef(null);
+ * useObserver({
+ *   target: targetRef,
+ *   onIntersect: ([entry]) => {
+ *     if (entry.isIntersecting) {
+ *       console.log("타겟이 화면에 나타남!");
+ *     }
+ *   },
+ * });
+ */
 export const useObserver = ({
-  target, // 감지할 대상, ref를 넘길 예정
-  onIntersect, // 감지 시 실행할 callback 함수
-  root = null, // 교차할 부모 요소, 아무것도 넘기지 않으면 document가 기본이다.
-  rootMargin = '0px', // root와 target이 감지하는 여백의 거리
-  threshold = 1.0, // 임계점. 1.0이면 root내에서 target이 100% 보여질 때 callback이 실행된다.
+  target, // 감지할 대상 요소 (ref로 전달됨)
+  onIntersect, // 감지될 때 실행할 콜백 함수
+  root = null, // 감지를 위한 부모 요소 (기본값: viewport)
+  rootMargin = "0px", // 감지 범위를 조절하는 여백 (CSS margin 값)
+  threshold = 1.0, // 감지 임계값 (0~1, 1이면 100% 보일 때 감지)
 }) => {
   useEffect(() => {
     let observer;
 
-    // 넘어오는 element가 있어야 observer를 생성할 수 있도록 한다.
-    if (target && target.current) {
-      // callback의 인자로 들어오는 entry는 기본적으로 순환자이기 때문에
-      // 복잡한 로직을 필요로 할때가 많다.
-      // callback을 선언하는 곳에서 로직을 짜서 통째로 넘기도록 하겠다.
-      observer = new IntersectionObserver(onIntersect, { root, rootMargin, threshold });
-      // 실제 Element가 들어있는 current 관측을 시작한다.
-      observer.observe(target.current);
+    // 대상 요소가 존재할 때만 IntersectionObserver를 생성
+    if (target?.current) {
+      observer = new IntersectionObserver(onIntersect, {
+        root,
+        rootMargin,
+        threshold,
+      });
+      observer.observe(target.current); // 대상 요소 감지 시작
     }
 
-    // observer를 사용하는 컴포넌트가 해제되면 observer 역시 꺼 주자.
-    return () => observer && observer.disconnect();
-  }, [target, rootMargin, threshold]);
+    // 컴포넌트가 언마운트되면 observer 해제
+    return () => observer?.disconnect();
+  }, [target, rootMargin, threshold]); // 의존성 배열에 필요한 값 추가
 };
