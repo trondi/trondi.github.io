@@ -43,5 +43,5 @@ export const useObserver = ({
 
     // 컴포넌트가 언마운트되면 observer 해제
     return () => observer?.disconnect();
-  }, [target, rootMargin, threshold]); // 의존성 배열에 필요한 값 추가
+  }, [target, onIntersect, root, rootMargin, threshold]); // 의존성 배열에 필요한 값 추가
 };
