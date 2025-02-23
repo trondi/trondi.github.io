@@ -5,12 +5,7 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -35,26 +30,26 @@ function Header() {
           </li>
           <li className="flex items-center hover:text-blue-500">
             <div className="flex items-center space-x-2">
-              {/*<DropdownMenu>*/}
-              {/*  <DropdownMenuTrigger asChild>*/}
-              {/*    <Avatar className="h-8 w-8 cursor-pointer">*/}
-              {/*      <AvatarImage src="/profile.jpeg" />*/}
-              {/*      <AvatarFallback>CN</AvatarFallback>*/}
-              {/*    </Avatar>*/}
-              {/*  </DropdownMenuTrigger>*/}
-              {/*  <DropdownMenuContent className="w-56">*/}
-              {/*    <>*/}
-              {/*      <DropdownMenuLabel>My Account</DropdownMenuLabel>*/}
-              {/*      <DropdownMenuSeparator />*/}
-              {/*      <DropdownMenuGroup>*/}
-              {/*        <DropdownMenuItem>Profile</DropdownMenuItem>*/}
-              {/*        <DropdownMenuItem>Billing</DropdownMenuItem>*/}
-              {/*        <DropdownMenuItem>Settings</DropdownMenuItem>*/}
-              {/*        <DropdownMenuItem>Log out</DropdownMenuItem>*/}
-              {/*      </DropdownMenuGroup>*/}
-              {/*    </>*/}
-              {/*  </DropdownMenuContent>*/}
-              {/*</DropdownMenu>*/}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Avatar className="h-8 w-8 cursor-pointer">
+                    <AvatarImage src="/profile.jpeg" />
+                    <AvatarFallback>CN</AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <>
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem>Profile</DropdownMenuItem>
+                      <DropdownMenuItem>Billing</DropdownMenuItem>
+                      <DropdownMenuItem>Settings</DropdownMenuItem>
+                      <DropdownMenuItem>Log out</DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </li>
         </ul>
