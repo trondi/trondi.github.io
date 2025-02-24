@@ -23,9 +23,7 @@ function Header() {
           </li>
           <li className="flex items-center">
             <Link href={"/about"}>
-              <a className="flex items-center leading-none" href="/about">
-                About
-              </a>
+              <h1 className="flex items-center leading-none">About</h1>
             </Link>
           </li>
           <li className="flex items-center hover:text-blue-500">
