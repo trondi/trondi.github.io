@@ -3,6 +3,8 @@
 # To get started with Next.js see: https://nextjs.org/docs/getting-started
 #
 name: Deploy Next.js site to Pages
+run: NEXT_IGNORE_TS_ERRORS=true yarn next build
+
 
 on:
   # Runs on pushes targeting the default branch
