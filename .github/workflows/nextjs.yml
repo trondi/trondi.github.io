@@ -3,8 +3,6 @@
 # To get started with Next.js see: https://nextjs.org/docs/getting-started
 #
 name: Deploy Next.js site to Pages
-run: NEXT_IGNORE_TS_ERRORS=true yarn next build
-
 
 on:
   # Runs on pushes targeting the default branch
@@ -36,6 +34,7 @@ jobs:
       - name: Detect package manager
         id: detect-package-manager
         run: |
+          NEXT_IGNORE_TS_ERRORS=true yarn next build
           if [ -f "${{ github.workspace }}/yarn.lock" ]; then
             echo "manager=yarn" >> $GITHUB_OUTPUT
             echo "command=install" >> $GITHUB_OUTPUT
