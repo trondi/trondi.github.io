@@ -14,8 +14,8 @@ import Link from "next/link";
 function Header() {
   return (
     <header className="flex justify-center items-center h-16 bg-gray-800 text-white">
-      <nav className="flex items-center justify-end w-full max-w-7xl p-4 mx-auto">
-        <ul className="flex items-center space-x-4">
+      <nav className="flex items-center justify-end w-full p-4 mx-auto">
+        <ul className="flex items-center space-x-4 mx-10">
           <li className="flex items-center">
             <Link href={"/"}>
               <h1 className="flex items-center leading-none">Home</h1>
@@ -35,7 +35,7 @@ function Header() {
                     <AvatarFallback>CN</AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56">
+                <DropdownMenuContent className="w-56  mb-8  mx-10">
                   <>
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
