@@ -13,7 +13,10 @@ import Link from "next/link";
 
 function Header() {
   return (
-    <header className="flex justify-center items-center h-16 bg-gray-800 text-white">
+    <header
+      className={`gap-6 flex-wrap py-[2.375rem] flex items-center justify-between pl-[33px] pr-[20px]`}
+    >
+      {/*<header className="flex justify-center items-center h-16 bg-gray-800 text-white">*/}
       <nav className="flex items-center justify-end w-full p-4 mx-auto">
         <ul className="flex items-center space-x-4 mx-10">
           <li className="flex items-center">
