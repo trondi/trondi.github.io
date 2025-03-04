@@ -9,7 +9,7 @@ import React from "react";
 export default function AdminPanelLayout({ children }) {
   const isSidebarOpen = useAppSelector((state) => state.sidebar?.isOpen);
   return (
-    <div className="h-screen w-full flex">
+    <div className="h-screen w-full">
       <Sidebar />
       <div
         className={cn(
