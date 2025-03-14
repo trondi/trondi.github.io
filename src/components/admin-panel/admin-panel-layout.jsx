@@ -4,12 +4,11 @@ import { cn } from "@/lib/utils";
 import { Sidebar } from "@/components/admin-panel/sidebar";
 import { useAppSelector } from "@/hooks/reduxHooks";
 import Header from "@components/Header";
-import React from "react";
 
 export default function AdminPanelLayout({ children }) {
   const isSidebarOpen = useAppSelector((state) => state.sidebar?.isOpen);
   return (
-    <div className="h-screen w-full">
+    <div className="h-screen w-full flex">
       <Sidebar />
       <div
         className={cn(
