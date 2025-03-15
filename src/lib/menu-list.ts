@@ -12,7 +12,7 @@ import {
   LibraryBig,
   BookMarked,
   UserCog,
-} from 'lucide-react';
+} from "lucide-react";
 
 type Submenu = {
   href: string;
@@ -36,74 +36,99 @@ type Group = {
 export function getMenuList(pathname: string): Group[] {
   return [
     {
-      groupLabel: '',
+      groupLabel: "",
       menus: [
         {
-          href: '/articles',
-          label: 'Articles',
-          active: pathname.includes('/articles'),
+          href: "/articles",
+          label: "Articles",
+          active: pathname.includes("/articles"),
           icon: BookMarked,
           submenus: [],
         },
         {
-          href: '/develop',
-          label: 'Develop',
-          active: pathname.includes('/develop'),
+          href: "/develop",
+          label: "Develop",
+          active: pathname.includes("/develop"),
           icon: BookMarked,
           submenus: [
             {
-              href: '/document/list',
-              label: 'List',
-              active: pathname === '/document/list',
+              href: "/document/list",
+              label: "List",
+              active: pathname === "/document/list",
             },
             {
-              href: '/document/library',
-              label: 'Library Documents',
-              active: pathname === '/document/library',
+              href: "/document/library",
+              label: "Library Documents",
+              active: pathname === "/document/library",
             },
           ],
         },
       ],
     },
     {
-      groupLabel: 'Frontend',
+      groupLabel: "Frontend",
       menus: [
-        { href: '/front/react', label: 'React', active: pathname.includes('/front/react'), icon: LayoutGrid, submenus: [] },
-        { href: '/front/css', label: 'CSS', active: pathname.includes('/front/css'), icon: Tag, submenus: [] },
-        { href: '/front/js',
-          label: 'JavaScript',
-          active: pathname.includes('/front/css'),
+        {
+          href: "/front/react",
+          label: "React",
+          active: pathname.includes("/front/react"),
+          icon: LayoutGrid,
+          submenus: [],
+        },
+        {
+          href: "/front/css",
+          label: "CSS",
+          active: pathname.includes("/front/css"),
+          icon: Tag,
+          submenus: [],
+        },
+        {
+          href: "/front/js",
+          label: "JavaScript",
+          active: pathname.includes("/front/css"),
           icon: Tag,
           submenus: [
             {
-              href: '/js/algorithm',
-              label: 'Algorithm',
-              active: pathname === '/js/algorithm',
+              href: "/js/algorithm",
+              label: "Algorithm",
+              active: pathname === "/js/algorithm",
             },
             {
-              href: '/twl',
-              label: 'Today I Learned',
-              active: pathname === '/twl',
+              href: "/twl",
+              label: "Today I Learned",
+              active: pathname === "/twl",
             },
           ],
         },
       ],
     },
     {
-      groupLabel: 'Develop',
+      groupLabel: "Develop",
       menus: [
         {
-          href: '/users',
-          label: 'Users',
-          active: pathname.includes('/users'),
+          href: "/users",
+          label: "Users",
+          active: pathname.includes("/users"),
           icon: Users,
           submenus: [],
         },
         {
-          href: '/account',
-          label: 'Account',
-          active: pathname.includes('/account'),
+          href: "/account",
+          label: "Account",
+          active: pathname.includes("/account"),
           icon: Settings,
+          submenus: [],
+        },
+      ],
+    },
+    {
+      groupLabel: "UI Components",
+      menus: [
+        {
+          href: "/ui",
+          label: "UI Components Test",
+          active: pathname.includes("/users"),
+          icon: Users,
           submenus: [],
         },
       ],
