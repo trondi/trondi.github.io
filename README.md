@@ -1,40 +1,44 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Frontend Blog
 
-## Getting Started
+개인 프론트엔드 개발 블로그 1차 버전입니다. Next.js App Router, TypeScript, Tailwind CSS, markdown 기반 포스트 구조로 구성되어 있습니다.
 
-First, run the development server:
+## 실행
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+브라우저에서 `http://localhost:3000`을 열면 됩니다.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+## 주요 구조
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+- `src/app`: App Router 기반 페이지와 메타데이터
+- `src/components/blog`: 블로그 전용 UI 컴포넌트
+- `src/lib/blog`: 콘텐츠 파싱, 메타데이터, 탐색 로직
+- `content/posts`: markdown 포스트 저장소
+- `docs/blog-architecture.md`: IA, 폴더 구조, 라우팅 구조 문서
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+## 포스트 추가 방법
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+`content/posts`에 `.md` 파일을 추가하고 아래 형식의 frontmatter를 작성합니다.
 
-## Learn More
+```md
+---
+title: "새 글 제목"
+date: "2026-03-13"
+summary: "짧은 소개"
+category: "Frontend"
+tags:
+- React
+- TypeScript
+featured: false
+draft: false
+---
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 다음 확장 후보
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- 검색 인덱스
+- 다크모드 토글
+- MDX 컴포넌트 지원
+- RSS / OG 이미지 자동화
