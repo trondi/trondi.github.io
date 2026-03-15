@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { PostListItem } from "@/components/blog/post-list-item";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
-import { CategoryScene } from "@/components/blog/three/category-scene";
+import { CategorySceneShell } from "@/components/blog/three/category-scene-shell";
 import { getAllPosts, getCategories, getPostsByCategorySlug } from "@/lib/blog/posts";
 
 type CategoryPageProps = {
@@ -28,7 +28,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     <>
       <RecentlyViewedPosts posts={allPosts} variant="category" />
       <div className="space-y-10">
-        <section className="overflow-hidden rounded-[34px] border border-slate-200 bg-white/82 backdrop-blur dark:border-stone-800 dark:bg-[#2a2a2e]/80">
+        <section className="overflow-hidden rounded-[34px] border border-slate-200/70 bg-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur dark:border-stone-700/70 dark:bg-[#2a2a2e]/80 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
           <div className="grid gap-8 px-6 py-7 md:px-8 md:py-8 lg:grid-cols-[minmax(0,1.1fr)_360px] lg:items-center">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Category</p>
@@ -50,8 +50,8 @@ export default function CategoryPage({ params }: CategoryPageProps) {
             </div>
             <div className="relative">
               <div className="absolute inset-4 rounded-[28px] bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.18),transparent_62%)]" />
-              <div className="relative overflow-hidden rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.82))] p-4 shadow-[0_18px_50px_rgba(15,23,42,0.05)] dark:border-stone-700 dark:bg-[#313136]">
-                <CategoryScene slug={params.slug} />
+              <div className="relative overflow-hidden rounded-[30px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.82))] p-4 shadow-[0_18px_50px_rgba(15,23,42,0.05),inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-stone-700/70 dark:bg-[#313136] dark:shadow-[0_18px_50px_rgba(15,23,42,0.22),inset_0_1px_0_rgba(255,255,255,0.03)]">
+                <CategorySceneShell slug={params.slug} />
               </div>
             </div>
           </div>

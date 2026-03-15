@@ -1,8 +1,8 @@
 export const siteConfig = {
-  title: "Trond Dev Archive",
+  title: "Trond Archive",
   description:
     "프론트엔드 개발 경험과 시행착오를 문서처럼 정리하는 개인 기술 블로그.",
-  siteUrl: "https://example.com",
+  siteUrl: "https://trondi.github.io",
   author: {
     name: "Trond",
     role: "Frontend Developer",

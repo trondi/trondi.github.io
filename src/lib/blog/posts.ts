@@ -4,8 +4,8 @@ import { cache } from "react";
 
 import { parseMarkdown } from "@/lib/blog/markdown";
 import { siteConfig } from "@/lib/blog/config";
-import { Post, PostFrontmatter, PostSummary, TaxonomyItem } from "@/lib/blog/types";
-import { estimateReadingTime, slugify } from "@/lib/blog/utils";
+import { Post, PostFrontmatter, PostSummary, SearchEntry, TaxonomyItem } from "@/lib/blog/types";
+import { estimateReadingTime, slugify, stripMarkdown } from "@/lib/blog/utils";
 
 const postsDirectory = path.join(process.cwd(), "content/posts");
 
@@ -129,6 +129,30 @@ export const getPostBySlug = cache((slug: string): Post | null => {
     blocks: parsed.blocks,
     toc: parsed.toc,
   };
+});
+
+export const getSearchIndex = cache((): SearchEntry[] => {
+  return getPostSlugs()
+    .map((slug) => {
+      const filePath = path.join(postsDirectory, `${slug}.md`);
+      const source = fs.readFileSync(filePath, "utf8");
+      const { metadata, content } = parseFrontmatter(source);
+      const frontmatter = validateFrontmatter(metadata, slug);
+
+      if (frontmatter.draft) {
+        return null;
+      }
+
+      return {
+        slug,
+        title: frontmatter.title,
+        summary: frontmatter.summary,
+        category: frontmatter.category,
+        tags: frontmatter.tags,
+        content: stripMarkdown(content.replace(/#+\s/g, " ").replace(/[-*]\s/g, " ")),
+      };
+    })
+    .filter((entry): entry is SearchEntry => Boolean(entry));
 });
 
 function countBy(items: string[]) {

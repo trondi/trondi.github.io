@@ -87,20 +87,20 @@ export default function PostPage({ params }: PostPageProps) {
         </div>
 
         <div className="mt-16 grid gap-6 border-t border-slate-200 pt-8 dark:border-stone-800 md:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white/70 p-5 dark:border-stone-800 dark:bg-[#2a2a2e]/76">
+          <div className="rounded-2xl border border-slate-200 bg-white/70 p-5 dark:border-stone-700 dark:bg-[#232326]">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-stone-400">Previous</p>
             {adjacent.previous ? (
-              <Link href={`/posts/${adjacent.previous.slug}`} className="mt-3 block text-lg font-semibold tracking-tight text-slate-950 dark:text-stone-100">
+              <Link href={`/posts/${adjacent.previous.slug}`} className="mt-3 block text-lg font-semibold tracking-tight text-slate-950 transition-colors hover:text-slate-700 dark:text-stone-100 dark:hover:text-stone-200">
                 {adjacent.previous.title}
               </Link>
             ) : (
               <p className="mt-3 text-sm text-slate-500 dark:text-stone-400">이전 글이 없습니다.</p>
             )}
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white/70 p-5 dark:border-stone-800 dark:bg-[#2a2a2e]/76">
+          <div className="rounded-2xl border border-slate-200 bg-white/70 p-5 dark:border-stone-700 dark:bg-[#232326]">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-stone-400">Next</p>
             {adjacent.next ? (
-              <Link href={`/posts/${adjacent.next.slug}`} className="mt-3 block text-lg font-semibold tracking-tight text-slate-950 dark:text-stone-100">
+              <Link href={`/posts/${adjacent.next.slug}`} className="mt-3 block text-lg font-semibold tracking-tight text-slate-950 transition-colors hover:text-slate-700 dark:text-stone-100 dark:hover:text-stone-200">
                 {adjacent.next.title}
               </Link>
             ) : (

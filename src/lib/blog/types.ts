@@ -13,6 +13,15 @@ export type PostSummary = PostFrontmatter & {
   readingTime: string;
 };
 
+export type SearchEntry = {
+  slug: string;
+  title: string;
+  summary: string;
+  category: string;
+  tags: string[];
+  content: string;
+};
+
 export type TocItem = {
   id: string;
   text: string;

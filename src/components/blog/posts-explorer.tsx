@@ -18,12 +18,23 @@ const PAGE_SIZE = 6;
 export function PostsExplorer({ posts, categories, tags }: PostsExplorerProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedTag, setSelectedTag] = useState<string>("all");
+  const [query, setQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest");
   const [page, setPage] = useState(1);
+
+  const normalizedQuery = query.trim().toLowerCase();
 
   const filtered = posts
     .filter((post) => selectedCategory === "all" || post.category === selectedCategory)
     .filter((post) => selectedTag === "all" || post.tags.includes(selectedTag))
+    .filter((post) => {
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      const haystack = [post.title, post.summary, post.category, ...post.tags].join(" ").toLowerCase();
+      return haystack.includes(normalizedQuery);
+    })
     .sort((a, b) =>
       sortOrder === "latest"
         ? +new Date(b.date) - +new Date(a.date)
@@ -35,7 +46,7 @@ export function PostsExplorer({ posts, categories, tags }: PostsExplorerProps) {
 
   useEffect(() => {
     setPage(1);
-  }, [selectedCategory, selectedTag, sortOrder]);
+  }, [query, selectedCategory, selectedTag, sortOrder]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -79,45 +90,78 @@ export function PostsExplorer({ posts, categories, tags }: PostsExplorerProps) {
       </aside>
 
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4 dark:border-slate-800">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Archive</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-              {filtered.length} posts
-            </h2>
+        <div className="border-b border-slate-200 pb-4 dark:border-stone-700">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-stone-400">
+                Archive
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-stone-100">
+                {filtered.length} posts
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSortOrder("latest")}
+                className={
+                  sortOrder === "latest"
+                    ? "rounded-full border border-slate-900 bg-slate-900 px-4 py-2 text-sm text-white dark:border-stone-200 dark:bg-stone-200 dark:text-stone-950"
+                    : "rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-600 dark:border-stone-700 dark:text-stone-300"
+                }
+              >
+                Latest
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortOrder("oldest")}
+                className={
+                  sortOrder === "oldest"
+                    ? "rounded-full border border-slate-900 bg-slate-900 px-4 py-2 text-sm text-white dark:border-stone-200 dark:bg-stone-200 dark:text-stone-950"
+                    : "rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-600 dark:border-stone-700 dark:text-stone-300"
+                }
+              >
+                Oldest
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setSortOrder("latest")}
-              className={
-                sortOrder === "latest"
-                  ? "rounded-full border border-slate-900 bg-slate-900 px-4 py-2 text-sm text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-950"
-                  : "rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300"
-              }
-            >
-              Latest
-            </button>
-            <button
-              type="button"
-              onClick={() => setSortOrder("oldest")}
-              className={
-                sortOrder === "oldest"
-                  ? "rounded-full border border-slate-900 bg-slate-900 px-4 py-2 text-sm text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-950"
-                  : "rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300"
-              }
-            >
-              Oldest
-            </button>
+
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <label htmlFor="posts-search" className="sr-only">
+              Search posts
+            </label>
+            <div className="relative min-w-[260px] flex-1">
+              <input
+                id="posts-search"
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="제목, 요약, 카테고리, 태그 검색"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-stone-500"
+              />
+            </div>
+            {query ? (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-stone-700 dark:text-stone-300 dark:hover:border-stone-500 dark:hover:text-stone-100"
+              >
+                Clear
+              </button>
+            ) : null}
           </div>
+
+          <p className="mt-3 text-sm text-slate-500 dark:text-stone-400">
+            검색어와 카테고리, 태그 필터를 함께 조합해 원하는 글만 빠르게 좁힐 수 있습니다.
+          </p>
         </div>
 
         <div className="pt-8">
           {paginated.length ? (
             paginated.map((post) => <PostListItem key={post.slug} post={post} />)
           ) : (
-            <div className="rounded-2xl border border-dashed border-slate-300 px-6 py-12 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-              조건에 맞는 글이 없습니다. 카테고리나 태그를 초기화해보세요.
+            <div className="rounded-2xl border border-dashed border-slate-300 px-6 py-12 text-sm text-slate-500 dark:border-stone-700 dark:text-stone-400">
+              조건에 맞는 글이 없습니다. 검색어를 지우거나 카테고리, 태그 필터를 다시 조정해보세요.
             </div>
           )}
         </div>

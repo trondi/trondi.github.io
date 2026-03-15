@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PostListItem } from "@/components/blog/post-list-item";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
 import { TagChip } from "@/components/blog/tag-chip";
-import { HeroGridScene } from "@/components/blog/three/hero-grid-scene";
+import { HeroGridSceneShell } from "@/components/blog/three/hero-grid-scene-shell";
 import { getAllPosts, getCategories, getFeaturedPosts, getLatestPosts } from "@/lib/blog/posts";
 import { slugify } from "@/lib/blog/utils";
 
@@ -18,8 +18,8 @@ export default function HomePage() {
       <RecentlyViewedPosts posts={allPosts} variant="home" />
       <div className="space-y-20">
         <section className="grid gap-8 border-b border-slate-200 pb-14 dark:border-stone-800 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
-          <div className="relative overflow-hidden rounded-[32px] border border-slate-200 bg-white/72 p-8 backdrop-blur dark:border-stone-800 dark:bg-[#2a2a2e]/72 md:p-10">
-            <HeroGridScene />
+          <div className="relative overflow-hidden rounded-[32px] border border-slate-200/70 bg-white/72 p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur dark:border-stone-700/70 dark:bg-[#2a2a2e]/72 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] md:p-10">
+            <HeroGridSceneShell />
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-stone-400">Frontend Archive</p>
             <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-stone-100 md:text-5xl">
               구현 기록을 문서처럼 정리하는 개인 프론트엔드 블로그
