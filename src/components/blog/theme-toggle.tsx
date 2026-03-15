@@ -42,7 +42,7 @@ export function ThemeToggle() {
       className={cn(
         "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium transition-colors",
         "border-slate-200 bg-white/90 text-slate-700 hover:border-slate-300 hover:text-slate-950",
-        "dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-zinc-100",
+        "dark:border-stone-700 dark:bg-[#313136] dark:text-stone-300 dark:hover:border-stone-600 dark:hover:text-stone-100",
         !mounted && "opacity-0",
       )}
     >
