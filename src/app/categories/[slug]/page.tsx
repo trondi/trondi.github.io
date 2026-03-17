@@ -28,30 +28,34 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     <>
       <RecentlyViewedPosts posts={allPosts} variant="category" />
       <div className="space-y-10">
-        <section className="overflow-hidden rounded-[34px] border border-slate-200/70 bg-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur dark:border-stone-700/70 dark:bg-[#2a2a2e]/80 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-          <div className="grid gap-8 px-6 py-7 md:px-8 md:py-8 lg:grid-cols-[minmax(0,1.1fr)_360px] lg:items-center">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Category</p>
+        <section className="glass-surface rounded-[36px]">
+          <div className="relative z-10 grid gap-6 px-5 py-5 md:px-7 md:py-7 lg:grid-cols-[minmax(0,1.08fr)_360px] lg:items-center">
+            <div className="glass-card rounded-[30px] p-6 md:p-7">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Category</p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 dark:text-white">
                 {category.name}
               </h1>
-              <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
-                {category.count}개의 글이 정리되어 있습니다. 카테고리의 성격에 맞춘 시각적 톤을 오른쪽 패널에
-                배치해, 텍스트 흐름을 해치지 않으면서 분위기만 보강했습니다.
+              <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-700 dark:text-slate-300">
+                {category.count}개의 글이 정리되어 있습니다. 카테고리 성격에 맞춘 씬을 유리 패널 안에 담아,
+                정보 밀도는 유지하면서 화면의 분위기만 부드럽게 올렸습니다.
               </p>
-              <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-500 dark:text-slate-400">
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 dark:border-stone-700 dark:bg-[#313136]">
+              <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-600 dark:text-slate-300">
+                <span className="glass-pill rounded-full px-3 py-1.5">
                   Focused Archive
                 </span>
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 dark:border-stone-700 dark:bg-[#313136]">
+                <span className="glass-pill rounded-full px-3 py-1.5">
                   Category-specific Scene
                 </span>
               </div>
             </div>
-            <div className="relative">
-              <div className="absolute inset-4 rounded-[28px] bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.18),transparent_62%)]" />
-              <div className="relative overflow-hidden rounded-[30px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.82))] p-4 shadow-[0_18px_50px_rgba(15,23,42,0.05),inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-stone-700/70 dark:bg-[#313136] dark:shadow-[0_18px_50px_rgba(15,23,42,0.22),inset_0_1px_0_rgba(255,255,255,0.03)]">
-                <CategorySceneShell slug={params.slug} />
+
+            <div className="relative overflow-hidden rounded-[34px]">
+              <div className="glass-scene-glow absolute -inset-3 rounded-[34px] opacity-90 blur-2xl" />
+              <div className="glass-card-strong rounded-[30px] p-4">
+                <div className="glass-scene-tint absolute inset-0" />
+                <div className="relative z-10">
+                  <CategorySceneShell slug={params.slug} />
+                </div>
               </div>
             </div>
           </div>

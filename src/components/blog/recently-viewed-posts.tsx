@@ -25,7 +25,6 @@ export function RecentlyViewedPosts({
   variant = "post",
 }: RecentlyViewedPostsProps) {
   const [recentSlugs, setRecentSlugs] = useState<string[]>([]);
-  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     const sync = () => {
@@ -38,21 +37,6 @@ export function RecentlyViewedPosts({
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
   }, [currentSlug]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const syncTheme = () => setIsDark(root.classList.contains("dark"));
-
-    syncTheme();
-
-    const observer = new MutationObserver(syncTheme);
-    observer.observe(root, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   const recentPosts = useMemo(() => {
     return recentSlugs
@@ -67,19 +51,11 @@ export function RecentlyViewedPosts({
     return null;
   }
 
-  const panelClassName =
-    variant === "home"
-      ? "hidden min-[1480px]:block"
-      : variant === "category"
-        ? "hidden min-[1480px]:block"
-        : "hidden min-[1520px]:block";
-
-  const cardClassName =
-    variant === "home"
-      ? "pointer-events-auto fixed right-6 top-56 w-60 rounded-[24px] border border-slate-200 bg-white/84 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur dark:border-stone-700 dark:bg-[#232326]/95"
-      : variant === "category"
-        ? "pointer-events-auto fixed right-6 top-56 w-60 rounded-[24px] border border-slate-200 bg-white/84 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur dark:border-stone-700 dark:bg-[#232326]/95"
-        : "pointer-events-auto fixed right-6 top-56 w-60 rounded-[22px] border border-slate-200 bg-white/90 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur dark:border-stone-700 dark:bg-[#232326]/95";
+  const panelClassName = variant === "post" ? "hidden min-[1520px]:block" : "hidden min-[1480px]:block";
+  const cardClassName = cn(
+    "glass-card pointer-events-auto fixed right-6 top-56 w-60 p-4",
+    variant === "post" ? "rounded-[22px]" : "rounded-[24px]",
+  );
 
   return (
     <aside
@@ -97,7 +73,7 @@ export function RecentlyViewedPosts({
                   key={post.slug}
                   href={`/posts/${post.slug}`}
                   className={cn(
-                    "block rounded-2xl border border-slate-200/80 transition-colors hover:border-slate-300 hover:bg-white dark:border-stone-600 dark:hover:border-stone-500 dark:hover:bg-stone-700/90",
+                    "glass-link block rounded-2xl",
                     variant === "post" ? "px-3 py-2.5" : "px-4 py-3",
                   )}
                 >
@@ -130,7 +106,7 @@ export function RecentlyViewedPosts({
         {hasNavigation ? (
           <div
             className={cn(
-              "border-slate-200 dark:border-zinc-700",
+              "glass-divider",
               recentPosts.length ? "mt-4 border-t pt-4" : "",
             )}
           >
@@ -141,27 +117,12 @@ export function RecentlyViewedPosts({
               {previousPost ? (
                 <Link
                   href={`/posts/${previousPost.slug}`}
-                  className={cn(
-                    "block rounded-2xl px-3 py-2.5 transition-colors",
-                    isDark
-                      ? "border border-stone-700 bg-[#232326] hover:border-stone-500 hover:bg-[#313136]"
-                      : "border border-slate-200/80 hover:border-slate-300 hover:bg-white",
-                  )}
+                  className="glass-link block rounded-2xl px-3 py-2.5"
                 >
-                  <p
-                    className={cn(
-                      "text-[11px] uppercase tracking-[0.2em]",
-                      isDark ? "text-stone-400" : "text-slate-400",
-                    )}
-                  >
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-stone-400">
                     Previous
                   </p>
-                  <p
-                    className={cn(
-                      "mt-1 text-[13px] font-semibold leading-5 tracking-tight",
-                      isDark ? "text-stone-100" : "text-slate-950",
-                    )}
-                  >
+                  <p className="mt-1 text-[13px] font-semibold leading-5 tracking-tight text-slate-950 dark:text-stone-100">
                     {previousPost.title}
                   </p>
                 </Link>
@@ -169,27 +130,12 @@ export function RecentlyViewedPosts({
               {nextPost ? (
                 <Link
                   href={`/posts/${nextPost.slug}`}
-                  className={cn(
-                    "block rounded-2xl px-3 py-2.5 transition-colors",
-                    isDark
-                      ? "border border-stone-700 bg-[#232326] hover:border-stone-500 hover:bg-[#313136]"
-                      : "border border-slate-200/80 hover:border-slate-300 hover:bg-white",
-                  )}
+                  className="glass-link block rounded-2xl px-3 py-2.5"
                 >
-                  <p
-                    className={cn(
-                      "text-[11px] uppercase tracking-[0.2em]",
-                      isDark ? "text-stone-400" : "text-slate-400",
-                    )}
-                  >
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-stone-400">
                     Next
                   </p>
-                  <p
-                    className={cn(
-                      "mt-1 text-[13px] font-semibold leading-5 tracking-tight",
-                      isDark ? "text-stone-100" : "text-slate-950",
-                    )}
-                  >
+                  <p className="mt-1 text-[13px] font-semibold leading-5 tracking-tight text-slate-950 dark:text-stone-100">
                     {nextPost.title}
                   </p>
                 </Link>

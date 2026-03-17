@@ -18,8 +18,10 @@ export default function HomePage() {
       <RecentlyViewedPosts posts={allPosts} variant="home" />
       <div className="space-y-20">
         <section className="grid gap-8 border-b border-slate-200 pb-14 dark:border-stone-800 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
-          <div className="relative overflow-hidden rounded-[32px] border border-slate-200/70 bg-white/72 p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur dark:border-stone-700/70 dark:bg-[#2a2a2e]/72 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] md:p-10">
-            <HeroGridSceneShell />
+          <div className="glass-surface rounded-[32px] p-8 md:p-10">
+            <div className="relative z-10">
+              <HeroGridSceneShell />
+            </div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-stone-400">Frontend Archive</p>
             <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-stone-100 md:text-5xl">
               구현 기록을 문서처럼 정리하는 개인 프론트엔드 블로그
@@ -29,13 +31,13 @@ export default function HomePage() {
               탐색을 우선하고, 각 글은 오래 남는 문서처럼 유지되도록 설계했습니다.
             </p>
             <div className="mt-10 flex flex-wrap gap-3 text-sm text-slate-500 dark:text-stone-400">
-              <span className="rounded-full border border-slate-200 bg-white/90 px-3 py-1 dark:border-stone-700 dark:bg-[#313136]">Subtle Three.js Hero</span>
-              <span className="rounded-full border border-slate-200 bg-white/90 px-3 py-1 dark:border-stone-700 dark:bg-[#313136]">Reading-first Layout</span>
-              <span className="rounded-full border border-slate-200 bg-white/90 px-3 py-1 dark:border-stone-700 dark:bg-[#313136]">Archive-friendly Structure</span>
+              <span className="glass-pill rounded-full px-3 py-1">Subtle Three.js Hero</span>
+              <span className="glass-pill rounded-full px-3 py-1">Reading-first Layout</span>
+              <span className="glass-pill rounded-full px-3 py-1">Archive-friendly Structure</span>
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-slate-200 bg-white/80 p-6 backdrop-blur dark:border-stone-700 dark:bg-stone-900/95">
+          <div className="glass-card rounded-[28px] p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-stone-400">Representative Categories</p>
             <div className="mt-4 flex flex-wrap gap-2">
               {categories.slice(0, 6).map((category) => (
@@ -46,14 +48,14 @@ export default function HomePage() {
                 />
               ))}
             </div>
-            <div className="mt-8 border-t border-slate-200 pt-5 dark:border-stone-800">
+            <div className="glass-divider mt-8 border-t pt-5">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-stone-400">Quick Access</p>
               <div className="mt-4 space-y-3 text-sm text-slate-600 dark:text-stone-200">
-                <Link href="/posts" className="flex items-center justify-between transition-colors hover:text-slate-950 dark:text-stone-200 dark:hover:text-white">
+                <Link href="/posts" className="glass-link flex items-center justify-between rounded-2xl px-4 py-3 transition-colors hover:text-slate-950 dark:text-stone-200 dark:hover:text-white">
                   <span>전체 글 아카이브 보기</span>
                   <span>→</span>
                 </Link>
-                <Link href="/about" className="flex items-center justify-between transition-colors hover:text-slate-950 dark:text-stone-200 dark:hover:text-white">
+                <Link href="/about" className="glass-link flex items-center justify-between rounded-2xl px-4 py-3 transition-colors hover:text-slate-950 dark:text-stone-200 dark:hover:text-white">
                   <span>작성자와 스택 보기</span>
                   <span>→</span>
                 </Link>
@@ -81,11 +83,11 @@ export default function HomePage() {
           </div>
 
           <aside className="space-y-8">
-            <section className="rounded-[28px] border border-slate-200 bg-white/80 p-6 backdrop-blur dark:border-stone-700 dark:bg-stone-900/95">
+            <section className="glass-card rounded-[28px] p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-stone-400">Recommended</p>
               <div className="mt-5 space-y-5">
                 {featuredPosts.map((post) => (
-                  <Link key={post.slug} href={`/posts/${post.slug}`} className="block border-b border-slate-200 pb-5 last:border-none last:pb-0 dark:border-stone-800">
+                  <Link key={post.slug} href={`/posts/${post.slug}`} className="glass-divider block border-b pb-5 last:border-none last:pb-0">
                     <p className="text-sm text-slate-500 dark:text-stone-400">{post.category}</p>
                     <h3 className="mt-2 text-lg font-semibold tracking-tight text-slate-950 dark:text-stone-100">{post.title}</h3>
                     <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-stone-200">{post.summary}</p>
@@ -94,7 +96,7 @@ export default function HomePage() {
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-slate-200 bg-white/80 p-6 backdrop-blur dark:border-stone-700 dark:bg-stone-900/95">
+            <section className="glass-card rounded-[28px] p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-stone-400">Reading Style</p>
               <ul className="mt-5 space-y-3 text-sm leading-7 text-slate-600 dark:text-stone-200">
                 <li>본문 폭을 넓히지 않고 코드와 텍스트의 리듬을 분리했습니다.</li>

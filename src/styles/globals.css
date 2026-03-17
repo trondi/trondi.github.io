@@ -30,6 +30,29 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    --glass-border: rgba(255, 255, 255, 0.58);
+    --glass-surface: rgba(255, 255, 255, 0.2);
+    --glass-card: rgba(255, 255, 255, 0.4);
+    --glass-card-strong: rgba(255, 255, 255, 0.38);
+    --glass-pill: rgba(255, 255, 255, 0.55);
+    --glass-link-bg: rgba(255, 255, 255, 0.3);
+    --glass-link-hover-bg: rgba(255, 255, 255, 0.48);
+    --glass-link-border: rgba(255, 255, 255, 0.54);
+    --glass-link-hover-border: rgba(255, 255, 255, 0.78);
+    --glass-line: rgba(255, 255, 255, 0.9);
+    --glass-surface-shadow: 0 24px 80px rgba(148, 163, 184, 0.18);
+    --glass-card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 18px 40px rgba(255, 255, 255, 0.18);
+    --glass-card-strong-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      0 20px 50px rgba(148, 163, 184, 0.22);
+    --glass-pill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    --glass-surface-overlay:
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.72), transparent 34%),
+      radial-gradient(circle at bottom right, rgba(191, 219, 254, 0.4), transparent 30%);
+    --glass-surface-inner: linear-gradient(135deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.12));
+    --glass-scene-glow:
+      radial-gradient(circle at top, rgba(255, 255, 255, 0.8), rgba(191, 219, 254, 0.28), transparent 72%);
+    --glass-scene-tint: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 30%, rgba(255, 255, 255, 0.08));
   }
   .dark {
     --page: 35 35 38;
@@ -57,6 +80,121 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-surface: rgba(255, 255, 255, 0.06);
+    --glass-card: rgba(255, 255, 255, 0.05);
+    --glass-card-strong: rgba(255, 255, 255, 0.06);
+    --glass-pill: rgba(255, 255, 255, 0.06);
+    --glass-link-bg: rgba(255, 255, 255, 0.03);
+    --glass-link-hover-bg: rgba(255, 255, 255, 0.08);
+    --glass-link-border: rgba(255, 255, 255, 0.08);
+    --glass-link-hover-border: rgba(255, 255, 255, 0.18);
+    --glass-line: rgba(255, 255, 255, 0.2);
+    --glass-surface-shadow: 0 28px 90px rgba(15, 23, 42, 0.38);
+    --glass-card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 50px rgba(15, 23, 42, 0.2);
+    --glass-card-strong-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 20px 50px rgba(15, 23, 42, 0.28);
+    --glass-pill-shadow: none;
+    --glass-surface-overlay:
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.12), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.18), transparent 26%);
+    --glass-surface-inner: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+    --glass-scene-glow: radial-gradient(circle at top, rgba(56, 189, 248, 0.22), transparent 68%);
+    --glass-scene-tint: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 30%, rgba(255, 255, 255, 0.02));
+  }
+}
+
+@layer components {
+  .glass-surface {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-surface);
+    box-shadow: var(--glass-surface-shadow);
+    backdrop-filter: blur(24px);
+  }
+
+  .glass-surface::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--glass-surface-overlay);
+    pointer-events: none;
+  }
+
+  .glass-surface::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    background: var(--glass-surface-inner);
+    pointer-events: none;
+  }
+
+  .glass-card {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-card);
+    box-shadow: var(--glass-card-shadow);
+    backdrop-filter: blur(20px);
+  }
+
+  .glass-card::before,
+  .glass-card-strong::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: var(--glass-line);
+    pointer-events: none;
+  }
+
+  .glass-card-strong {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-card-strong);
+    box-shadow: var(--glass-card-strong-shadow);
+    backdrop-filter: blur(28px);
+  }
+
+  .glass-pill {
+    border: 1px solid var(--glass-border);
+    background: var(--glass-pill);
+    box-shadow: var(--glass-pill-shadow);
+    backdrop-filter: blur(16px);
+  }
+
+  .glass-link {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--glass-link-border);
+    background: var(--glass-link-bg);
+    transition:
+      border-color 200ms ease,
+      background-color 200ms ease,
+      transform 200ms ease;
+    backdrop-filter: blur(18px);
+  }
+
+  .glass-link:hover {
+    border-color: var(--glass-link-hover-border);
+    background: var(--glass-link-hover-bg);
+  }
+
+  .glass-divider {
+    border-color: var(--glass-link-border);
+  }
+
+  .glass-scene-glow {
+    background: var(--glass-scene-glow);
+  }
+
+  .glass-scene-tint {
+    background: var(--glass-scene-tint);
   }
 }
 
@@ -67,10 +205,12 @@
 
   html {
     scroll-behavior: smooth;
+    overflow-x: clip;
   }
 
   body {
     @apply min-h-screen bg-background text-foreground;
+    overflow-x: clip;
     font-family:
       "Pretendard Variable",
       "SUIT Variable",
