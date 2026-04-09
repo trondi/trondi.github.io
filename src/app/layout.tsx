@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { AmbientSceneShell } from "@/components/blog/three/ambient-scene-shell";
-import { SeasonalSceneShell } from "@/components/blog/three/seasonal-scene-shell";
+import { SeasonalOverlay } from "@/components/blog/seasonal-overlay";
 import { SiteFooter } from "@/components/blog/site-footer";
 import { SiteHeader } from "@/components/blog/site-header";
 import { ViewTransitionProvider } from "@/components/blog/view-transition-provider";
@@ -41,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ViewTransitionProvider>
           <div className="min-h-screen">
             <AmbientSceneShell />
-            <SeasonalSceneShell />
+            <SeasonalOverlay />
             <SiteHeader />
             <main className="mx-auto max-w-6xl px-6 pb-16 pt-4">{children}</main>
             <SiteFooter />
