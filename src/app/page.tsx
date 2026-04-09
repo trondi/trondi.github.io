@@ -4,6 +4,7 @@ import { PostListItem } from "@/components/blog/post-list-item";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
 import { TagChip } from "@/components/blog/tag-chip";
 import { HeroGridSceneShell } from "@/components/blog/three/hero-grid-scene-shell";
+import { getSeason, SEASON_CONFIG } from "@/lib/season";
 import { getAllPosts, getCategories, getFeaturedPosts, getLatestPosts } from "@/lib/blog/posts";
 import { slugify } from "@/lib/blog/utils";
 
@@ -12,6 +13,8 @@ export default function HomePage() {
   const featuredPosts = getFeaturedPosts(3);
   const categories = getCategories();
   const allPosts = getAllPosts();
+  const season = getSeason();
+  const seasonCfg = SEASON_CONFIG[season];
 
   return (
     <>
@@ -37,10 +40,16 @@ export default function HomePage() {
               <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground md:text-lg md:leading-8">
                 React, Next.js, TypeScript, UI 설계와 트러블슈팅을 읽기 좋은 글로 정리합니다.
               </p>
-              <div className="mt-8 flex flex-wrap gap-2 text-sm">
+              <div className="mt-8 flex flex-wrap items-center gap-2 text-sm">
                 <span className="glass-pill rounded-full px-3 py-1 text-xs">Three.js</span>
                 <span className="glass-pill rounded-full px-3 py-1 text-xs">Reading-first</span>
                 <span className="glass-pill rounded-full px-3 py-1 text-xs">Archive-friendly</span>
+                <span
+                  className="glass-pill rounded-full px-3 py-1 text-xs"
+                  title={`현재 계절: ${seasonCfg.label}`}
+                >
+                  {seasonCfg.emoji} {seasonCfg.label}
+                </span>
               </div>
             </div>
 
