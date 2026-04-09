@@ -16,63 +16,91 @@ export default function HomePage() {
   return (
     <>
       <RecentlyViewedPosts posts={allPosts} variant="home" />
-      <div className="space-y-20">
-        <section className="grid gap-8 border-b border-slate-200 pb-14 dark:border-stone-800 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
-          <div className="glass-surface rounded-[32px] p-8 md:p-10">
-            <div className="relative z-10">
-              <HeroGridSceneShell />
-            </div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-stone-400">Frontend Archive</p>
-            <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-stone-100 md:text-5xl">
-              구현 기록을 문서처럼 정리하는 개인 프론트엔드 블로그
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 dark:text-stone-300">
-              React, Next.js, TypeScript, UI 설계와 트러블슈팅을 읽기 좋은 글로 정리합니다. 홈은 쇼케이스보다
-              탐색을 우선하고, 각 글은 오래 남는 문서처럼 유지되도록 설계했습니다.
-            </p>
-            <div className="mt-10 flex flex-wrap gap-3 text-sm text-slate-500 dark:text-stone-400">
-              <span className="glass-pill rounded-full px-3 py-1">Subtle Three.js Hero</span>
-              <span className="glass-pill rounded-full px-3 py-1">Reading-first Layout</span>
-              <span className="glass-pill rounded-full px-3 py-1">Archive-friendly Structure</span>
-            </div>
+      <div className="space-y-24">
+
+        {/* Hero */}
+        <section className="relative min-h-[480px] border-b border-border pb-16 pt-12">
+          {/* Three.js as full-width background */}
+          <div className="absolute inset-0 overflow-hidden">
+            <HeroGridSceneShell />
           </div>
 
-          <div className="glass-card rounded-[28px] p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-stone-400">Representative Categories</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {categories.slice(0, 6).map((category) => (
-                <TagChip
-                  key={category.slug}
-                  label={`${category.name} (${category.count})`}
-                  href={`/categories/${slugify(category.name)}`}
-                />
-              ))}
+          {/* Content */}
+          <div className="relative z-10 grid gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.6fr)]">
+            <div className="flex flex-col justify-end">
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-muted-foreground">
+                Frontend Archive
+              </p>
+              <h1 className="mt-4 max-w-2xl text-4xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl">
+                구현 기록을<br className="hidden sm:block" /> 문서처럼 정리합니다
+              </h1>
+              <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground md:text-lg md:leading-8">
+                React, Next.js, TypeScript, UI 설계와 트러블슈팅을 읽기 좋은 글로 정리합니다.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-2 text-sm">
+                <span className="glass-pill rounded-full px-3 py-1 text-xs">Three.js</span>
+                <span className="glass-pill rounded-full px-3 py-1 text-xs">Reading-first</span>
+                <span className="glass-pill rounded-full px-3 py-1 text-xs">Archive-friendly</span>
+              </div>
             </div>
-            <div className="glass-divider mt-8 border-t pt-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-stone-400">Quick Access</p>
-              <div className="mt-4 space-y-3 text-sm text-slate-600 dark:text-stone-200">
-                <Link href="/posts" className="glass-link flex items-center justify-between rounded-2xl px-4 py-3 transition-colors hover:text-slate-950 dark:text-stone-200 dark:hover:text-white">
+
+            <div className="flex flex-col gap-6">
+              {/* Categories */}
+              <div className="glass-card rounded-2xl p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                  Categories
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {categories.slice(0, 6).map((category) => (
+                    <TagChip
+                      key={category.slug}
+                      label={`${category.name} (${category.count})`}
+                      href={`/categories/${slugify(category.name)}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick links */}
+              <div className="space-y-2 text-sm">
+                <Link
+                  href="/posts"
+                  className="glass-link flex items-center justify-between rounded-xl px-4 py-3 text-foreground"
+                >
                   <span>전체 글 아카이브 보기</span>
-                  <span>→</span>
+                  <span className="text-muted-foreground">→</span>
                 </Link>
-                <Link href="/about" className="glass-link flex items-center justify-between rounded-2xl px-4 py-3 transition-colors hover:text-slate-950 dark:text-stone-200 dark:hover:text-white">
+                <Link
+                  href="/about"
+                  className="glass-link flex items-center justify-between rounded-xl px-4 py-3 text-foreground"
+                >
                   <span>작성자와 스택 보기</span>
-                  <span>→</span>
+                  <span className="text-muted-foreground">→</span>
                 </Link>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="grid gap-14 lg:grid-cols-[minmax(0,1fr)_320px]">
+        {/* Latest posts + Sidebar */}
+        <section className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_300px]">
+
+          {/* Posts */}
           <div>
-            <div className="mb-8 flex items-end justify-between gap-4">
+            <div className="mb-10 flex items-end justify-between gap-4 border-b border-border pb-5">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-stone-400">Latest Posts</p>
-                <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-stone-100">최근에 정리한 글</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                  Latest Posts
+                </p>
+                <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-foreground">
+                  최근에 정리한 글
+                </h2>
               </div>
-              <Link href="/posts" className="text-sm text-slate-600 transition-colors hover:text-slate-950 dark:text-stone-300 dark:hover:text-stone-100">
-                전체 글 보기
+              <Link
+                href="/posts"
+                className="shrink-0 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                전체 보기
               </Link>
             </div>
             <div>
@@ -82,30 +110,48 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Sidebar */}
           <aside className="space-y-8">
-            <section className="glass-card rounded-[28px] p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-stone-400">Recommended</p>
-              <div className="mt-5 space-y-5">
-                {featuredPosts.map((post) => (
-                  <Link key={post.slug} href={`/posts/${post.slug}`} className="glass-divider block border-b pb-5 last:border-none last:pb-0">
-                    <p className="text-sm text-slate-500 dark:text-stone-400">{post.category}</p>
-                    <h3 className="mt-2 text-lg font-semibold tracking-tight text-slate-950 dark:text-stone-100">{post.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-stone-200">{post.summary}</p>
+            {/* Recommended */}
+            <div>
+              <p className="mb-5 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                Recommended
+              </p>
+              <div className="space-y-6">
+                {featuredPosts.map((post, i) => (
+                  <Link
+                    key={post.slug}
+                    href={`/posts/${post.slug}`}
+                    className="block group"
+                  >
+                    <p className="text-xs text-muted-foreground">{post.category}</p>
+                    <h3 className="mt-1 text-sm font-semibold leading-snug text-foreground group-hover:text-muted-foreground transition-colors">
+                      {post.title}
+                    </h3>
+                    {i < featuredPosts.length - 1 && (
+                      <div className="mt-6 border-b border-border" />
+                    )}
                   </Link>
                 ))}
               </div>
-            </section>
+            </div>
 
-            <section className="glass-card rounded-[28px] p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-stone-400">Reading Style</p>
-              <ul className="mt-5 space-y-3 text-sm leading-7 text-slate-600 dark:text-stone-200">
+            {/* Divider */}
+            <div className="border-t border-border" />
+
+            {/* About reading style */}
+            <div>
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                Reading Style
+              </p>
+              <ul className="space-y-3 text-sm leading-6 text-muted-foreground">
                 <li>본문 폭을 넓히지 않고 코드와 텍스트의 리듬을 분리했습니다.</li>
                 <li>카테고리, 태그, 관련 글 중심으로 다시 찾기 쉬운 구조를 유지합니다.</li>
-                <li>1차 버전은 단순한 정적 구조에 집중하고, 이후 검색과 다크모드를 확장할 수 있습니다.</li>
               </ul>
-            </section>
+            </div>
           </aside>
         </section>
+
       </div>
     </>
   );
