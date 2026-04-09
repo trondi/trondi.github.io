@@ -20,6 +20,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "embla-carousel-react": "^8.5.2",
+    "gsap": "^3.14.2",
     "lucide-react": "^0.469.0",
     "next": "14.0.1",
     "next-redux-wrapper": "^8.1.0",

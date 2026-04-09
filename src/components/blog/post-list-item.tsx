@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 
+import { useGsapReveal } from "@/hooks/use-gsap-reveal";
 import { TagChip } from "@/components/blog/tag-chip";
 import { PostSummary } from "@/lib/blog/types";
 import { formatDate, slugify } from "@/lib/blog/utils";
@@ -9,27 +12,40 @@ type PostListItemProps = {
 };
 
 export function PostListItem({ post }: PostListItemProps) {
+  const ref = useGsapReveal<HTMLElement>({ children: false, y: 18, duration: 0.5 });
+
   return (
-    <article className="border-b border-slate-200 py-6 first:pt-0 dark:border-stone-800">
-      <div className="mb-3 flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-stone-400">
+    <article
+      ref={ref}
+      className="border-b border-border py-6 first:pt-0"
+    >
+      <div className="mb-2.5 flex flex-wrap items-center gap-2.5 text-sm text-muted-foreground">
         <span>{formatDate(post.date)}</span>
         <span>·</span>
         <Link
           href={`/categories/${slugify(post.category)}`}
-          className="transition-colors hover:text-slate-900 dark:hover:text-stone-100"
+          className="transition-colors hover:text-foreground"
         >
           {post.category}
         </Link>
         <span>·</span>
         <span>{post.readingTime}</span>
       </div>
-      <h3 className="text-xl font-semibold tracking-tight text-slate-950 dark:text-stone-100">
-        <Link href={`/posts/${post.slug}`} className="transition-colors hover:text-slate-700 dark:hover:text-stone-200">
+      <h3
+        className="text-xl font-bold tracking-tight text-foreground"
+        style={{ viewTransitionName: `post-title-${post.slug}` }}
+      >
+        <Link
+          href={`/posts/${post.slug}`}
+          className="transition-colors hover:text-muted-foreground"
+        >
           {post.title}
         </Link>
       </h3>
-      <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 dark:text-stone-300">{post.summary}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <p className="mt-2.5 max-w-3xl text-sm leading-7 text-muted-foreground">
+        {post.summary}
+      </p>
+      <div className="mt-3.5 flex flex-wrap gap-2">
         {post.tags.map((tag) => (
           <TagChip key={tag} label={tag} href={`/tags/${slugify(tag)}`} />
         ))}
