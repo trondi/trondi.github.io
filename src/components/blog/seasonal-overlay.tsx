@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { getSeason, SEASON_CONFIG } from "@/lib/season";
+import { useEffect, useRef } from "react";
+import { useSeasonalContext } from "@/components/blog/seasonal-context";
 import type { Season } from "@/lib/season";
 
 // ─── Particle ──────────────────────────────────────────────────────────────────
@@ -233,14 +233,10 @@ function makeParticle(
 }
 
 export function SeasonalOverlay() {
+  const { activeSeason } = useSeasonalContext();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [active, setActive] = useState(false);
-  const [season] = useState<Season>(getSeason);
   const particlesRef = useRef<Particle[]>([]);
   const animRef = useRef<number>(0);
-
-  const cfg = CFG[season];
-  const display = SEASON_CONFIG[season];
 
   // Canvas resize
   useEffect(() => {
@@ -255,21 +251,23 @@ export function SeasonalOverlay() {
     return () => window.removeEventListener("resize", resize);
   }, []);
 
-  // Animation loop
+  // Animation loop — re-runs when activeSeason changes
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    if (!active) {
+    if (!activeSeason) {
       cancelAnimationFrame(animRef.current);
-      // Fade-out: just stop drawing (canvas stays but opacity handled by CSS)
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       return;
     }
 
-    // Spawn particles scattered across screen on first start
+    const season: Season = activeSeason;
+    const cfg = CFG[season];
     const { width, height } = canvas;
+
     particlesRef.current = Array.from({ length: cfg.count }, (_, i) =>
       makeParticle(width, height, i < cfg.count * 0.5, cfg),
     );
@@ -281,16 +279,13 @@ export function SeasonalOverlay() {
       t += 0.012;
 
       for (const p of particlesRef.current) {
-        // Horizontal sway (sine wave)
         const sway = Math.sin(t * 0.9 + p.swayPhase) * cfg.swayAmp;
         p.x += p.vx + sway * 0.04;
         p.y += p.vy;
         p.rotation += p.rotSpeed;
 
-        // Recycle when off-screen
-        if (p.y > canvas.height + 30) {
+        if (p.y > canvas.height + 30)
           Object.assign(p, makeParticle(canvas.width, canvas.height, false, cfg));
-        }
         if (p.x < -30) p.x = canvas.width + 20;
         if (p.x > canvas.width + 30) p.x = -20;
 
@@ -311,34 +306,16 @@ export function SeasonalOverlay() {
     };
 
     tick();
-
     return () => cancelAnimationFrame(animRef.current);
-  }, [active, cfg, season]);
+  }, [activeSeason]);
 
   return (
-    <>
-      {/* Full-screen overlay canvas */}
-      <canvas
-        ref={canvasRef}
-        className={`pointer-events-none fixed inset-0 z-30 transition-opacity duration-700 ${
-          active ? "opacity-100" : "opacity-0"
-        }`}
-        aria-hidden
-      />
-
-      {/* Floating season button */}
-      <button
-        onClick={() => setActive((v) => !v)}
-        aria-label={`${display.label} 효과 ${active ? "끄기" : "켜기"}`}
-        className={`fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium shadow-sm transition-all duration-200 hover:shadow-md active:scale-95 ${
-          active
-            ? "border-foreground/20 bg-foreground text-background"
-            : "border-border bg-card text-foreground"
-        }`}
-      >
-        <span className="text-base leading-none">{display.emoji}</span>
-        <span>{display.label}</span>
-      </button>
-    </>
+    <canvas
+      ref={canvasRef}
+      className={`pointer-events-none fixed inset-0 z-30 transition-opacity duration-700 ${
+        activeSeason ? "opacity-100" : "opacity-0"
+      }`}
+      aria-hidden
+    />
   );
 }

@@ -3,146 +3,166 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── Light mode ──────────────────────────────────────────────────────── */
   :root {
-    --page: 250 250 250;
-    --background: 0 0% 98%;
-    --foreground: 0 0% 9%;
+    --page: 249 249 247;
+    --background: 40 12% 98%;     /* very slight warm tint */
+    --foreground: 30 6% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    --card-foreground: 30 6% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 9%;
+    --popover-foreground: 30 6% 10%;
+    --primary: 30 6% 10%;
+    --primary-foreground: 40 12% 98%;
+    --secondary: 36 10% 95%;
+    --secondary-foreground: 30 6% 10%;
+    --muted: 36 10% 95%;
+    --muted-foreground: 30 5% 44%;
+    --accent: 36 10% 95%;
+    --accent-foreground: 30 6% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 0 0% 9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --border: 36 8% 88%;
+    --input: 36 8% 88%;
+    --ring: 243 75% 56%;
     --radius: 0.5rem;
+
+    /* Single accent — indigo (2026: one bold colour against warm neutral) */
+    --link: 243 72% 48%;
+    --link-dark: 243 85% 72%;
   }
+
+  /* ── Dark mode — warm neutral, NOT pure black ────────────────────────── */
   .dark {
-    --page: 10 10 10;
-    --background: 0 0% 4%;
-    --foreground: 0 0% 93%;
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 93%;
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 93%;
-    --primary: 0 0% 93%;
-    --primary-foreground: 0 0% 7%;
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 85%;
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 55%;
-    --accent: 0 0% 12%;
-    --accent-foreground: 0 0% 85%;
+    --page: 22 20 17;             /* #161411 — warm dark base */
+    --background: 24 5% 9%;      /* #171513 */
+    --foreground: 32 8% 94%;     /* slightly warm white */
+    --card: 26 5% 12%;           /* #1c1a18 */
+    --card-foreground: 32 8% 94%;
+    --popover: 26 5% 12%;
+    --popover-foreground: 32 8% 94%;
+    --primary: 32 8% 94%;
+    --primary-foreground: 26 5% 12%;
+    --secondary: 26 4% 16%;      /* hover surfaces */
+    --secondary-foreground: 32 6% 82%;
+    --muted: 26 4% 16%;
+    --muted-foreground: 28 5% 62%; /* lighter than before — easier on eyes */
+    --accent: 26 4% 16%;
+    --accent-foreground: 32 6% 82%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 16%;
-    --input: 0 0% 16%;
-    --ring: 0 0% 70%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --border: 26 4% 22%;         /* more visible borders */
+    --input: 26 4% 22%;
+    --ring: 243 75% 68%;
   }
 }
 
 @layer components {
-  /* Simple border-based surfaces — no backdrop blur */
-  .glass-surface {
-    position: relative;
-    overflow: hidden;
-    isolation: isolate;
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
-  }
-
-  .dark .glass-surface {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.18);
-  }
-
-  .glass-card {
-    position: relative;
-    overflow: hidden;
-    isolation: isolate;
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  }
-
-  .dark .glass-card {
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
-  }
-
+  /* ── Legacy glass surface aliases ────────────────────────────────────── */
+  .glass-surface,
+  .glass-card,
   .glass-card-strong {
     position: relative;
     overflow: hidden;
     isolation: isolate;
     background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
   }
-
+  .dark .glass-surface,
+  .dark .glass-card,
   .dark .glass-card-strong {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.14);
   }
-
   .glass-pill {
     background: hsl(var(--secondary));
     border: 1px solid hsl(var(--border));
     color: hsl(var(--muted-foreground));
   }
-
   .glass-link {
     border: 1px solid hsl(var(--border));
     background: transparent;
-    transition:
-      border-color 150ms ease,
-      background-color 150ms ease;
+    transition: border-color 150ms ease, background-color 150ms ease;
+  }
+  .glass-link:hover { background: hsl(var(--secondary)); }
+  .glass-divider { border-color: hsl(var(--border)); }
+  .glass-scene-glow, .glass-scene-tint { background: transparent; }
+
+  /* ── 2026 Typography ──────────────────────────────────────────────────── */
+
+  /* ① Char-split headline animation ──────────────────────────────────── */
+  /* Each .char starts invisible; .headline-ready triggers the stagger.   */
+  @keyframes char-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.35em) rotate(1.5deg);
+      filter: blur(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+      filter: blur(0);
+    }
   }
 
-  .glass-link:hover {
-    background: hsl(var(--secondary));
-    border-color: hsl(var(--border));
+  .headline-split .char {
+    display: inline-block;
+    opacity: 0;
+    will-change: transform, opacity;
   }
 
-  .glass-divider {
-    border-color: hsl(var(--border));
+  .headline-ready .char {
+    animation: char-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  /* Kept for backward compat with Three.js scene overlays */
-  .glass-scene-glow,
-  .glass-scene-tint {
-    background: transparent;
+  /* Hero headline — fluid clamp, tight tracking */
+  .hero-headline {
+    font-size: clamp(2.7rem, 5.6vw, 4.4rem);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.032em;
   }
 
-  /* View Transitions API */
+  /* Animated underline — decorates on hover, invisible at rest */
+  .link-underline {
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 3px;
+    transition: text-decoration-color 200ms ease;
+  }
+  .link-underline:hover { text-decoration-color: currentColor; }
+
+  /* ── 2026: CSS Scroll-Timeline animations ────────────────────────────── */
+  /* Native browser API — no JS needed.                                     */
+  /* @supports guards for Safari < 17 / Firefox < 110 fallback.            */
+
+  @keyframes post-reveal {
+    from { opacity: 0; transform: translateY(13px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  @supports (animation-timeline: view()) {
+    .post-item {
+      animation: post-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 30%;
+    }
+  }
+
+  /* Fallback: already-visible items stay visible */
+  @supports not (animation-timeline: view()) {
+    .post-item { opacity: 1; }
+  }
+
+  /* ── View Transitions API ────────────────────────────────────────────── */
   @keyframes vt-slide-from-right {
-    from { transform: translateX(24px); opacity: 0; }
+    from { transform: translateX(22px); opacity: 0; }
   }
   @keyframes vt-slide-to-left {
-    to { transform: translateX(-24px); opacity: 0; }
+    to { transform: translateX(-22px); opacity: 0; }
   }
-  @keyframes vt-fade-in {
-    from { opacity: 0; }
-  }
-  @keyframes vt-fade-out {
-    to { opacity: 0; }
-  }
+  @keyframes vt-fade-in  { from { opacity: 0; } }
+  @keyframes vt-fade-out { to   { opacity: 0; } }
 
   ::view-transition-old(root) {
     animation: vt-slide-to-left 0.22s cubic-bezier(0.4, 0, 1, 1) both;
@@ -150,8 +170,6 @@
   ::view-transition-new(root) {
     animation: vt-slide-from-right 0.22s cubic-bezier(0, 0, 0.2, 1) both;
   }
-
-  /* Named shared-element transition for post titles */
   ::view-transition-old(post-title),
   ::view-transition-new(post-title) {
     animation: vt-fade-in 0.18s ease both, vt-fade-out 0.18s ease both;
@@ -160,9 +178,7 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
 
   html {
     scroll-behavior: smooth;
@@ -173,29 +189,29 @@
     @apply min-h-screen bg-background text-foreground;
     overflow-x: clip;
     font-family:
-      "Pretendard Variable",
-      "SUIT Variable",
-      "IBM Plex Sans KR",
-      "Apple SD Gothic Neo",
-      "Noto Sans KR",
-      sans-serif;
+      "Pretendard Variable", "SUIT Variable",
+      "IBM Plex Sans KR", "Apple SD Gothic Neo",
+      "Noto Sans KR", sans-serif;
   }
 
-  code,
-  pre {
+  /* Headings — tighter tracking across the board */
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+  }
+
+  code, pre {
     font-family:
-      "JetBrains Mono",
-      "SFMono-Regular",
-      "Consolas",
-      "Menlo",
-      monospace;
+      "JetBrains Mono", "SFMono-Regular",
+      "Consolas", "Menlo", monospace;
   }
 
+  /* 2026: warm-tinted selection */
   ::selection {
-    @apply bg-slate-200 text-slate-900;
+    background: hsl(243 72% 56% / 0.15);
+    color: hsl(var(--foreground));
   }
-
   .dark ::selection {
-    @apply bg-slate-700/80 text-slate-100;
+    background: hsl(243 72% 68% / 0.22);
+    color: hsl(var(--foreground));
   }
 }

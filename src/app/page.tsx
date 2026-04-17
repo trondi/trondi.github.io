@@ -1,10 +1,9 @@
 import Link from "next/link";
 
+import { AnimatedHeadline } from "@/components/blog/animated-headline";
+import { HeroShader } from "@/components/blog/ogl/hero-shader";
 import { PostListItem } from "@/components/blog/post-list-item";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
-import { TagChip } from "@/components/blog/tag-chip";
-import { HeroGridSceneShell } from "@/components/blog/three/hero-grid-scene-shell";
-import { getSeason, SEASON_CONFIG } from "@/lib/season";
 import { getAllPosts, getCategories, getFeaturedPosts, getLatestPosts } from "@/lib/blog/posts";
 import { slugify } from "@/lib/blog/utils";
 
@@ -13,95 +12,93 @@ export default function HomePage() {
   const featuredPosts = getFeaturedPosts(3);
   const categories = getCategories();
   const allPosts = getAllPosts();
-  const season = getSeason();
-  const seasonCfg = SEASON_CONFIG[season];
 
   return (
     <>
       <RecentlyViewedPosts posts={allPosts} variant="home" />
       <div className="space-y-24">
 
-        {/* Hero */}
-        <section className="relative min-h-[480px] border-b border-border pb-16 pt-12">
-          {/* Three.js as full-width background */}
-          <div className="absolute inset-0 overflow-hidden">
-            <HeroGridSceneShell />
-          </div>
+        {/* ── Hero ─────────────────────────────────────────────────────────── */}
+        <section className="relative border-b border-border pb-16 pt-14">
 
-          {/* Content */}
-          <div className="relative z-10 grid gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.6fr)]">
+          {/* OGL GLSL shader — flowing aurora gradient, mouse-reactive */}
+          <HeroShader />
+
+          {/* Content grid */}
+          <div className="relative grid gap-14 lg:grid-cols-[minmax(0,1.55fr)_minmax(200px,0.45fr)]">
+
+            {/* Left — headline */}
             <div className="flex flex-col justify-end">
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-muted-foreground">
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.38em] text-muted-foreground">
                 Frontend Archive
               </p>
-              <h1 className="mt-4 max-w-2xl text-4xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl">
-                구현 기록을<br className="hidden sm:block" /> 문서처럼 정리합니다
-              </h1>
-              <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground md:text-lg md:leading-8">
-                React, Next.js, TypeScript, UI 설계와 트러블슈팅을 읽기 좋은 글로 정리합니다.
+              <AnimatedHeadline
+                lines={["구현 기록을", "문서처럼 정리합니다"]}
+                className="hero-headline mt-3 max-w-2xl text-foreground"
+                delay={120}
+              />
+              <p className="mt-5 max-w-xl text-[15px] leading-[1.8] text-muted-foreground">
+                React, Next.js, TypeScript, UI 설계와 트러블슈팅을
+                읽기 좋은 글로 정리합니다.
               </p>
-              <div className="mt-8 flex flex-wrap items-center gap-2 text-sm">
-                <span className="glass-pill rounded-full px-3 py-1 text-xs">Three.js</span>
-                <span className="glass-pill rounded-full px-3 py-1 text-xs">Reading-first</span>
-                <span className="glass-pill rounded-full px-3 py-1 text-xs">Archive-friendly</span>
-                <span
-                  className="glass-pill rounded-full px-3 py-1 text-xs"
-                  title={`현재 계절: ${seasonCfg.label}`}
-                >
-                  {seasonCfg.emoji} {seasonCfg.label}
-                </span>
+              <div className="mt-7 flex flex-wrap gap-2">
+                {(["Reading-first", "Archive-friendly", "Frontend"] as const).map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-border px-3 py-1 text-[11px] font-medium text-muted-foreground"
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
             </div>
 
-            <div className="flex flex-col gap-6">
-              {/* Categories */}
-              <div className="glass-card rounded-2xl p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                  Categories
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {categories.slice(0, 6).map((category) => (
-                    <TagChip
-                      key={category.slug}
-                      label={`${category.name} (${category.count})`}
-                      href={`/categories/${slugify(category.name)}`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Quick links */}
-              <div className="space-y-2 text-sm">
+            {/* Right — categories + nav */}
+            <div className="flex flex-col gap-0 pt-1">
+              <p className="mb-3 text-[10.5px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                Categories
+              </p>
+              {categories.slice(0, 6).map((category) => (
+                <Link
+                  key={category.slug}
+                  href={`/categories/${slugify(category.name)}`}
+                  className="flex items-center justify-between rounded-md px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                >
+                  <span>{category.name}</span>
+                  <span className="tabular-nums text-xs opacity-50">{category.count}</span>
+                </Link>
+              ))}
+              <div className="mt-4 border-t border-border pt-4 flex flex-col gap-0">
                 <Link
                   href="/posts"
-                  className="glass-link flex items-center justify-between rounded-xl px-4 py-3 text-foreground"
+                  className="flex items-center justify-between rounded-md px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                 >
-                  <span>전체 글 아카이브 보기</span>
-                  <span className="text-muted-foreground">→</span>
+                  <span>전체 글 보기</span>
+                  <span className="opacity-50">→</span>
                 </Link>
                 <Link
                   href="/about"
-                  className="glass-link flex items-center justify-between rounded-xl px-4 py-3 text-foreground"
+                  className="flex items-center justify-between rounded-md px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                 >
-                  <span>작성자와 스택 보기</span>
-                  <span className="text-muted-foreground">→</span>
+                  <span>소개</span>
+                  <span className="opacity-50">→</span>
                 </Link>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Latest posts + Sidebar */}
-        <section className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_300px]">
+        {/* ── Latest posts + Sidebar ────────────────────────────────────────── */}
+        <section className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_260px]">
 
           {/* Posts */}
           <div>
             <div className="mb-10 flex items-end justify-between gap-4 border-b border-border pb-5">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                   Latest Posts
                 </p>
-                <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-foreground">
+                <h2 className="mt-1.5 text-2xl font-bold tracking-[-0.02em] text-foreground">
                   최근에 정리한 글
                 </h2>
               </div>
@@ -109,7 +106,7 @@ export default function HomePage() {
                 href="/posts"
                 className="shrink-0 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
-                전체 보기
+                전체 보기 →
               </Link>
             </div>
             <div>
@@ -121,20 +118,15 @@ export default function HomePage() {
 
           {/* Sidebar */}
           <aside className="space-y-8">
-            {/* Recommended */}
             <div>
-              <p className="mb-5 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+              <p className="mb-5 text-[10.5px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                 Recommended
               </p>
               <div className="space-y-6">
                 {featuredPosts.map((post, i) => (
-                  <Link
-                    key={post.slug}
-                    href={`/posts/${post.slug}`}
-                    className="block group"
-                  >
+                  <Link key={post.slug} href={`/posts/${post.slug}`} className="block group">
                     <p className="text-xs text-muted-foreground">{post.category}</p>
-                    <h3 className="mt-1 text-sm font-semibold leading-snug text-foreground group-hover:text-muted-foreground transition-colors">
+                    <h3 className="mt-1 text-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-muted-foreground">
                       {post.title}
                     </h3>
                     {i < featuredPosts.length - 1 && (
@@ -145,15 +137,13 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Divider */}
             <div className="border-t border-border" />
 
-            {/* About reading style */}
             <div>
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+              <p className="mb-4 text-[10.5px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                 Reading Style
               </p>
-              <ul className="space-y-3 text-sm leading-6 text-muted-foreground">
+              <ul className="space-y-3 text-sm leading-[1.75] text-muted-foreground">
                 <li>본문 폭을 넓히지 않고 코드와 텍스트의 리듬을 분리했습니다.</li>
                 <li>카테고리, 태그, 관련 글 중심으로 다시 찾기 쉬운 구조를 유지합니다.</li>
               </ul>

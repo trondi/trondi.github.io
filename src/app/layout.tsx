@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
-import { AmbientSceneShell } from "@/components/blog/three/ambient-scene-shell";
+import { LenisProvider } from "@/components/blog/lenis-provider";
 import { SeasonalOverlay } from "@/components/blog/seasonal-overlay";
+import { SeasonalProvider } from "@/components/blog/seasonal-context";
 import { SiteFooter } from "@/components/blog/site-footer";
 import { SiteHeader } from "@/components/blog/site-header";
 import { ViewTransitionProvider } from "@/components/blog/view-transition-provider";
@@ -38,15 +39,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko" suppressHydrationWarning>
       <body className="bg-[rgb(var(--page))] font-sans text-foreground antialiased">
-        <ViewTransitionProvider>
-          <div className="min-h-screen">
-            <AmbientSceneShell />
-            <SeasonalOverlay />
-            <SiteHeader />
-            <main className="mx-auto max-w-6xl px-6 pb-16 pt-4">{children}</main>
-            <SiteFooter />
-          </div>
-        </ViewTransitionProvider>
+        <LenisProvider>
+          <SeasonalProvider>
+            <ViewTransitionProvider>
+              <div className="min-h-screen">
+                <SeasonalOverlay />
+                <SiteHeader />
+                <main className="mx-auto max-w-6xl px-6 pb-16 pt-4">{children}</main>
+                <SiteFooter />
+              </div>
+            </ViewTransitionProvider>
+          </SeasonalProvider>
+        </LenisProvider>
       </body>
     </html>
   );
