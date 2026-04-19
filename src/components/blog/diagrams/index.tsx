@@ -9,6 +9,7 @@ const registry: Record<string, React.LazyExoticComponent<() => React.ReactElemen
   "sse-shared-worker":     lazy(() => import("./sse-shared-worker").then((m) => ({ default: m.SseSharedWorkerDiagram }))),
   "jenkins-pipeline":      lazy(() => import("./jenkins-pipeline").then((m) => ({ default: m.JenkinsPipelineDiagram }))),
   "gitlab-jenkins-compare":lazy(() => import("./gitlab-jenkins-compare").then((m) => ({ default: m.GitlabJenkinsCompareDiagram }))),
+  "pm2-concepts":          lazy(() => import("./pm2-concepts").then((m) => ({ default: m.Pm2ConceptsDiagram }))),
 };
 
 export function DiagramBlock({ name }: { name: string }) {
