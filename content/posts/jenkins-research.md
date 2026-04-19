@@ -59,6 +59,10 @@ Pipeline
 
 ## Declarative Pipeline 작성
 
+```diagram
+jenkins-pipeline
+```
+
 ### 기본 구조
 
 ```groovy

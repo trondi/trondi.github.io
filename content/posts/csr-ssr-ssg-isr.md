@@ -184,6 +184,10 @@ export async function POST(request: Request) {
 
 ## 비교 요약
 
+```diagram
+rendering-strategies
+```
+
 | | CSR | SSR | SSG | ISR |
 |---|---|---|---|---|
 | HTML 생성 시점 | 브라우저에서 | 요청마다 서버 | 빌드 타임 | 빌드 + 주기적 갱신 |

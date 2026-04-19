@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Fragment, ReactNode } from "react";
 
+import { DiagramBlock } from "@/components/blog/diagrams";
 import { MarkdownBlock } from "@/lib/blog/types";
 
 function renderInline(text: string): ReactNode[] {
@@ -142,6 +143,39 @@ export function MarkdownRenderer({ blocks }: MarkdownRendererProps) {
               </pre>
             </div>
           );
+        }
+
+        if (block.type === "table") {
+          return (
+            <div key={`table-${index}`} className="overflow-x-auto rounded-xl border border-border">
+              <table className="w-full text-sm">
+                <thead className="bg-secondary/60">
+                  <tr>
+                    {block.headers.map((h, i) => (
+                      <th key={i} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {renderInline(h)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {block.rows.map((row, ri) => (
+                    <tr key={ri} className="transition-colors hover:bg-secondary/30">
+                      {row.map((cell, ci) => (
+                        <td key={ci} className="px-4 py-3 leading-6 text-foreground/80">
+                          {renderInline(cell)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        if (block.type === "diagram") {
+          return <DiagramBlock key={`diagram-${index}`} name={block.name} />;
         }
 
         return <hr key={`hr-${index}`} className="border-slate-200 dark:border-slate-800" />;

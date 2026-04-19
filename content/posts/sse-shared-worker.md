@@ -172,6 +172,10 @@ function NotificationBadge() {
 
 탭을 5개 열면 서버에 SSE 연결이 5개 생긴다. Shared Worker를 쓰면 연결이 1개로 줄어든다.
 
+```diagram
+sse-shared-worker
+```
+
 ```
 [탭1] ──┐
 [탭2] ──┤── Shared Worker ── SSE → 서버

@@ -8,8 +8,16 @@ function isSpecialLine(line: string) {
     /^>\s?/.test(line) ||
     /^-\s+/.test(line) ||
     /^\d+\.\s+/.test(line) ||
-    /^---+$/.test(line)
+    /^---+$/.test(line) ||
+    /^\|/.test(line)
   );
+}
+
+function parseTableCells(line: string): string[] {
+  return line
+    .split("|")
+    .slice(1, -1)
+    .map((cell) => cell.trim());
 }
 
 export function parseMarkdown(content: string): ParsedMarkdown {
@@ -30,6 +38,21 @@ export function parseMarkdown(content: string): ParsedMarkdown {
 
     if (line.startsWith("```")) {
       const language = line.replace(/```/, "").trim();
+
+      // diagram block: ```diagram\n<name>\n```
+      if (language === "diagram") {
+        const innerLines: string[] = [];
+        index += 1;
+        while (index < lines.length && !lines[index].startsWith("```")) {
+          innerLines.push(lines[index].trim());
+          index += 1;
+        }
+        const name = innerLines.filter(Boolean).join("").trim();
+        if (name) blocks.push({ type: "diagram", name });
+        index += 1;
+        continue;
+      }
+
       const codeLines: string[] = [];
       index += 1;
 
@@ -44,6 +67,23 @@ export function parseMarkdown(content: string): ParsedMarkdown {
         code: codeLines.join("\n"),
       });
       index += 1;
+      continue;
+    }
+
+    // table block
+    if (/^\|/.test(line)) {
+      const headers = parseTableCells(line);
+      index += 1;
+      // skip separator row (|---|---|)
+      if (index < lines.length && /^\|[-| :]+\|/.test(lines[index])) {
+        index += 1;
+      }
+      const rows: string[][] = [];
+      while (index < lines.length && /^\|/.test(lines[index].trim())) {
+        rows.push(parseTableCells(lines[index]));
+        index += 1;
+      }
+      blocks.push({ type: "table", headers, rows });
       continue;
     }
 

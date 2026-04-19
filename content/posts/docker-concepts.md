@@ -20,6 +20,10 @@ featured: false
 
 ## VM vs 컨테이너
 
+```diagram
+docker-concepts
+```
+
 | | VM | 컨테이너 |
 |---|---|---|
 | 가상화 단위 | 하드웨어 (OS 포함) | 프로세스 (OS 공유) |

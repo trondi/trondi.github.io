@@ -35,6 +35,8 @@ export type MarkdownBlock =
   | { type: "ordered-list"; items: string[] }
   | { type: "blockquote"; text: string }
   | { type: "code"; language: string; code: string }
+  | { type: "table"; headers: string[]; rows: string[][] }
+  | { type: "diagram"; name: string }
   | { type: "hr" };
 
 export type ParsedMarkdown = {

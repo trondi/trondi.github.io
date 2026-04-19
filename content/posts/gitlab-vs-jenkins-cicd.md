@@ -15,6 +15,10 @@ featured: false
 
 ## 한 줄 요약
 
+```diagram
+gitlab-jenkins-compare
+```
+
 | | GitLab CI/CD | Jenkins |
 |---|---|---|
 | 형태 | SaaS / Self-hosted 통합 플랫폼 | 전용 CI 서버 (Self-hosted) |
