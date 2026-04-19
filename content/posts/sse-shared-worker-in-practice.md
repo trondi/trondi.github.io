@@ -2,7 +2,7 @@
 title: "실무에서 SSE + Shared Worker를 도입하며 마주친 것들"
 date: "2026-04-19"
 summary: "실시간 알람 시스템을 SSE와 Shared Worker로 구축하면서 실제로 고민했던 것들 — Next.js Edge Runtime 문제, 배치 전략 설계, 재연결 정책, 탭 간 상태 동기화까지."
-category: "JavaScript / TypeScript"
+category: "Project"
 tags:
   - SSE
   - Shared Worker

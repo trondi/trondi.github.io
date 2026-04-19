@@ -2,7 +2,7 @@
 title: "SSE와 Shared Worker — 실시간 통신의 두 가지 접근"
 date: "2026-04-19"
 summary: "Server-Sent Events로 서버 → 클라이언트 단방향 스트리밍을 구현하는 방법과, Shared Worker로 탭 간 상태를 공유하는 방법을 정리했다."
-category: "JavaScript / TypeScript"
+category: "Project"
 tags:
   - SSE
   - Shared Worker
