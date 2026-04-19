@@ -1,212 +1,228 @@
 "use client";
 
 import Link from "next/link";
-import { Search, X } from "lucide-react";
+import { Search, X, ArrowRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { SearchEntry } from "@/lib/blog/types";
 import { cn } from "@/lib/utils";
 
-type HeaderSearchProps = {
-  entries: SearchEntry[];
-};
+type HeaderSearchProps = { entries: SearchEntry[] };
+
+function highlight(text: string, query: string) {
+  if (!query) return text;
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="bg-transparent font-semibold text-foreground">
+        {text.slice(idx, idx + query.length)}
+      </mark>
+      {text.slice(idx + query.length)}
+    </>
+  );
+}
 
 function getSnippet(entry: SearchEntry, query: string) {
   const source = `${entry.summary} ${entry.content}`.replace(/\s+/g, " ").trim();
-
-  if (!source) {
-    return "";
-  }
-
-  const lowered = source.toLowerCase();
-  const normalizedQuery = query.trim().toLowerCase();
-  const matchIndex = lowered.indexOf(normalizedQuery);
-
-  if (!normalizedQuery || matchIndex === -1) {
-    return source.slice(0, 110);
-  }
-
-  const start = Math.max(0, matchIndex - 40);
-  const end = Math.min(source.length, matchIndex + normalizedQuery.length + 70);
-  const prefix = start > 0 ? "..." : "";
-  const suffix = end < source.length ? "..." : "";
-  return `${prefix}${source.slice(start, end)}${suffix}`;
+  if (!source) return "";
+  const low = source.toLowerCase();
+  const q   = query.trim().toLowerCase();
+  const idx = q ? low.indexOf(q) : -1;
+  if (idx === -1) return source.slice(0, 100);
+  const start = Math.max(0, idx - 36);
+  const end   = Math.min(source.length, idx + q.length + 64);
+  return `${start > 0 ? "…" : ""}${source.slice(start, end)}${end < source.length ? "…" : ""}`;
 }
 
 export function HeaderSearch({ entries }: HeaderSearchProps) {
-  const [open, setOpen] = useState(false);
+  const [open,  setOpen]  = useState(false);
   const [query, setQuery] = useState("");
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef   = useRef<HTMLInputElement>(null);
 
+  // Focus input when panel opens
   useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const frame = window.requestAnimationFrame(() => inputRef.current?.focus());
-    return () => window.cancelAnimationFrame(frame);
+    if (!open) return;
+    const raf = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => cancelAnimationFrame(raf);
   }, [open]);
 
+  // Close on outside click or Escape
   useEffect(() => {
-    const handleClick = (event: MouseEvent) => {
-      if (!wrapperRef.current?.contains(event.target as Node)) {
-        setOpen(false);
+    const onMouseDown = (e: MouseEvent) => {
+      if (!wrapperRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setOpen(false); setQuery(""); }
+      // ⌘K / Ctrl+K global shortcut
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setOpen((v) => !v);
       }
     };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKeyDown);
-
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKey);
     };
   }, []);
 
-  const normalizedQuery = query.trim().toLowerCase();
+  const q = query.trim().toLowerCase();
 
   const results = useMemo(() => {
-    if (!normalizedQuery) {
-      return [];
-    }
-
+    if (!q) return [];
     return entries
       .map((entry) => {
-        const haystack = [
-          entry.title,
-          entry.summary,
-          entry.category,
-          entry.tags.join(" "),
-          entry.content,
-        ]
-          .join(" ")
-          .toLowerCase();
-
+        const hay = [entry.title, entry.summary, entry.category, entry.tags.join(" "), entry.content]
+          .join(" ").toLowerCase();
         const score =
-          (entry.title.toLowerCase().includes(normalizedQuery) ? 4 : 0) +
-          (entry.summary.toLowerCase().includes(normalizedQuery) ? 3 : 0) +
-          (entry.category.toLowerCase().includes(normalizedQuery) ? 2 : 0) +
-          (entry.tags.join(" ").toLowerCase().includes(normalizedQuery) ? 2 : 0) +
-          (entry.content.toLowerCase().includes(normalizedQuery) ? 1 : 0);
-
-        return haystack.includes(normalizedQuery) ? { entry, score } : null;
+          (entry.title.toLowerCase().includes(q)            ? 4 : 0) +
+          (entry.summary.toLowerCase().includes(q)          ? 3 : 0) +
+          (entry.category.toLowerCase().includes(q)         ? 2 : 0) +
+          (entry.tags.join(" ").toLowerCase().includes(q)   ? 2 : 0) +
+          (entry.content.toLowerCase().includes(q)          ? 1 : 0);
+        return hay.includes(q) ? { entry, score } : null;
       })
-      .filter((item): item is { entry: SearchEntry; score: number } => Boolean(item))
-      .sort((a, b) => b.score - a.score || a.entry.title.localeCompare(b.entry.title))
+      .filter((x): x is { entry: SearchEntry; score: number } => Boolean(x))
+      .sort((a, b) => b.score - a.score)
       .slice(0, 6);
-  }, [entries, normalizedQuery]);
+  }, [entries, q]);
+
+  const close = () => { setOpen(false); setQuery(""); };
 
   return (
-    <div ref={wrapperRef} className="relative z-50 flex items-center justify-end">
-      <div
+    <div ref={wrapperRef} className="relative z-50">
+
+      {/* ── Trigger button ─────────────────────────────────────────────── */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="검색"
+        aria-expanded={open}
         className={cn(
-          "flex items-center gap-2 rounded-full transition-all duration-300 ease-out",
-          open && "bg-white/98 px-2 py-1 shadow-[0_16px_40px_rgba(15,23,42,0.12)] backdrop-blur dark:bg-[#2a2a2e]/98",
+          "inline-flex h-9 items-center gap-2 rounded-full border px-3 text-xs font-medium transition-colors duration-150",
+          open
+            ? "border-foreground/20 bg-secondary text-foreground"
+            : "border-border bg-background text-muted-foreground hover:border-foreground/20 hover:text-foreground",
         )}
       >
-        <div
-          className={cn(
-            "overflow-hidden transition-all duration-300 ease-out",
-            open ? "w-[min(28rem,calc(100vw-10rem))] opacity-100" : "w-0 opacity-0",
+        <Search className="h-3.5 w-3.5 shrink-0" />
+        <span className="hidden sm:inline">Search</span>
+        <kbd className="hidden items-center gap-0.5 rounded border border-border px-1 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline-flex">
+          <span>⌘</span>K
+        </kbd>
+      </button>
+
+      {/* ── Search panel — fixed command-palette style ─────────────────── */}
+      {/* Backdrop */}
+      <div
+        aria-hidden
+        onClick={close}
+        className={cn(
+          "fixed inset-0 z-40 bg-background/60 backdrop-blur-sm transition-opacity duration-200",
+          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+        )}
+      />
+
+      <div
+        className={cn(
+          "fixed left-1/2 top-[5.5rem] z-50 w-[min(34rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-border bg-background shadow-[0_16px_48px_rgba(0,0,0,0.14)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.42)] transition-all duration-200 ease-out",
+          open
+            ? "pointer-events-auto translate-y-0 opacity-100"
+            : "pointer-events-none -translate-y-2 opacity-0",
+        )}
+      >
+        {/* Input row */}
+        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+          <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="제목, 태그, 본문 키워드로 검색…"
+            className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          />
+          {query ? (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="검색어 지우기"
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              esc
+            </kbd>
           )}
-        >
-          <div className="flex items-center rounded-full border border-slate-200 bg-white px-3 py-2 dark:border-stone-700 dark:bg-[#313136]">
-            <Search className="h-3.5 w-3.5 text-slate-400 dark:text-stone-400" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="전체 글 검색"
-              className="ml-2 w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400 dark:text-stone-100 dark:placeholder:text-stone-500"
-            />
-            {query ? (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                className="ml-2 rounded-full p-1 text-slate-400 transition-colors hover:text-slate-700 dark:text-stone-500 dark:hover:text-stone-200"
-                aria-label="검색어 지우기"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            ) : null}
-          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          aria-label={open ? "검색 닫기" : "검색 열기"}
-          className={cn(
-            "inline-flex items-center justify-center rounded-full border border-slate-200 bg-white/90 text-xs font-medium text-slate-700 transition-all duration-300 ease-out hover:border-slate-300 hover:text-slate-950 dark:border-stone-700 dark:bg-[#313136] dark:text-stone-300 dark:hover:border-stone-600 dark:hover:text-stone-100",
-            open ? "h-9 w-9" : "gap-2 px-3 py-2",
-          )}
-        >
-          {open ? <X className="h-3.5 w-3.5" /> : <Search className="h-3.5 w-3.5" />}
-          <span
-            className={cn(
-              "overflow-hidden whitespace-nowrap transition-all duration-300 ease-out",
-              open ? "max-w-0 opacity-0" : "max-w-20 opacity-100",
-            )}
-          >
-            Search
-          </span>
-        </button>
-      </div>
-
-      <div
-        className={cn(
-          "absolute left-0 top-[calc(100%+0.75rem)] z-50 w-[min(35rem,calc(100vw-2.5rem))] origin-top overflow-hidden rounded-[28px] border border-white/70 bg-white/78 shadow-[0_24px_60px_rgba(15,23,42,0.16)] backdrop-blur-2xl transition-all duration-300 ease-out dark:border-white/10 dark:bg-[#232326]/82",
-          open
-            ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-            : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0",
-        )}
-      >
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] dark:bg-[linear-gradient(180deg,rgba(42,42,46,0.96),rgba(35,35,38,0.92))]" />
-          <div className="relative p-3">
-            {normalizedQuery ? (
-              results.length ? (
-                <div className="space-y-2">
-                  {results.map(({ entry }) => (
+        {/* Results */}
+        <div className="max-h-[min(28rem,60vh)] overflow-y-auto">
+          {q ? (
+            results.length ? (
+              <ul className="divide-y divide-border">
+                {results.map(({ entry }) => (
+                  <li key={entry.slug}>
                     <Link
-                      key={entry.slug}
                       href={`/posts/${entry.slug}`}
-                      onClick={() => {
-                        setOpen(false);
-                        setQuery("");
-                      }}
-                      className="block rounded-2xl border border-white/55 bg-white/50 px-3 py-3 transition-colors hover:border-slate-200 hover:bg-white/72 dark:border-white/5 dark:bg-[#2a2a2e]/70 dark:hover:border-stone-700 dark:hover:bg-[#313136]"
+                      onClick={close}
+                      className="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-secondary"
                     >
-                      <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-slate-400 dark:text-stone-500">
-                        <span>{entry.category}</span>
+                      {/* Icon */}
+                      <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/40 transition-colors group-hover:text-foreground" />
+
+                      {/* Text */}
+                      <div className="min-w-0">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                          <span className="text-[10.5px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                            {entry.category}
+                          </span>
+                        </div>
+                        <p className="text-sm font-semibold leading-snug text-foreground">
+                          {highlight(entry.title, query.trim())}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                          {getSnippet(entry, query.trim())}
+                        </p>
                       </div>
-                      <p className="mt-2 text-sm font-semibold tracking-tight text-slate-950 dark:text-stone-100">
-                        {entry.title}
-                      </p>
-                      <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-stone-300">
-                        {getSnippet(entry, normalizedQuery)}
-                      </p>
                     </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200/80 bg-white/42 px-4 py-8 text-sm text-slate-500 dark:border-stone-700 dark:bg-[#2a2a2e]/60 dark:text-stone-400">
-                  검색 결과가 없습니다. 제목, 태그, 본문 키워드로 다시 시도해보세요.
-                </div>
-              )
+                  </li>
+                ))}
+              </ul>
             ) : (
-              <div className="rounded-2xl bg-white/36 px-4 py-6 text-sm text-slate-500 dark:bg-[#2a2a2e]/50 dark:text-stone-400">
-                제목, 태그, 본문 키워드로 전체 글을 검색할 수 있습니다.
+              <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">결과 없음</p>
+                <p className="mt-1 text-xs">다른 키워드로 다시 시도해보세요.</p>
               </div>
-            )}
-          </div>
+            )
+          ) : (
+            <div className="px-4 py-5">
+              <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                최근 글
+              </p>
+              <ul className="divide-y divide-border">
+                {entries.slice(0, 4).map((entry) => (
+                  <li key={entry.slug}>
+                    <Link
+                      href={`/posts/${entry.slug}`}
+                      onClick={close}
+                      className="group flex items-center justify-between gap-3 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <span className="truncate">{entry.title}</span>
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
