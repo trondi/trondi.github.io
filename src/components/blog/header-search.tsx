@@ -117,12 +117,13 @@ export function HeaderSearch({ entries }: HeaderSearchProps) {
       </button>
 
       {/* ── Search panel — fixed command-palette style ─────────────────── */}
-      {/* Backdrop */}
+      {/* Backdrop — z-[38] keeps it below the sticky header (z-40),
+           so header buttons stay visible and clickable */}
       <div
         aria-hidden
         onClick={close}
         className={cn(
-          "fixed inset-0 z-40 bg-background/60 backdrop-blur-sm transition-opacity duration-200",
+          "fixed inset-0 z-[38] bg-background/50 transition-opacity duration-200",
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
         )}
       />
