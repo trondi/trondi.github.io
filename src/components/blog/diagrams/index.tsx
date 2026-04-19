@@ -7,6 +7,7 @@ const registry: Record<string, React.LazyExoticComponent<() => React.ReactElemen
   "docker-concepts":       lazy(() => import("./docker-concepts").then((m) => ({ default: m.DockerConceptsDiagram }))),
   "rendering-strategies":  lazy(() => import("./rendering-strategies").then((m) => ({ default: m.RenderingStrategiesDiagram }))),
   "sse-shared-worker":     lazy(() => import("./sse-shared-worker").then((m) => ({ default: m.SseSharedWorkerDiagram }))),
+  "sse-shared-worker-arch":lazy(() => import("./sse-shared-worker-arch").then((m) => ({ default: m.SseSharedWorkerArchDiagram }))),
   "jenkins-pipeline":      lazy(() => import("./jenkins-pipeline").then((m) => ({ default: m.JenkinsPipelineDiagram }))),
   "gitlab-jenkins-compare":lazy(() => import("./gitlab-jenkins-compare").then((m) => ({ default: m.GitlabJenkinsCompareDiagram }))),
   "pm2-concepts":          lazy(() => import("./pm2-concepts").then((m) => ({ default: m.Pm2ConceptsDiagram }))),
