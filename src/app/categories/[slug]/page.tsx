@@ -14,6 +14,7 @@ const CATEGORY_ACCENT: Record<string, { light: string; dark: string; label: stri
   "trouble-shooting":    { light: "bg-orange-500/[0.07]",  dark: "dark:bg-orange-400/[0.10]",  label: "디버깅·에러 해결 과정을 단계별로 기록합니다." },
   til:                   { light: "bg-emerald-500/[0.07]", dark: "dark:bg-emerald-400/[0.09]", label: "오늘 배운 것을 짧고 빠르게 기록합니다." },
   project:               { light: "bg-violet-500/[0.07]",  dark: "dark:bg-violet-400/[0.10]",  label: "사이드 프로젝트 설계와 회고를 담습니다." },
+  "devops-infra":        { light: "bg-sky-500/[0.07]",     dark: "dark:bg-sky-400/[0.10]",     label: "Docker, Kubernetes, CI/CD 등 인프라 구축 기록입니다." },
 };
 
 const DEFAULT_ACCENT = { light: "bg-slate-500/[0.07]", dark: "dark:bg-slate-400/[0.09]", label: "카테고리의 글 목록입니다." };
