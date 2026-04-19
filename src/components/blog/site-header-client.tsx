@@ -30,10 +30,33 @@ export function SiteHeaderClient({
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const sync = () => setScrolled(window.scrollY > 24);
-    sync();
-    window.addEventListener("scroll", sync, { passive: true });
-    return () => window.removeEventListener("scroll", sync);
+    // Hysteresis: collapse when scroll > 40px, expand only when back below 10px.
+    // The dead-zone between 10–40 keeps the current state, eliminating
+    // the rapid true↔false toggling that causes jitter near the threshold.
+    let raf: number | null = null;
+    const COLLAPSE_AT = 40;
+    const EXPAND_AT   = 10;
+
+    const sync = () => {
+      raf = null;
+      const y = window.scrollY;
+      setScrolled((prev) => {
+        if (!prev && y > COLLAPSE_AT) return true;
+        if (prev  && y < EXPAND_AT)   return false;
+        return prev; // no change inside the dead-zone
+      });
+    };
+
+    const onScroll = () => {
+      if (raf === null) raf = requestAnimationFrame(sync);
+    };
+
+    sync(); // initial state
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf !== null) cancelAnimationFrame(raf);
+    };
   }, []);
 
   useEffect(() => {
@@ -54,12 +77,12 @@ export function SiteHeaderClient({
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md transition-all duration-300",
+        "sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md transition-[box-shadow] duration-300",
         scrolled && "shadow-[0_1px_0_0_hsl(var(--border))]",
       )}
     >
       <div className="mx-auto max-w-6xl px-6">
-        <div className={cn("flex flex-col transition-all duration-300", scrolled ? "gap-2 py-2.5" : "gap-4 py-4")}>
+        <div className={cn("flex flex-col transition-[gap,padding] duration-300", scrolled ? "gap-2 py-2.5" : "gap-4 py-4")}>
 
           <div className={cn(
             "flex justify-between gap-4",
@@ -74,7 +97,7 @@ export function SiteHeaderClient({
                 {title}
               </Link>
               <p className={cn(
-                "max-w-2xl text-sm leading-6 text-muted-foreground transition-all duration-300",
+                "max-w-2xl text-sm leading-6 text-muted-foreground transition-[max-height,opacity,margin] duration-300",
                 scrolled ? "mt-0 max-h-0 overflow-hidden opacity-0" : "mt-1.5 max-h-20 opacity-100",
               )}>
                 {intro}
@@ -143,7 +166,7 @@ export function SiteHeaderClient({
 
           {/* Category bar */}
           <div className={cn(
-            "overflow-hidden border-t border-border transition-all duration-300",
+            "overflow-hidden border-t border-border transition-[max-height,opacity,padding] duration-300",
             scrolled ? "max-h-0 pt-0 opacity-0" : "max-h-24 pt-3 opacity-100",
           )}>
             <nav className="flex flex-wrap gap-x-5 gap-y-2.5 rounded-xl bg-secondary/40 px-4 py-2.5 text-sm text-muted-foreground">
