@@ -1,15 +1,11 @@
 "use client";
 
-import { Moon, SunMedium } from "lucide-react";
 import { useEffect, useState } from "react";
-
-import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "theme-preference";
 
 function applyTheme(nextTheme: "light" | "dark") {
-  const root = document.documentElement;
-  root.classList.toggle("dark", nextTheme === "dark");
+  document.documentElement.classList.toggle("dark", nextTheme === "dark");
 }
 
 export function ThemeToggle() {
@@ -21,33 +17,27 @@ export function ThemeToggle() {
     const preferred =
       stored ??
       (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-
     setTheme(preferred);
     applyTheme(preferred);
     setMounted(true);
   }, []);
 
-  const toggleTheme = () => {
-    const nextTheme = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
-    applyTheme(nextTheme);
-    window.localStorage.setItem(STORAGE_KEY, nextTheme);
+  const toggle = () => {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    applyTheme(next);
+    window.localStorage.setItem(STORAGE_KEY, next);
   };
 
   return (
     <button
       type="button"
-      onClick={toggleTheme}
-      aria-label="다크모드 전환"
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium transition-colors",
-        "border-slate-200 bg-white/90 text-slate-700 hover:border-slate-300 hover:text-slate-950",
-        "dark:border-stone-700 dark:bg-[#313136] dark:text-stone-300 dark:hover:border-stone-600 dark:hover:text-stone-100",
-        !mounted && "opacity-0",
-      )}
+      onClick={toggle}
+      aria-label="테마 전환"
+      style={{ opacity: mounted ? 1 : 0 }}
+      className="font-mono text-[11px] tracking-[0.04em] text-muted-foreground bg-card border border-border rounded px-3 py-[5px] transition-colors hover:border-[hsl(var(--ring))] hover:text-[hsl(var(--ring))]"
     >
-      {theme === "dark" ? <SunMedium className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-      <span>{theme === "dark" ? "Light" : "Dark"}</span>
+      {theme === "dark" ? "[ ☀ light ]" : "[ ☾ dark ]"}
     </button>
   );
 }

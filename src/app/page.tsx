@@ -1,17 +1,16 @@
 import Link from "next/link";
 
-import { AnimatedHeadline } from "@/components/blog/animated-headline";
 import { HeroTorusSceneShell } from "@/components/blog/three/hero-torus-scene-shell";
 import { PostListItem } from "@/components/blog/post-list-item";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
-import { getAllPosts, getCategories, getFeaturedPosts, getLatestPosts } from "@/lib/blog/posts";
-import { slugify } from "@/lib/blog/utils";
+import { getAllPosts, getFeaturedPosts, getLatestPosts } from "@/lib/blog/posts";
+
+const HERO_CATS = ["Frontend", "React / Next.js", "CSS / UI", "TypeScript", "TIL"] as const;
 
 export default function HomePage() {
-  const latestPosts = getLatestPosts(5);
+  const latestPosts   = getLatestPosts(5);
   const featuredPosts = getFeaturedPosts(3);
-  const categories = getCategories();
-  const allPosts = getAllPosts();
+  const allPosts      = getAllPosts();
 
   return (
     <>
@@ -19,81 +18,79 @@ export default function HomePage() {
       <div className="space-y-24">
 
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
-        <section className="relative min-h-[72vh] overflow-hidden border-b border-border pb-16 pt-14">
+        <section className="relative overflow-hidden border-b border-border" style={{ height: "88vh", minHeight: 540 }}>
 
-          {/* Three.js torus rings — warm sienna oval shapes, mouse-reactive */}
+          {/* Three.js torus rings */}
           <HeroTorusSceneShell />
 
-          {/* Vignette — torus 씬 가장자리를 배경색으로 페이드 */}
+          {/* Vignette */}
           <div
             className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(ellipse 70% 90% at 20% 55%, transparent 30%, hsl(var(--background) / 0.92) 78%)",
-            }}
+            style={{ background: "radial-gradient(ellipse 70% 90% at 20% 55%, transparent 30%, hsl(var(--background) / 0.92) 78%)" }}
             aria-hidden
           />
 
-          {/* Content grid */}
-          <div className="relative grid gap-14 lg:grid-cols-[minmax(0,1.55fr)_minmax(200px,0.45fr)]">
+          {/* Scanline */}
+          <div className="hero-scanline" aria-hidden />
 
-            {/* Left — headline */}
-            <div className="flex flex-col justify-end">
-              <p className="text-[10.5px] font-semibold uppercase tracking-[0.38em] text-muted-foreground">
-                Frontend Archive
-              </p>
-              <AnimatedHeadline
-                lines={["구현 기록을", "문서처럼 정리합니다"]}
-                className="hero-headline mt-3 max-w-2xl text-foreground"
-                delay={120}
-              />
-              <p className="mt-5 max-w-xl text-[15px] leading-[1.8] text-muted-foreground">
-                React, Next.js, TypeScript, UI 설계와 트러블슈팅을
-                읽기 좋은 글로 정리합니다.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-2">
-                {(["Reading-first", "Archive-friendly", "Frontend"] as const).map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-border px-3 py-1 text-[11px] font-medium text-muted-foreground"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+          {/* Content */}
+          <div className="relative z-10 flex h-full flex-col justify-center px-8" style={{ maxWidth: 1120, margin: "0 auto" }}>
+
+            {/* Terminal prompt */}
+            <p className="fade-up fade-d1 font-mono text-[11px] tracking-[0.12em] text-[hsl(var(--ring))] opacity-75 mb-[22px]">
+              &gt; frontend_archive.init()
+            </p>
+
+            {/* Headline */}
+            <h1
+              className="fade-up fade-d2 mb-[22px]"
+              style={{ fontSize: "clamp(2.3rem, 5.2vw, 4rem)", fontWeight: 600, lineHeight: 1.13, letterSpacing: "-0.025em", maxWidth: 560 }}
+            >
+              구현 기록을<br />
+              <span className="text-[hsl(var(--ring))]">문서처럼</span>{" "}
+              정리합니다.
+              <span className="hero-blink-cursor" aria-hidden />
+            </h1>
+
+            {/* Subtext */}
+            <p
+              className="fade-up fade-d3 font-mono text-muted-foreground mb-8"
+              style={{ fontSize: 12, lineHeight: 1.85, maxWidth: 420 }}
+            >
+              <span className="opacity-50">// </span>
+              React, Next.js, TypeScript, UI 설계와<br />
+              트러블슈팅을 읽기 좋은 글로 정리합니다.
+            </p>
+
+            {/* Category chips */}
+            <div className="fade-up fade-d4 flex flex-wrap gap-2 mb-10">
+              {HERO_CATS.map((c) => (
+                <span
+                  key={c}
+                  className="font-mono text-[10px] text-muted-foreground border border-border rounded px-[10px] py-1 tracking-[0.04em]"
+                  style={{ background: "hsl(var(--ring) / 0.07)" }}
+                >
+                  {c}
+                </span>
+              ))}
             </div>
 
-            {/* Right — categories + nav */}
-            <div className="flex flex-col gap-0 pt-1">
-              <p className="mb-3 text-[10.5px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                Categories
-              </p>
-              {categories.slice(0, 6).map((category) => (
-                <Link
-                  key={category.slug}
-                  href={`/categories/${slugify(category.name)}`}
-                  className="flex items-center justify-between rounded-md px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                >
-                  <span>{category.name}</span>
-                  <span className="tabular-nums text-xs opacity-50">{category.count}</span>
-                </Link>
-              ))}
-              <div className="mt-4 border-t border-border pt-4 flex flex-col gap-0">
-                <Link
-                  href="/posts"
-                  className="flex items-center justify-between rounded-md px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                >
-                  <span>전체 글 보기</span>
-                  <span className="opacity-50">→</span>
-                </Link>
-                <Link
-                  href="/about"
-                  className="flex items-center justify-between rounded-md px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                >
-                  <span>소개</span>
-                  <span className="opacity-50">→</span>
-                </Link>
-              </div>
+            {/* CTA */}
+            <Link
+              href="/posts"
+              className="fade-up fade-d5 font-mono text-[12px] tracking-[0.06em] border border-[hsl(var(--ring))] rounded px-5 py-[9px] inline-flex w-fit transition-colors hover:bg-[hsl(var(--ring))] hover:text-white"
+              style={{ color: "hsl(var(--ring))", background: "hsl(var(--ring) / 0.08)" }}
+            >
+              [ 전체 글 보기 ↓ ]
+            </Link>
+
+            {/* Bottom-left coordinates */}
+            <div
+              className="absolute bottom-7 font-mono text-muted-foreground"
+              style={{ fontSize: 9, letterSpacing: "0.08em", lineHeight: 1.8 }}
+            >
+              <div className="text-[hsl(var(--ring))] opacity-50">◎ TROND ARCHIVE</div>
+              <div>Seoul, KR — Frontend Engineer</div>
             </div>
           </div>
         </section>
