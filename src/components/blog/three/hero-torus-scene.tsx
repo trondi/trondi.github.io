@@ -22,12 +22,12 @@ function shouldReduceMotion() {
 }
 
 const RING_DEFS = [
-  { r: 6.2,  tube: 0.028, pos: [0,  0,  0] as [number,number,number], rotSpeed: [ 0.0008,  0.0014,  0      ], opacity: 0.38 },
-  { r: 9.5,  tube: 0.018, pos: [0,  0, -2] as [number,number,number], rotSpeed: [ 0.0005, -0.0008,  0.0004 ], opacity: 0.22 },
-  { r: 4.1,  tube: 0.040, pos: [3, -1,  1] as [number,number,number], rotSpeed: [-0.0012,  0.0006,  0.001  ], opacity: 0.45 },
-  { r: 13,   tube: 0.012, pos: [0,  0, -6] as [number,number,number], rotSpeed: [ 0.0003,  0.0005, -0.0002 ], opacity: 0.12 },
-  { r: 7.8,  tube: 0.022, pos: [-4, 2, -4] as [number,number,number], rotSpeed: [ 0.001,  -0.001,   0.0006 ], opacity: 0.20 },
-  { r: 3.0,  tube: 0.035, pos: [-2,-2,  3] as [number,number,number], rotSpeed: [-0.002,   0.0008, -0.001  ], opacity: 0.35 },
+  { r: 6.2,  tube: 0.10, pos: [0,  0,  0] as [number,number,number], rotSpeed: [ 0.0008,  0.0014,  0      ], opacity: 0.45 },
+  { r: 9.5,  tube: 0.07, pos: [0,  0, -2] as [number,number,number], rotSpeed: [ 0.0005, -0.0008,  0.0004 ], opacity: 0.28 },
+  { r: 4.1,  tube: 0.13, pos: [3, -1,  1] as [number,number,number], rotSpeed: [-0.0012,  0.0006,  0.001  ], opacity: 0.52 },
+  { r: 13,   tube: 0.05, pos: [0,  0, -6] as [number,number,number], rotSpeed: [ 0.0003,  0.0005, -0.0002 ], opacity: 0.18 },
+  { r: 7.8,  tube: 0.08, pos: [-4, 2, -4] as [number,number,number], rotSpeed: [ 0.001,  -0.001,   0.0006 ], opacity: 0.26 },
+  { r: 3.0,  tube: 0.12, pos: [-2,-2,  3] as [number,number,number], rotSpeed: [-0.002,   0.0008, -0.001  ], opacity: 0.42 },
 ] as const;
 
 export function HeroTorusScene() {
