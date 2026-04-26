@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { AnimatedHeadline } from "@/components/blog/animated-headline";
-import { HeroShader } from "@/components/blog/ogl/hero-shader";
+import { HeroParticleSceneShell } from "@/components/blog/three/hero-particle-scene-shell";
 import { PostListItem } from "@/components/blog/post-list-item";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
 import { getAllPosts, getCategories, getFeaturedPosts, getLatestPosts } from "@/lib/blog/posts";
@@ -19,10 +19,20 @@ export default function HomePage() {
       <div className="space-y-24">
 
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
-        <section className="relative border-b border-border pb-16 pt-14">
+        <section className="relative min-h-[72vh] overflow-hidden border-b border-border pb-16 pt-14">
 
-          {/* OGL GLSL shader — flowing aurora gradient, mouse-reactive */}
-          <HeroShader />
+          {/* Three.js particle constellation — warm sienna, mouse-reactive */}
+          <HeroParticleSceneShell />
+
+          {/* Oval vignette — particle scene 가장자리를 배경으로 페이드 */}
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 65% 90% at 18% 55%, transparent 28%, hsl(var(--background)/0.93) 72%)",
+            }}
+            aria-hidden
+          />
 
           {/* Content grid */}
           <div className="relative grid gap-14 lg:grid-cols-[minmax(0,1.55fr)_minmax(200px,0.45fr)]">
@@ -110,8 +120,8 @@ export default function HomePage() {
               </Link>
             </div>
             <div>
-              {latestPosts.map((post) => (
-                <PostListItem key={post.slug} post={post} />
+              {latestPosts.map((post, idx) => (
+                <PostListItem key={post.slug} post={post} idx={idx} />
               ))}
             </div>
           </div>

@@ -2,63 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Space Mono — 터미널/레이블 전용 */
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+
 @layer base {
-  /* ── Light mode ──────────────────────────────────────────────────────── */
+  /* ── Light mode — warm cream ─────────────────────────────────────────── */
   :root {
-    --page: 249 249 247;
-    --background: 40 12% 98%;     /* very slight warm tint */
-    --foreground: 30 6% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 30 6% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 30 6% 10%;
-    --primary: 30 6% 10%;
-    --primary-foreground: 40 12% 98%;
-    --secondary: 36 10% 95%;
-    --secondary-foreground: 30 6% 10%;
-    --muted: 36 10% 95%;
-    --muted-foreground: 30 5% 44%;
-    --accent: 36 10% 95%;
-    --accent-foreground: 30 6% 10%;
+    --page: 250 247 242;
+    --background: 35 30% 97%;
+    --foreground: 22 28% 10%;
+    --card: 35 20% 100%;
+    --card-foreground: 22 28% 10%;
+    --popover: 35 20% 100%;
+    --popover-foreground: 22 28% 10%;
+    --primary: 22 28% 10%;
+    --primary-foreground: 35 30% 97%;
+    --secondary: 30 18% 93%;
+    --secondary-foreground: 22 28% 10%;
+    --muted: 30 18% 93%;
+    --muted-foreground: 25 14% 44%;
+    --accent: 30 18% 93%;
+    --accent-foreground: 22 28% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 36 8% 88%;
-    --input: 36 8% 88%;
-    --ring: 243 75% 56%;
+    --border: 30 20% 86%;
+    --input: 30 20% 86%;
+    --ring: 23 52% 55%;
     --radius: 0.5rem;
 
-    /* Single accent — indigo (2026: one bold colour against warm neutral) */
-    --link: 243 72% 48%;
-    --link-dark: 243 85% 72%;
+    /* Amber accent */
+    --link: 23 58% 42%;
+    --link-dark: 25 65% 65%;
   }
 
-  /* ── Dark mode — warm neutral, NOT pure black ────────────────────────── */
+  /* ── Dark mode — warm dark brown ─────────────────────────────────────── */
   .dark {
-    --page: 22 20 17;             /* #161411 — warm dark base */
-    --background: 24 5% 9%;      /* #171513 */
-    --foreground: 32 8% 94%;     /* slightly warm white */
-    --card: 26 5% 12%;           /* #1c1a18 */
-    --card-foreground: 32 8% 94%;
-    --popover: 26 5% 12%;
-    --popover-foreground: 32 8% 94%;
-    --primary: 32 8% 94%;
-    --primary-foreground: 26 5% 12%;
-    --secondary: 26 4% 16%;      /* hover surfaces */
-    --secondary-foreground: 32 6% 82%;
-    --muted: 26 4% 16%;
-    --muted-foreground: 28 5% 62%; /* lighter than before — easier on eyes */
-    --accent: 26 4% 16%;
-    --accent-foreground: 32 6% 82%;
+    --page: 16 12 9; /* #100c09 */
+    --background: 23 22% 8%;
+    --foreground: 32 14% 91%;
+    --card: 24 20% 11%;
+    --card-foreground: 32 14% 91%;
+    --popover: 24 20% 11%;
+    --popover-foreground: 32 14% 91%;
+    --primary: 32 14% 91%;
+    --primary-foreground: 24 20% 11%;
+    --secondary: 25 15% 15%;
+    --secondary-foreground: 30 10% 76%;
+    --muted: 25 15% 15%;
+    --muted-foreground: 28 10% 56%;
+    --accent: 25 15% 15%;
+    --accent-foreground: 30 10% 76%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 26 4% 22%;         /* more visible borders */
-    --input: 26 4% 22%;
-    --ring: 243 75% 68%;
+    --border: 25 14% 19%;
+    --input: 25 14% 19%;
+    --ring: 23 52% 55%;
+
+    --link: 23 58% 52%;
+    --link-dark: 25 68% 68%;
   }
 }
 
 @layer components {
-  /* ── Legacy glass surface aliases ────────────────────────────────────── */
+  /* ── Glass surface aliases ────────────────────────────────────────────── */
   .glass-surface,
   .glass-card,
   .glass-card-strong {
@@ -67,31 +73,41 @@
     isolation: isolate;
     background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.04);
   }
+
   .dark .glass-surface,
   .dark .glass-card,
   .dark .glass-card-strong {
-    box-shadow: 0 1px 3px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.14);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28), 0 4px 16px rgba(0, 0, 0, 0.18);
   }
+
   .glass-pill {
     background: hsl(var(--secondary));
     border: 1px solid hsl(var(--border));
     color: hsl(var(--muted-foreground));
   }
+
   .glass-link {
     border: 1px solid hsl(var(--border));
     background: transparent;
     transition: border-color 150ms ease, background-color 150ms ease;
   }
-  .glass-link:hover { background: hsl(var(--secondary)); }
-  .glass-divider { border-color: hsl(var(--border)); }
-  .glass-scene-glow, .glass-scene-tint { background: transparent; }
 
-  /* ── 2026 Typography ──────────────────────────────────────────────────── */
+  .glass-link:hover {
+    background: hsl(var(--secondary));
+  }
 
-  /* ① Char-split headline animation ──────────────────────────────────── */
-  /* Each .char starts invisible; .headline-ready triggers the stagger.   */
+  .glass-divider {
+    border-color: hsl(var(--border));
+  }
+
+  .glass-scene-glow,
+  .glass-scene-tint {
+    background: transparent;
+  }
+
+  /* ── Typography ───────────────────────────────────────────────────────── */
   @keyframes char-in {
     from {
       opacity: 0;
@@ -115,7 +131,6 @@
     animation: char-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  /* Hero headline — fluid clamp, tight tracking */
   .hero-headline {
     font-size: clamp(2.7rem, 5.6vw, 4.4rem);
     font-weight: 800;
@@ -123,22 +138,27 @@
     letter-spacing: -0.032em;
   }
 
-  /* Animated underline — decorates on hover, invisible at rest */
   .link-underline {
     text-decoration: underline;
     text-decoration-color: transparent;
     text-underline-offset: 3px;
     transition: text-decoration-color 200ms ease;
   }
-  .link-underline:hover { text-decoration-color: currentColor; }
 
-  /* ── 2026: CSS Scroll-Timeline animations ────────────────────────────── */
-  /* Native browser API — no JS needed.                                     */
-  /* @supports guards for Safari < 17 / Firefox < 110 fallback.            */
+  .link-underline:hover {
+    text-decoration-color: currentColor;
+  }
 
+  /* ── Scroll-Timeline reveal ───────────────────────────────────────────── */
   @keyframes post-reveal {
-    from { opacity: 0; transform: translateY(13px); }
-    to   { opacity: 1; transform: none; }
+    from {
+      opacity: 0;
+      transform: translateY(13px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
 
   @supports (animation-timeline: view()) {
@@ -149,36 +169,68 @@
     }
   }
 
-  /* Fallback: already-visible items stay visible */
   @supports not (animation-timeline: view()) {
-    .post-item { opacity: 1; }
+    .post-item {
+      opacity: 1;
+    }
   }
 
-  /* ── View Transitions API ────────────────────────────────────────────── */
+  /* ── View Transitions ─────────────────────────────────────────────────── */
   @keyframes vt-slide-from-right {
-    from { transform: translateX(22px); opacity: 0; }
+    from {
+      transform: translateX(22px);
+      opacity: 0;
+    }
   }
+
   @keyframes vt-slide-to-left {
-    to { transform: translateX(-22px); opacity: 0; }
+    to {
+      transform: translateX(-22px);
+      opacity: 0;
+    }
   }
-  @keyframes vt-fade-in  { from { opacity: 0; } }
-  @keyframes vt-fade-out { to   { opacity: 0; } }
+
+  @keyframes vt-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes vt-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
 
   ::view-transition-old(root) {
     animation: vt-slide-to-left 0.22s cubic-bezier(0.4, 0, 1, 1) both;
   }
+
   ::view-transition-new(root) {
     animation: vt-slide-from-right 0.22s cubic-bezier(0, 0, 0.2, 1) both;
   }
+
   ::view-transition-old(post-title),
   ::view-transition-new(post-title) {
     animation: vt-fade-in 0.18s ease both, vt-fade-out 0.18s ease both;
     mix-blend-mode: normal;
   }
+
+  /* ── Terminal meta style ──────────────────────────────────────────────── */
+  .mono {
+    font-family: "Space Mono", "JetBrains Mono", "SFMono-Regular", monospace;
+  }
 }
 
 @layer base {
-  * { @apply border-border; }
+  * {
+    @apply border-border;
+  }
+
+  /* 마우스 디바이스에서만 기본 커서 숨김 — SmoothCursor가 대체 */
+  @media (pointer: fine) {
+    * { cursor: none !important; }
+  }
 
   html {
     scroll-behavior: smooth;
@@ -189,29 +241,40 @@
     @apply min-h-screen bg-background text-foreground;
     overflow-x: clip;
     font-family:
-      "Pretendard Variable", "SUIT Variable",
-      "IBM Plex Sans KR", "Apple SD Gothic Neo",
-      "Noto Sans KR", sans-serif;
+      "Pretendard Variable",
+      "SUIT Variable",
+      "IBM Plex Sans KR",
+      "Apple SD Gothic Neo",
+      "Noto Sans KR",
+      sans-serif;
   }
 
-  /* Headings — tighter tracking across the board */
-  h1, h2, h3, h4 {
+  h1,
+  h2,
+  h3,
+  h4 {
     letter-spacing: -0.02em;
   }
 
-  code, pre {
+  code,
+  pre {
     font-family:
-      "JetBrains Mono", "SFMono-Regular",
-      "Consolas", "Menlo", monospace;
+      "Space Mono",
+      "JetBrains Mono",
+      "SFMono-Regular",
+      "Consolas",
+      "Menlo",
+      monospace;
   }
 
-  /* 2026: warm-tinted selection */
+  /* Warm amber selection */
   ::selection {
-    background: hsl(243 72% 56% / 0.15);
+    background: hsl(23 58% 52% / 0.18);
     color: hsl(var(--foreground));
   }
+
   .dark ::selection {
-    background: hsl(243 72% 68% / 0.22);
+    background: hsl(25 65% 65% / 0.22);
     color: hsl(var(--foreground));
   }
 }

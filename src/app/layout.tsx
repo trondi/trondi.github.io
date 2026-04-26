@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { LenisProvider } from "@/components/blog/lenis-provider";
 import { SeasonalOverlay } from "@/components/blog/seasonal-overlay";
+import { SmoothCursor } from "@/components/blog/smooth-cursor";
 import { SeasonalProvider } from "@/components/blog/seasonal-context";
 import { SiteFooter } from "@/components/blog/site-footer";
 import { SiteHeader } from "@/components/blog/site-header";
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko" suppressHydrationWarning>
       <body className="bg-[rgb(var(--page))] font-sans text-foreground antialiased">
+        <SmoothCursor />
         <LenisProvider>
           <SeasonalProvider>
             <ViewTransitionProvider>
