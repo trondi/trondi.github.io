@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { AnimatedHeadline } from "@/components/blog/animated-headline";
-import { HeroParticleSceneShell } from "@/components/blog/three/hero-particle-scene-shell";
+import { HeroTorusSceneShell } from "@/components/blog/three/hero-torus-scene-shell";
 import { PostListItem } from "@/components/blog/post-list-item";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
 import { getAllPosts, getCategories, getFeaturedPosts, getLatestPosts } from "@/lib/blog/posts";
@@ -21,15 +21,15 @@ export default function HomePage() {
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
         <section className="relative min-h-[72vh] overflow-hidden border-b border-border pb-16 pt-14">
 
-          {/* Three.js particle constellation — warm sienna, mouse-reactive */}
-          <HeroParticleSceneShell />
+          {/* Three.js torus rings — warm sienna oval shapes, mouse-reactive */}
+          <HeroTorusSceneShell />
 
-          {/* Oval vignette — particle scene 가장자리를 배경으로 페이드 */}
+          {/* Vignette — torus 씬 가장자리를 배경색으로 페이드 */}
           <div
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(ellipse 65% 90% at 18% 55%, transparent 28%, hsl(var(--background)/0.93) 72%)",
+                "radial-gradient(ellipse 70% 90% at 20% 55%, transparent 30%, hsl(var(--background) / 0.92) 78%)",
             }}
             aria-hidden
           />
