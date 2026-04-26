@@ -53,7 +53,8 @@ export function RecentlyViewedPosts({
 
   const panelClassName = variant === "post" ? "hidden min-[1520px]:block" : "hidden min-[1480px]:block";
   const cardClassName = cn(
-    "glass-card pointer-events-auto fixed right-6 top-56 w-60 p-4",
+    "pointer-events-auto fixed right-6 top-56 w-60 p-4",
+    "rounded-[22px] border border-border bg-card/90 shadow-lg backdrop-blur-xl",
     variant === "post" ? "rounded-[22px]" : "rounded-[24px]",
   );
 
@@ -64,7 +65,7 @@ export function RecentlyViewedPosts({
       <div className={cardClassName}>
         {recentPosts.length ? (
           <>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-zinc-400">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
               Recently Viewed
             </p>
             <div className="mt-4 space-y-3">
@@ -73,18 +74,18 @@ export function RecentlyViewedPosts({
                   key={post.slug}
                   href={`/posts/${post.slug}`}
                   className={cn(
-                    "glass-link block rounded-2xl",
+                    "block rounded-2xl border border-transparent transition-colors hover:border-border hover:bg-secondary/60",
                     variant === "post" ? "px-3 py-2.5" : "px-4 py-3",
                   )}
                 >
                   <div className="flex items-start gap-3">
-                    <span className="pt-0.5 text-[11px] font-medium text-slate-400 dark:text-zinc-500">
+                    <span className="pt-0.5 text-[11px] font-medium text-muted-foreground/50">
                       {String(index + 1).padStart(2, "0")}
                     </span>
                     <div>
                       <p
                         className={cn(
-                          "font-semibold tracking-tight text-slate-950 dark:text-zinc-100",
+                          "font-semibold tracking-tight text-foreground",
                           variant === "post"
                             ? "text-[13px] leading-5"
                             : "text-sm leading-6",
@@ -92,7 +93,7 @@ export function RecentlyViewedPosts({
                       >
                         {post.title}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         {formatDate(post.date)}
                       </p>
                     </div>
@@ -106,23 +107,22 @@ export function RecentlyViewedPosts({
         {hasNavigation ? (
           <div
             className={cn(
-              "glass-divider",
-              recentPosts.length ? "mt-4 border-t pt-4" : "",
+              recentPosts.length ? "mt-4 border-t border-border pt-4" : "",
             )}
           >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-zinc-400">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
               Move Between Posts
             </p>
             <div className="mt-3 space-y-2">
               {previousPost ? (
                 <Link
                   href={`/posts/${previousPost.slug}`}
-                  className="glass-link block rounded-2xl px-3 py-2.5"
+                  className="block rounded-2xl border border-transparent px-3 py-2.5 transition-colors hover:border-border hover:bg-secondary/60"
                 >
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-stone-400">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground/60">
                     Previous
                   </p>
-                  <p className="mt-1 text-[13px] font-semibold leading-5 tracking-tight text-slate-950 dark:text-stone-100">
+                  <p className="mt-1 text-[13px] font-semibold leading-5 tracking-tight text-foreground">
                     {previousPost.title}
                   </p>
                 </Link>
@@ -130,12 +130,12 @@ export function RecentlyViewedPosts({
               {nextPost ? (
                 <Link
                   href={`/posts/${nextPost.slug}`}
-                  className="glass-link block rounded-2xl px-3 py-2.5"
+                  className="block rounded-2xl border border-transparent px-3 py-2.5 transition-colors hover:border-border hover:bg-secondary/60"
                 >
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-stone-400">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground/60">
                     Next
                   </p>
-                  <p className="mt-1 text-[13px] font-semibold leading-5 tracking-tight text-slate-950 dark:text-stone-100">
+                  <p className="mt-1 text-[13px] font-semibold leading-5 tracking-tight text-foreground">
                     {nextPost.title}
                   </p>
                 </Link>

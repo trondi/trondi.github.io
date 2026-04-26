@@ -26,7 +26,7 @@ export default function HomePage() {
           {/* Vignette */}
           <div
             className="pointer-events-none absolute inset-0"
-            style={{ background: "radial-gradient(ellipse 70% 90% at 20% 55%, transparent 30%, hsl(var(--background) / 0.92) 78%)" }}
+            style={{ background: "radial-gradient(ellipse 70% 90% at 20% 55%, transparent 30%, hsl(var(--background)) 78%)" }}
             aria-hidden
           />
 

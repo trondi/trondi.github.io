@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <body className="bg-[rgb(var(--page))] font-sans text-foreground antialiased">
+      <body className="font-sans text-foreground antialiased">
         <SmoothCursor />
         <LenisProvider>
           <SeasonalProvider>
