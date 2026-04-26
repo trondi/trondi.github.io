@@ -29,7 +29,7 @@ export default function HomePage() {
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(ellipse 120% 100% at 60% 50%, transparent 35%, hsl(var(--background) / 0.85) 65%, hsl(var(--background) / 0.97) 100%)",
+                "radial-gradient(ellipse 70% 90% at 20% 55%, transparent 30%, hsl(var(--background) / 0.92) 78%)",
             }}
             aria-hidden
           />

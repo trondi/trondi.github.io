@@ -21,13 +21,15 @@ function shouldReduceMotion() {
   );
 }
 
+// 링 중심을 오른쪽에 배치 → 카메라가 오른쪽을 향해 오프셋되면서
+// 씬 원점(0,0,0)이 화면 왼쪽(텍스트 영역) 뒤에 위치함
 const RING_DEFS = [
-  { r: 6.2,  tube: 0.10, pos: [0,  0,  0] as [number,number,number], rotSpeed: [ 0.0008,  0.0014,  0      ], opacity: 0.45 },
-  { r: 9.5,  tube: 0.07, pos: [0,  0, -2] as [number,number,number], rotSpeed: [ 0.0005, -0.0008,  0.0004 ], opacity: 0.28 },
-  { r: 4.1,  tube: 0.13, pos: [3, -1,  1] as [number,number,number], rotSpeed: [-0.0012,  0.0006,  0.001  ], opacity: 0.52 },
-  { r: 13,   tube: 0.05, pos: [0,  0, -6] as [number,number,number], rotSpeed: [ 0.0003,  0.0005, -0.0002 ], opacity: 0.18 },
-  { r: 7.8,  tube: 0.08, pos: [-4, 2, -4] as [number,number,number], rotSpeed: [ 0.001,  -0.001,   0.0006 ], opacity: 0.26 },
-  { r: 3.0,  tube: 0.12, pos: [-2,-2,  3] as [number,number,number], rotSpeed: [-0.002,   0.0008, -0.001  ], opacity: 0.42 },
+  { r: 6.2,  tube: 0.028, pos: [0,  0,  0] as [number,number,number], rotSpeed: [ 0.0008,  0.0014,  0      ], opacity: 0.38 },
+  { r: 9.5,  tube: 0.018, pos: [0,  0, -2] as [number,number,number], rotSpeed: [ 0.0005, -0.0008,  0.0004 ], opacity: 0.22 },
+  { r: 4.1,  tube: 0.040, pos: [3, -1,  1] as [number,number,number], rotSpeed: [-0.0012,  0.0006,  0.001  ], opacity: 0.45 },
+  { r: 13,   tube: 0.012, pos: [0,  0, -6] as [number,number,number], rotSpeed: [ 0.0003,  0.0005, -0.0002 ], opacity: 0.12 },
+  { r: 7.8,  tube: 0.022, pos: [-4, 2, -4] as [number,number,number], rotSpeed: [ 0.001,  -0.001,   0.0006 ], opacity: 0.20 },
+  { r: 3.0,  tube: 0.035, pos: [-2,-2,  3] as [number,number,number], rotSpeed: [-0.002,   0.0008, -0.001  ], opacity: 0.35 },
 ] as const;
 
 export function HeroTorusScene() {
@@ -46,7 +48,8 @@ export function HeroTorusScene() {
     /* ── Scene & Camera ──────────────────────────────────────────────── */
     const scene  = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200);
-    camera.position.set(0, 0, 26);
+    // x를 오른쪽으로 오프셋 → 씬 원점이 화면 왼쪽(헤드라인 텍스트 뒤)에 위치
+    camera.position.set(8, 0, 26);
     camera.lookAt(0, 0, 0);
 
     /* ── Torus rings ─────────────────────────────────────────────────── */
@@ -111,9 +114,9 @@ export function HeroTorusScene() {
         mesh.rotation.z += rotSpeed[2];
       });
 
-      // Camera parallax
-      camera.position.x += (mouse.x * 3   - camera.position.x) * 0.04;
-      camera.position.y += (mouse.y * 1.8 - camera.position.y) * 0.04;
+      // Camera parallax — 기준점 x=8 유지하면서 마우스 오프셋 추가
+      camera.position.x += (8 + mouse.x * 2   - camera.position.x) * 0.04;
+      camera.position.y += (    mouse.y * 1.8  - camera.position.y) * 0.04;
       camera.lookAt(0, 0, 0);
 
       renderer.render(scene, camera);
