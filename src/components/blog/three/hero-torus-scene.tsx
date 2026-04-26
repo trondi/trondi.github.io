@@ -86,7 +86,7 @@ export function HeroTorusScene() {
       const w = container.clientWidth;
       const h = container.clientHeight;
       if (!w || !h) return;
-      renderer.setSize(w, h, false);
+      renderer.setSize(w, h); // updateStyle=true(기본값) — 캔버스 CSS 크기도 함께 업데이트
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     }

@@ -112,7 +112,7 @@ export function HeroParticleScene() {
       const w = container.clientWidth;
       const h = container.clientHeight;
       if (!w || !h) return;
-      renderer.setSize(w, h, false);
+      renderer.setSize(w, h);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     }
