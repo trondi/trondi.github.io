@@ -20,8 +20,8 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
           onClick={() => onPageChange(page)}
           className={
             page === currentPage
-              ? "rounded-full border border-slate-900 bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-950"
-              : "rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
+              ? "rounded-full border border-foreground bg-foreground px-4 py-2 text-sm font-medium text-background"
+              : "rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-[hsl(var(--ring)/0.4)] hover:text-foreground"
           }
         >
           {page}

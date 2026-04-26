@@ -9,13 +9,18 @@ import { cn } from "@/lib/utils";
 const SEASONS: Season[] = ["spring", "summer", "autumn", "winter"];
 const currentSeason = getSeason();
 
-export function SeasonSelector() {
+type SeasonSelectorProps = {
+  inMenu?: boolean;
+};
+
+export function SeasonSelector({ inMenu }: SeasonSelectorProps) {
   const { activeSeason, setActiveSeason } = useSeasonalContext();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   // Close on outside click / Escape
   useEffect(() => {
+    if (inMenu) return; // parent menu handles this
     const onDown = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
@@ -28,10 +33,50 @@ export function SeasonSelector() {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, []);
+  }, [inMenu]);
 
   const active = activeSeason ? SEASON_CONFIG[activeSeason] : null;
 
+  // ── In-menu flat list ──────────────────────────────────────────────────
+  if (inMenu) {
+    return (
+      <div className="flex gap-1">
+        {SEASONS.map((s) => {
+          const cfg = SEASON_CONFIG[s];
+          const isActive = s === activeSeason;
+          const isCurrent = s === currentSeason;
+          return (
+            <button
+              key={s}
+              type="button"
+              title={cfg.label + (isCurrent ? " (현재)" : "")}
+              onClick={() => setActiveSeason(isActive ? null : s)}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-lg text-base transition-colors",
+                isActive
+                  ? "bg-[hsl(var(--ring)/0.15)] text-[hsl(var(--ring))] ring-1 ring-[hsl(var(--ring)/0.4)]"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+              )}
+            >
+              {cfg.emoji}
+            </button>
+          );
+        })}
+        {activeSeason && (
+          <button
+            type="button"
+            title="효과 끄기"
+            onClick={() => setActiveSeason(null)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // ── Standalone dropdown ────────────────────────────────────────────────
   return (
     <div ref={ref} className="relative">
       <button
@@ -42,7 +87,7 @@ export function SeasonSelector() {
           "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium transition-colors",
           activeSeason
             ? "border-foreground/25 bg-foreground text-background hover:border-foreground/40"
-            : "border-slate-200 bg-white/90 text-slate-700 hover:border-slate-300 hover:text-slate-950 dark:border-stone-700 dark:bg-[#313136] dark:text-stone-300 dark:hover:border-stone-600 dark:hover:text-stone-100",
+            : "border-border bg-card text-muted-foreground hover:border-[hsl(var(--ring)/0.4)] hover:text-foreground",
         )}
       >
         <span className="text-sm leading-none">
@@ -54,7 +99,7 @@ export function SeasonSelector() {
       {/* Dropdown */}
       <div
         className={cn(
-          "absolute right-0 top-[calc(100%+0.6rem)] z-50 min-w-[140px] overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_12px_36px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-all duration-200 dark:border-stone-700/80 dark:bg-[#232326]/95",
+          "absolute right-0 top-[calc(100%+0.6rem)] z-50 min-w-[140px] overflow-hidden rounded-2xl border border-border bg-background/95 shadow-lg backdrop-blur-xl transition-all duration-200",
           open
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-1 opacity-0",
@@ -77,7 +122,7 @@ export function SeasonSelector() {
                   "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors",
                   isActive
                     ? "bg-foreground text-background"
-                    : "text-slate-700 hover:bg-slate-100 dark:text-stone-300 dark:hover:bg-stone-800",
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground",
                 )}
               >
                 <span className="text-base leading-none">{cfg.emoji}</span>
@@ -95,7 +140,7 @@ export function SeasonSelector() {
               <button
                 type="button"
                 onClick={() => { setActiveSeason(null); setOpen(false); }}
-                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-slate-100 dark:hover:bg-stone-800"
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-secondary"
               >
                 <span className="text-base leading-none">✕</span>
                 <span>끄기</span>

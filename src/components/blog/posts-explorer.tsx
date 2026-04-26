@@ -58,7 +58,7 @@ export function PostsExplorer({ posts, categories, tags }: PostsExplorerProps) {
     <div className="grid gap-10 lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
       <aside className="space-y-8 lg:sticky lg:top-24 lg:self-start">
         <section>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Category</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Category</p>
           <div className="mt-4 flex flex-wrap gap-2 lg:flex-col lg:items-start">
             <button type="button" onClick={() => setSelectedCategory("all")}>
               <TagChip label="All Categories" active={selectedCategory === "all"} />
@@ -75,7 +75,7 @@ export function PostsExplorer({ posts, categories, tags }: PostsExplorerProps) {
         </section>
 
         <section>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Tags</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Tags</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <button type="button" onClick={() => setSelectedTag("all")}>
               <TagChip label="All Tags" active={selectedTag === "all"} />
@@ -90,13 +90,13 @@ export function PostsExplorer({ posts, categories, tags }: PostsExplorerProps) {
       </aside>
 
       <div>
-        <div className="border-b border-slate-200 pb-4 dark:border-stone-700">
+        <div className="border-b border-border pb-4">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-stone-400">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                 Archive
               </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-stone-100">
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
                 {filtered.length} posts
               </h2>
             </div>
@@ -106,8 +106,8 @@ export function PostsExplorer({ posts, categories, tags }: PostsExplorerProps) {
                 onClick={() => setSortOrder("latest")}
                 className={
                   sortOrder === "latest"
-                    ? "rounded-full border border-slate-900 bg-slate-900 px-4 py-2 text-sm text-white dark:border-stone-200 dark:bg-stone-200 dark:text-stone-950"
-                    : "rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-600 dark:border-stone-700 dark:text-stone-300"
+                    ? "rounded-full border border-foreground bg-foreground px-4 py-2 text-sm text-background"
+                    : "rounded-full border border-border px-4 py-2 text-sm text-muted-foreground hover:border-[hsl(var(--ring)/0.4)] hover:text-foreground"
                 }
               >
                 Latest
@@ -117,8 +117,8 @@ export function PostsExplorer({ posts, categories, tags }: PostsExplorerProps) {
                 onClick={() => setSortOrder("oldest")}
                 className={
                   sortOrder === "oldest"
-                    ? "rounded-full border border-slate-900 bg-slate-900 px-4 py-2 text-sm text-white dark:border-stone-200 dark:bg-stone-200 dark:text-stone-950"
-                    : "rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-600 dark:border-stone-700 dark:text-stone-300"
+                    ? "rounded-full border border-foreground bg-foreground px-4 py-2 text-sm text-background"
+                    : "rounded-full border border-border px-4 py-2 text-sm text-muted-foreground hover:border-[hsl(var(--ring)/0.4)] hover:text-foreground"
                 }
               >
                 Oldest
@@ -137,21 +137,21 @@ export function PostsExplorer({ posts, categories, tags }: PostsExplorerProps) {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="제목, 요약, 카테고리, 태그 검색"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-stone-500"
+                className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/60 focus:border-[hsl(var(--ring)/0.6)]"
               />
             </div>
             {query ? (
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-stone-700 dark:text-stone-300 dark:hover:border-stone-500 dark:hover:text-stone-100"
+                className="rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition hover:border-[hsl(var(--ring)/0.4)] hover:text-foreground"
               >
                 Clear
               </button>
             ) : null}
           </div>
 
-          <p className="mt-3 text-sm text-slate-500 dark:text-stone-400">
+          <p className="mt-3 text-sm text-muted-foreground">
             검색어와 카테고리, 태그 필터를 함께 조합해 원하는 글만 빠르게 좁힐 수 있습니다.
           </p>
         </div>
@@ -160,7 +160,7 @@ export function PostsExplorer({ posts, categories, tags }: PostsExplorerProps) {
           {paginated.length ? (
             paginated.map((post) => <PostListItem key={post.slug} post={post} />)
           ) : (
-            <div className="rounded-2xl border border-dashed border-slate-300 px-6 py-12 text-sm text-slate-500 dark:border-stone-700 dark:text-stone-400">
+            <div className="rounded-2xl border border-dashed border-border px-6 py-12 text-sm text-muted-foreground">
               조건에 맞는 글이 없습니다. 검색어를 지우거나 카테고리, 태그 필터를 다시 조정해보세요.
             </div>
           )}
