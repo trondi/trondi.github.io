@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import React, { useState } from "react";
 
 type Mode = "fork" | "cluster";
 
@@ -181,7 +181,7 @@ export function Pm2ConceptsDiagram() {
             {deploySteps.map((step, i) => {
               const active = deployStep === i + 1;
               return (
-                <Fragment key={step.label}>
+                <React.Fragment key={step.label}>
                   <div
                     className="flex flex-col items-center gap-1 rounded-xl border px-3 py-2 text-center transition-all min-w-[80px]"
                     style={{
@@ -197,7 +197,7 @@ export function Pm2ConceptsDiagram() {
                   {i < deploySteps.length - 1 && (
                     <span className="text-border">→</span>
                   )}
-                </Fragment>
+                </React.Fragment>
               );
             })}
           </div>
