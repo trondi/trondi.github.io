@@ -57,7 +57,7 @@ export default function HomePage() {
               className="fade-up fade-d3 font-mono text-muted-foreground mb-8"
               style={{ fontSize: 12, lineHeight: 1.85, maxWidth: 420 }}
             >
-              <span className="opacity-50">// </span>
+              <span className="opacity-50">{"// "}</span>
               React, Next.js, TypeScript, UI 설계와<br />
               트러블슈팅을 읽기 좋은 글로 정리합니다.
             </p>
