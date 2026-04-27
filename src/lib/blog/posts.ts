@@ -83,18 +83,47 @@ function sortPosts(posts: PostSummary[]) {
   return posts.sort((a, b) => +new Date(b.date) - +new Date(a.date));
 }
 
+// Recursively walk postsDirectory and return absolute file paths of every .md file.
+// Subdirectories are used purely for organization (by category) — slugs remain
+// the bare filename so URLs (/posts/<slug>) are unaffected by folder layout.
+function walkMarkdownFiles(dir: string): string[] {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...walkMarkdownFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+}
+
+// slug → absolute file path
+const slugToPath = cache((): Map<string, string> => {
+  const map = new Map<string, string>();
+  for (const filePath of walkMarkdownFiles(postsDirectory)) {
+    const slug = path.basename(filePath, ".md");
+    if (map.has(slug)) {
+      throw new Error(`Duplicate post slug "${slug}": ${map.get(slug)} vs ${filePath}`);
+    }
+    map.set(slug, filePath);
+  }
+  return map;
+});
+
 function getPostSlugsInternal() {
-  return fs
-    .readdirSync(postsDirectory)
-    .filter((file) => file.endsWith(".md"))
-    .map((file) => file.replace(/\.md$/, ""));
+  return [...slugToPath().keys()];
 }
 
 export const getPostSlugs = cache(() => getPostSlugsInternal());
 
 export const getAllPosts = cache((): PostSummary[] => {
-  const posts = getPostSlugs().map((slug) => {
-    const filePath = path.join(postsDirectory, `${slug}.md`);
+  const map = slugToPath();
+  const posts = [...map.entries()].map(([slug, filePath]) => {
     const source = fs.readFileSync(filePath, "utf8");
     const { metadata, content } = parseFrontmatter(source);
     const frontmatter = validateFrontmatter(metadata, slug);
@@ -110,9 +139,9 @@ export const getAllPosts = cache((): PostSummary[] => {
 });
 
 export const getPostBySlug = cache((slug: string): Post | null => {
-  const filePath = path.join(postsDirectory, `${slug}.md`);
+  const filePath = slugToPath().get(slug);
 
-  if (!fs.existsSync(filePath)) {
+  if (!filePath || !fs.existsSync(filePath)) {
     return null;
   }
 
@@ -132,9 +161,9 @@ export const getPostBySlug = cache((slug: string): Post | null => {
 });
 
 export const getSearchIndex = cache((): SearchEntry[] => {
-  return getPostSlugs()
-    .map((slug) => {
-      const filePath = path.join(postsDirectory, `${slug}.md`);
+  const map = slugToPath();
+  return [...map.entries()]
+    .map(([slug, filePath]) => {
       const source = fs.readFileSync(filePath, "utf8");
       const { metadata, content } = parseFrontmatter(source);
       const frontmatter = validateFrontmatter(metadata, slug);
