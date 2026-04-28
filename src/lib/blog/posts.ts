@@ -115,6 +115,14 @@ const slugToPath = cache((): Map<string, string> => {
   return map;
 });
 
+// Draft posts are hidden in production.
+// Set NEXT_PUBLIC_DRAFT_PREVIEW=true in .env.local to view them locally.
+const isDraftPreview = process.env.NEXT_PUBLIC_DRAFT_PREVIEW === "true";
+
+function isVisible(draft: boolean) {
+  return !draft || isDraftPreview;
+}
+
 function getPostSlugsInternal() {
   return [...slugToPath().keys()];
 }
@@ -135,7 +143,7 @@ export const getAllPosts = cache((): PostSummary[] => {
     };
   });
 
-  return sortPosts(posts.filter((post) => !post.draft));
+  return sortPosts(posts.filter((post) => isVisible(post.draft)));
 });
 
 export const getPostBySlug = cache((slug: string): Post | null => {
@@ -148,6 +156,12 @@ export const getPostBySlug = cache((slug: string): Post | null => {
   const source = fs.readFileSync(filePath, "utf8");
   const { metadata, content } = parseFrontmatter(source);
   const frontmatter = validateFrontmatter(metadata, slug);
+
+  // Block direct URL access to draft posts in production
+  if (!isVisible(frontmatter.draft)) {
+    return null;
+  }
+
   const parsed = parseMarkdown(content);
 
   return {
@@ -168,7 +182,7 @@ export const getSearchIndex = cache((): SearchEntry[] => {
       const { metadata, content } = parseFrontmatter(source);
       const frontmatter = validateFrontmatter(metadata, slug);
 
-      if (frontmatter.draft) {
+      if (!isVisible(frontmatter.draft)) {
         return null;
       }
 
