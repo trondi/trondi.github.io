@@ -244,6 +244,7 @@ export function getTags(): TaxonomyItem[] {
 
   return [...counts.entries()]
     .map(([name, count]) => ({ name, slug: slugify(name), count }))
+    .filter((item) => item.slug.length > 0)
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
 
