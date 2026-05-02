@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 import { siteConfig } from "@/lib/blog/config";
-import { getCategories, getPostSlugs, getTags } from "@/lib/blog/posts";
+import { getCategories, getTags, getVisiblePostSlugs } from "@/lib/blog/posts";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages = ["", "/posts", "/about"].map((route) => ({
@@ -9,7 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: new Date(),
   }));
 
-  const posts = getPostSlugs().map((slug) => ({
+  const posts = getVisiblePostSlugs().map((slug) => ({
     url: `${siteConfig.siteUrl}/posts/${slug}`,
     lastModified: new Date(),
   }));

@@ -12,7 +12,7 @@ import {
   getAdjacentPosts,
   getAllPosts,
   getPostBySlug,
-  getPostSlugs,
+  getVisiblePostSlugs,
   getRelatedPosts,
 } from "@/lib/blog/posts";
 import { formatDate, slugify } from "@/lib/blog/utils";
@@ -24,7 +24,7 @@ type PostPageProps = {
 };
 
 export function generateStaticParams() {
-  return getPostSlugs().map((slug) => ({ slug }));
+  return getVisiblePostSlugs().map((slug) => ({ slug }));
 }
 
 export function generateMetadata({ params }: PostPageProps): Metadata {

@@ -8,6 +8,16 @@ export function slugify(value: string) {
     .replace(/-+/g, "-");
 }
 
+export function slugifyHeading(value: string) {
+  const slug = value
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+
+  return encodeURIComponent(slug || "section");
+}
+
 export function formatDate(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {
     year: "numeric",

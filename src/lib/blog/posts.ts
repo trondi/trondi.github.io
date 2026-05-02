@@ -129,6 +129,8 @@ function getPostSlugsInternal() {
 
 export const getPostSlugs = cache(() => getPostSlugsInternal());
 
+export const getVisiblePostSlugs = cache(() => getAllPosts().map((post) => post.slug));
+
 export const getAllPosts = cache((): PostSummary[] => {
   const map = slugToPath();
   const posts = [...map.entries()].map(([slug, filePath]) => {

@@ -1,5 +1,5 @@
 import { ParsedMarkdown } from "@/lib/blog/types";
-import { slugify, stripMarkdown } from "@/lib/blog/utils";
+import { slugifyHeading, stripMarkdown } from "@/lib/blog/utils";
 
 function isSpecialLine(line: string) {
   return (
@@ -24,6 +24,7 @@ export function parseMarkdown(content: string): ParsedMarkdown {
   const lines = content.replace(/\r\n/g, "\n").split("\n");
   const blocks: ParsedMarkdown["blocks"] = [];
   const toc: ParsedMarkdown["toc"] = [];
+  const headingCounts = new Map<string, number>();
 
   let index = 0;
 
@@ -91,7 +92,10 @@ export function parseMarkdown(content: string): ParsedMarkdown {
     if (headingMatch) {
       const level = headingMatch[1].length as 1 | 2 | 3;
       const text = stripMarkdown(headingMatch[2]);
-      const id = slugify(text);
+      const baseId = slugifyHeading(text);
+      const count = headingCounts.get(baseId) ?? 0;
+      const id = count === 0 ? baseId : `${baseId}-${count + 1}`;
+      headingCounts.set(baseId, count + 1);
 
       blocks.push({ type: "heading", level, text, id });
       if (level >= 2) {

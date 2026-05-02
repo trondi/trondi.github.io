@@ -8,6 +8,7 @@ tags:
 - Writing
 - Notes
 featured: false
+draft: true
 ---
 # TIL이라도 읽기 흐름을 설계해야 하는 이유
 
