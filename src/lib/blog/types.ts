@@ -4,8 +4,8 @@ export type PostFrontmatter = {
   summary: string;
   category: string;
   tags: string[];
-  featured?: boolean;
-  draft?: boolean;
+  featured: boolean;
+  draft: boolean;
 };
 
 export type PostSummary = PostFrontmatter & {

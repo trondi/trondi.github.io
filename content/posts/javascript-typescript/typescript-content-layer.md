@@ -8,6 +8,7 @@ tags:
 - Markdown
 - Architecture
 featured: false
+draft: true
 ---
 # TypeScript로 콘텐츠 레이어를 단순하게 유지하는 방법
 

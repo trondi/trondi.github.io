@@ -8,6 +8,7 @@ tags:
 - Blog
 - UX
 featured: true
+draft: true
 ---
 # 문서형 블로그 IA를 먼저 설계한 이유
 

@@ -221,7 +221,7 @@ export function getLatestPosts(limit = 5) {
 export function getCategories(): TaxonomyItem[] {
   const posts = getAllPosts();
   const counts = countBy(posts.map((post) => post.category));
-  const configured = new Set(siteConfig.categories);
+  const configured = new Set<string>(siteConfig.categories);
 
   const ordered = siteConfig.categories
     .filter((name) => counts.has(name))

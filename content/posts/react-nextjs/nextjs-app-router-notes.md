@@ -8,6 +8,7 @@ tags:
 - App Router
 - SEO
 featured: true
+draft: true
 ---
 # Next.js App Router에서 블로그 골격을 잡을 때의 기준
 

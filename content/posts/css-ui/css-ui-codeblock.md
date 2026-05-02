@@ -8,6 +8,7 @@ tags:
 - UI
 - Code Block
 featured: true
+draft: true
 ---
 # 코드 블록이 읽기 좋은 블로그 UI를 만드는 기준
 

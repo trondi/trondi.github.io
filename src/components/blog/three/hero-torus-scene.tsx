@@ -38,12 +38,13 @@ export function HeroTorusScene() {
   useEffect(() => {
     const container = containerRef.current;
     if (!container || shouldReduceMotion()) return;
+    const currentContainer = container;
 
     /* ── Renderer ────────────────────────────────────────────────────── */
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000000, 0);
-    container.appendChild(renderer.domElement);
+    currentContainer.appendChild(renderer.domElement);
 
     /* ── Scene & Camera ──────────────────────────────────────────────── */
     const scene  = new THREE.Scene();
@@ -83,15 +84,15 @@ export function HeroTorusScene() {
 
     /* ── Resize ──────────────────────────────────────────────────────── */
     function resize() {
-      const w = container.clientWidth;
-      const h = container.clientHeight;
+      const w = currentContainer.clientWidth;
+      const h = currentContainer.clientHeight;
       if (!w || !h) return;
       renderer.setSize(w, h); // updateStyle=true(기본값) — 캔버스 CSS 크기도 함께 업데이트
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     }
     const ro = new ResizeObserver(resize);
-    ro.observe(container);
+    ro.observe(currentContainer);
     resize();
 
     /* ── Mouse parallax ──────────────────────────────────────────────── */
@@ -134,8 +135,8 @@ export function HeroTorusScene() {
         mat.dispose();
       });
       renderer.dispose();
-      if (container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
+      if (currentContainer.contains(renderer.domElement)) {
+        currentContainer.removeChild(renderer.domElement);
       }
     };
   }, []);
