@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { PostListItem } from "@/components/blog/post-list-item";
+import { CategoryTagFilter } from "@/components/blog/category-tag-filter";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
 import { getAllPosts, getCategories, getPostsByCategorySlug } from "@/lib/blog/posts";
 
@@ -79,27 +79,8 @@ export default function CategoryPage({ params }: CategoryPageProps) {
           </div>
         </section>
 
-        {/* ── Post list ────────────────────────────────────────────────── */}
-        <div>
-          <div className="mb-8 flex items-center justify-between border-b border-border pb-4">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-              All Posts
-            </p>
-            <span className="text-xs tabular-nums text-muted-foreground">
-              {posts.length}개
-            </span>
-          </div>
-
-          {posts.length > 0 ? (
-            posts.map((post) => (
-              <PostListItem key={post.slug} post={post} />
-            ))
-          ) : (
-            <p className="py-16 text-center text-sm text-muted-foreground">
-              아직 글이 없습니다.
-            </p>
-          )}
-        </div>
+        {/* ── Tag filter + post list ──────────────────────────────────── */}
+        <CategoryTagFilter posts={posts} />
       </div>
     </>
   );
