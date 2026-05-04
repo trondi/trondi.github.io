@@ -5,6 +5,7 @@ import { Settings2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { HeaderSearch } from "@/components/blog/header-search";
+import { ReadingProgress } from "@/components/blog/reading-progress";
 import { SeasonSelector } from "@/components/blog/season-selector";
 import { ThemeToggle } from "@/components/blog/theme-toggle";
 import { SearchEntry } from "@/lib/blog/types";
@@ -75,6 +76,8 @@ export function SiteHeaderClient({
         scrolled && "shadow-[0_1px_0_0_hsl(var(--border))]",
       )}
     >
+      {/* Reading progress (post 상세 페이지에서만 노출) */}
+      <ReadingProgress />
       <div className="mx-auto max-w-6xl px-6">
         <div className={cn("flex flex-col transition-[gap,padding] duration-300", scrolled ? "gap-0 py-2.5" : "gap-3 py-4")}>
 
