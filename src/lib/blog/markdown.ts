@@ -31,20 +31,21 @@ export function parseMarkdown(content: string): ParsedMarkdown {
   while (index < lines.length) {
     const rawLine = lines[index];
     const line = rawLine.trimEnd();
+    const trimmedLine = line.trim();
 
-    if (!line.trim()) {
+    if (!trimmedLine) {
       index += 1;
       continue;
     }
 
-    if (line.startsWith("```")) {
-      const language = line.replace(/```/, "").trim();
+    if (trimmedLine.startsWith("```")) {
+      const language = trimmedLine.replace(/```/, "").trim();
 
       // diagram block: ```diagram\n<name>\n```
       if (language === "diagram") {
         const innerLines: string[] = [];
         index += 1;
-        while (index < lines.length && !lines[index].startsWith("```")) {
+        while (index < lines.length && !lines[index].trim().startsWith("```")) {
           innerLines.push(lines[index].trim());
           index += 1;
         }
@@ -57,7 +58,7 @@ export function parseMarkdown(content: string): ParsedMarkdown {
       const codeLines: string[] = [];
       index += 1;
 
-      while (index < lines.length && !lines[index].startsWith("```")) {
+      while (index < lines.length && !lines[index].trim().startsWith("```")) {
         codeLines.push(lines[index]);
         index += 1;
       }
@@ -72,23 +73,23 @@ export function parseMarkdown(content: string): ParsedMarkdown {
     }
 
     // table block
-    if (/^\|/.test(line)) {
-      const headers = parseTableCells(line);
+    if (/^\|/.test(trimmedLine)) {
+      const headers = parseTableCells(trimmedLine);
       index += 1;
       // skip separator row (|---|---|)
-      if (index < lines.length && /^\|[-| :]+\|/.test(lines[index])) {
+      if (index < lines.length && /^\|[-| :]+\|/.test(lines[index].trim())) {
         index += 1;
       }
       const rows: string[][] = [];
       while (index < lines.length && /^\|/.test(lines[index].trim())) {
-        rows.push(parseTableCells(lines[index]));
+        rows.push(parseTableCells(lines[index].trim()));
         index += 1;
       }
       blocks.push({ type: "table", headers, rows });
       continue;
     }
 
-    const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
+    const headingMatch = trimmedLine.match(/^(#{1,3})\s+(.+)$/);
     if (headingMatch) {
       const level = headingMatch[1].length as 1 | 2 | 3;
       const text = stripMarkdown(headingMatch[2]);
@@ -105,13 +106,13 @@ export function parseMarkdown(content: string): ParsedMarkdown {
       continue;
     }
 
-    if (/^---+$/.test(line)) {
+    if (/^---+$/.test(trimmedLine)) {
       blocks.push({ type: "hr" });
       index += 1;
       continue;
     }
 
-    if (/^>\s?/.test(line)) {
+    if (/^>\s?/.test(trimmedLine)) {
       const quoteLines: string[] = [];
       while (index < lines.length && /^>\s?/.test(lines[index].trim())) {
         quoteLines.push(lines[index].trim().replace(/^>\s?/, ""));
@@ -121,7 +122,7 @@ export function parseMarkdown(content: string): ParsedMarkdown {
       continue;
     }
 
-    if (/^-\s+/.test(line)) {
+    if (/^-\s+/.test(trimmedLine)) {
       const items: string[] = [];
       while (index < lines.length && /^-\s+/.test(lines[index].trim())) {
         items.push(lines[index].trim().replace(/^-\s+/, ""));
@@ -131,7 +132,7 @@ export function parseMarkdown(content: string): ParsedMarkdown {
       continue;
     }
 
-    if (/^\d+\.\s+/.test(line)) {
+    if (/^\d+\.\s+/.test(trimmedLine)) {
       const items: string[] = [];
       while (index < lines.length && /^\d+\.\s+/.test(lines[index].trim())) {
         items.push(lines[index].trim().replace(/^\d+\.\s+/, ""));
@@ -151,7 +152,12 @@ export function parseMarkdown(content: string): ParsedMarkdown {
       index += 1;
     }
 
-    blocks.push({ type: "paragraph", text: paragraphLines.join(" ") });
+    if (paragraphLines.length > 0) {
+      blocks.push({ type: "paragraph", text: paragraphLines.join(" ") });
+    } else {
+      blocks.push({ type: "paragraph", text: trimmedLine });
+      index += 1;
+    }
   }
 
   return { blocks, toc };

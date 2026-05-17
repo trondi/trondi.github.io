@@ -69,6 +69,19 @@ function renderInline(text: string): ReactNode[] {
   });
 }
 
+function parseTaskListItem(item: string) {
+  const match = item.match(/^\[([ xX])\]\s+(.+)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    checked: match[1].toLowerCase() === "x",
+    text: match[2],
+  };
+}
+
 type MarkdownRendererProps = {
   blocks: MarkdownBlock[];
 };
@@ -102,11 +115,42 @@ export function MarkdownRenderer({ blocks }: MarkdownRendererProps) {
         }
 
         if (block.type === "unordered-list") {
+          const hasTaskItems = block.items.some((item) => parseTaskListItem(item));
+
           return (
-            <ul key={`ul-${index}`} className="list-disc space-y-2 pl-6 text-[1.02rem] leading-8 text-slate-700 marker:text-slate-400 dark:text-slate-300/95 dark:marker:text-slate-600">
-              {block.items.map((item) => (
-                <li key={item}>{renderInline(item)}</li>
-              ))}
+            <ul
+              key={`ul-${index}`}
+              className={
+                hasTaskItems
+                  ? "space-y-2 pl-0 text-[1.02rem] leading-8 text-slate-700 dark:text-slate-300/95"
+                  : "list-disc space-y-2 pl-6 text-[1.02rem] leading-8 text-slate-700 marker:text-slate-400 dark:text-slate-300/95 dark:marker:text-slate-600"
+              }
+            >
+              {block.items.map((item, itemIndex) => {
+                const taskItem = parseTaskListItem(item);
+
+                if (taskItem) {
+                  return (
+                    <li key={`${item}-${itemIndex}`} className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={taskItem.checked}
+                        readOnly
+                        disabled
+                        aria-label={taskItem.checked ? "완료" : "미완료"}
+                        className="mt-2 h-4 w-4 flex-shrink-0 rounded border-slate-300 accent-slate-900 disabled:opacity-80 dark:border-slate-600 dark:accent-slate-200"
+                      />
+                      <span>{renderInline(taskItem.text)}</span>
+                    </li>
+                  );
+                }
+
+                return (
+                  <li key={`${item}-${itemIndex}`} className={hasTaskItems ? "ml-6 list-disc" : undefined}>
+                    {renderInline(item)}
+                  </li>
+                );
+              })}
             </ul>
           );
         }
