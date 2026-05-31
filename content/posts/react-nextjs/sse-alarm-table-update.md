@@ -35,6 +35,10 @@ SSE 서버
                                   └─ queryClient.setQueryData() 캐시 직접 교체
 ```
 
+```diagram
+alarm-data-flow
+```
+
 핵심은 세 가지다. **SharedWorker로 SSE 연결을 단 하나만 유지**하고, **배칭 로직으로 업데이트 빈도를 제어**하며, **React Query 캐시를 직접 수술**해 리렌더를 최소화한다.
 
 ---
@@ -103,6 +107,10 @@ export const getUpdateStrategy = (
 ### ROW_UPDATE가 결정되는 경우
 
 상태 변화(재시작, 일시정지 등)처럼 **행은 그대로인데 데이터만 바뀌는** 경우다. 이때는 해당 행만 API로 다시 가져와 캐시에 꽂는다.
+
+```diagram
+alarm-update-strategy
+```
 
 ### currentPageIds로 현재 페이지와 무관한 알람 걸러내기
 
@@ -182,6 +190,10 @@ async function executeCntrPartialUpdate(relevantCntrRowsMap, ...) {
 ## 컴포넌트별 등록 방식 차이
 
 세 컴포넌트가 `useAlarmHandler`를 다르게 사용한다.
+
+```diagram
+alarm-querykey-map
+```
 
 ### HostTable — HOST 페이지 메인 테이블
 

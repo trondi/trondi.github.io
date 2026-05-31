@@ -24,7 +24,7 @@ featured: true
 - **WebSocket**: 양방향 실시간 통신
 - **SSE(Server-Sent Events)**: 서버 → 클라이언트 단방향 스트리밍
 
-알람은 서버에서 클라이언트 방향으로만 흐른다. 클라이언트가 서버에 실시간으로 메시지를 보낼 필요가 없다. 그렇다면 WebSocket은 오버스펙이고, SSE가 적합하다. 폴링은 최신성과 서버 부하 사이에서 균형을 맞추기 어려웠다.
+알람은 서버에서 클라이언트 방향으로만 흐른다. 클라이언트가 서버에 실시간으로 메시지를 보낼 필요가 없다. 그렇다면 WebSocket은 오버스펙이고, SSE가 적합하다. 폴링은 최신성과 서버 부하 사이에서 균형을 맞추기 어려웠다. (같은 프로젝트에서 클러스터 설치 상태에는 오히려 폴링을 골랐는데, 그 판단 기준은 [Polling, SSE, WebSocket 비교 글](/posts/project/polling-vs-realtime)에 따로 정리했다.)
 
 SSE로 결정한 이후, 진짜 고민이 시작됐다.
 
@@ -85,6 +85,10 @@ function setupSSE(baseURL: string) {
 각 컴포넌트는 `MessagePort`를 통해 Worker와 통신한다. Worker가 알람을 받으면 연결된 모든 포트에 `postMessage`로 분배한다.
 
 탭 수가 몇 개든 SSE 연결은 1개다.
+
+```diagram
+sse-shared-worker
+```
 
 ---
 
@@ -220,6 +224,12 @@ export const getUpdateStrategy = (
 };
 ```
 
+전략 결정 흐름을 페이지 타입별로 정리하면 다음과 같다.
+
+```diagram
+alarm-update-strategy
+```
+
 ### FULL_REFRESH_GAP — 전체 새로고침 최소 간격
 
 문제가 하나 더 있었다. `destroy` 알람이 연속으로 5개 오면 FULL_REFRESH가 5번 발생한다. 각각 API 호출이 일어나는 건 낭비다.
@@ -252,6 +262,46 @@ function scheduleFullRefresh() {
 ```
 
 ROW_UPDATE는 5초 단위로 throttle한다. 5초 동안 들어온 알람을 모아서 한 번에 처리한다.
+
+### pendingQueue — 중복 알람 자동 제거
+
+ROW_UPDATE 시 같은 타겟에 대한 알람이 여러 개 있어도 API는 한 번만 호출하면 된다. 그래서 pendingQueue는 배열이 아닌 `Map<string, AlarmInfo>`로 설계했다.
+
+키는 타겟을 고유하게 식별하는 문자열이다.
+
+```typescript
+function getAlarmKey(alarm: AlarmInfo): string {
+  if (alarm.notiType === 'HOST') {
+    return `host-${alarm.notiHostId}`;
+  }
+  return `cntr-${alarm.notiTargetId}-${alarm.notiHostId}`;
+}
+
+// 같은 타겟의 알람이 3개 연속으로 와도 Map에는 1개 엔트리만 남는다
+pendingQueue.set(getAlarmKey(alarm), alarm);
+```
+
+배열로 구현했다면 같은 Container에 대해 알람이 3개 오면 동일한 행에 API를 3번 호출했을 것이다. Map을 쓰면 나중에 온 알람이 앞 알람을 덮어쓰므로 API 호출은 1번으로 줄어든다.
+
+SSE 수신부터 화면 갱신까지 전체 흐름을 정리하면 다음과 같다.
+
+```diagram
+alarm-data-flow
+```
+
+### ROW_UPDATE — React Query 캐시 직접 수정
+
+ROW_UPDATE는 `refetch()`를 호출하지 않는다. 대신 `queryClient.getQueryCache().getAll()`로 현재 캐시를 순회한 뒤, 해당 행만 교체하고 `queryClient.setQueryData()`로 직접 반영한다. 네트워크 요청 없이 화면이 즉시 업데이트된다.
+
+컴포넌트마다 queryKey 매칭 방식이 다르다.
+
+- **HostTable**: 쿼리 파라미터가 포함된 긴 키 대신 prefix로 매칭 — 필터 조건과 무관하게 모든 Host 목록 캐시를 갱신
+- **CntrTable**: exact 매칭 — 현재 보이는 Host의 Container 목록만 갱신
+- **HostExpandRow**: Host ID가 포함된 prefix로 매칭 — 펼쳐진 행의 하위 Container 목록만 갱신
+
+```diagram
+alarm-querykey-map
+```
 
 ---
 
@@ -382,6 +432,36 @@ function broadcastAlarm(alarm: AlarmInfo) {
 
 ---
 
+## 개선할 수 있는 부분
+
+실제로 사용하면서 눈에 띈 개선 포인트 세 가지다.
+
+**5회 재연결 실패 시 영구 단절**
+
+현재는 `reconnectAttempt >= MAX_RECONNECT_ATTEMPTS`가 되면 재연결을 완전히 포기한다. 사용자가 탭을 새로고침하기 전까지 실시간 알람을 받을 수 없다. 더 나은 방법은 5회 실패 이후에도 긴 간격(예: 5분)으로 계속 재시도하는 것이다.
+
+**INIT_LAST_READ 경쟁 조건**
+
+여러 탭이 동시에 Worker에 연결되면 각 탭이 거의 동시에 `INIT_LAST_READ` 메시지를 보낸다. Worker 핸들러가 단순 대입이기 때문에 마지막으로 도착한 값이 `lastReadNotiSeq`가 된다.
+
+```typescript
+// 현재 — 도착 순서에 따라 오래된 값이 남을 수 있다
+lastReadNotiSeq = msg.data.lastReadNotiSeq;
+
+// 개선 — 항상 더 큰 값(최신 읽음 상태)을 유지
+lastReadNotiSeq = Math.max(lastReadNotiSeq, msg.data.lastReadNotiSeq);
+```
+
+탭 A가 seq 100을 보내고 탭 B가 seq 80을 보낼 때, B가 늦게 도착하면 80이 최종값이 된다. `Math.max`를 쓰면 항상 최신 값이 유지된다.
+
+**localStorage 간접 접근의 복잡성**
+
+Shared Worker는 DOM API에 접근할 수 없어 localStorage를 직접 읽지 못한다. 그래서 Worker가 탭에 `INIT_LAST_READ` 메시지를 보내고, 탭이 localStorage를 읽어서 응답하는 구조가 됐다. 메시지 왕복이 한 번 더 발생하고, Worker 재시작 시 어느 탭이 먼저 응답하느냐에 따라 초기 읽음 상태가 달라질 수 있다.
+
+개선 방법으로는 `indexedDB`를 Worker에서 직접 접근하거나, `BroadcastChannel` API를 활용해 탭 간 상태를 동기화하는 방식이 있다.
+
+---
+
 ## 결론 — 선택의 이유들
 
 이 구현에서 내린 주요 결정들을 다시 정리하면:
@@ -397,3 +477,12 @@ function broadcastAlarm(alarm: AlarmInfo) {
 | Worker 메모리 큐 | 새 탭 열었을 때 최근 이력 즉시 표시 |
 
 처음에는 "SSE 하나 붙이면 되겠지" 싶었는데, 실제로 부딪혀보니 고민할 것들이 꽤 많았다. 특히 Next.js의 런타임 제약과 다중 탭 환경은 예상하지 못한 변수였다. 결국 각 문제를 하나씩 풀어가면서 지금의 구조가 만들어졌다.
+
+---
+
+## 참고
+
+- [Polling, SSE, WebSocket — 클러스터 설치 상태에 무엇을 골랐나](/posts/project/polling-vs-realtime)
+- [SSE와 Shared Worker — 실시간 통신의 두 가지 접근](/posts/project/sse-shared-worker)
+- [SSE 알람으로 테이블을 실시간 업데이트하는 법 — SharedWorker + React Query 캐시 전략](/posts/react-nextjs/sse-alarm-table-update)
+- [Next.js에서 SSE와 WebSocket은 Proxy로 처리해도 될까](/posts/react-nextjs/nextjs-proxy-sse-websocket)

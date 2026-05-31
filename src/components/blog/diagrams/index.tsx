@@ -10,6 +10,9 @@ const registry: Record<string, React.LazyExoticComponent<() => React.ReactElemen
   "jenkins-pipeline":      lazy(() => import("./jenkins-pipeline").then((m) => ({ default: m.JenkinsPipelineDiagram }))),
   "gitlab-jenkins-compare":lazy(() => import("./gitlab-jenkins-compare").then((m) => ({ default: m.GitlabJenkinsCompareDiagram }))),
   "pm2-concepts":          lazy(() => import("./pm2-concepts").then((m) => ({ default: m.Pm2ConceptsDiagram }))),
+  "alarm-data-flow":       lazy(() => import("./alarm-data-flow").then((m) => ({ default: m.AlarmDataFlowDiagram }))),
+  "alarm-update-strategy": lazy(() => import("./alarm-update-strategy").then((m) => ({ default: m.AlarmUpdateStrategyDiagram }))),
+  "alarm-querykey-map":    lazy(() => import("./alarm-querykey-map").then((m) => ({ default: m.AlarmQuerykeyMapDiagram }))),
 };
 
 export function DiagramBlock({ name }: { name: string }) {
