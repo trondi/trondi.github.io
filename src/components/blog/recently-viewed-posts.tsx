@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import { PostSummary } from "@/lib/blog/types";
 import { cn } from "@/lib/utils";
-import { formatDate } from "@/lib/blog/utils";
 
 const STORAGE_KEY = "recently-viewed-posts";
 
@@ -53,7 +52,7 @@ export function RecentlyViewedPosts({
 
   const panelClassName = variant === "post" ? "hidden min-[1520px]:block" : "hidden min-[1480px]:block";
   const cardClassName = cn(
-    "pointer-events-auto fixed right-6 top-56 w-64 overflow-hidden p-4",
+    "pointer-events-auto fixed right-6 top-56 w-56 overflow-hidden p-4",
     "rounded-[26px] border border-[hsl(var(--ring)/0.28)] bg-[hsl(var(--ring)/0.08)] shadow-[0_18px_55px_hsl(var(--foreground)/0.12)] backdrop-blur-xl",
     "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-[linear-gradient(90deg,transparent,hsl(var(--ring)/0.55),transparent)]",
     variant === "post" ? "rounded-[22px]" : "rounded-[24px]",
@@ -80,7 +79,17 @@ export function RecentlyViewedPosts({
                   key={post.slug}
                   href={`/posts/${post.slug}`}
                   className={cn(
-                    "block rounded-2xl border border-transparent bg-background/35 transition-colors hover:border-[hsl(var(--ring)/0.25)] hover:bg-background/70",
+                    "block rounded-2xl backdrop-blur-md backdrop-saturate-150 transition-[background,border-color,box-shadow]",
+                    // Light mode glass — bright white pane
+                    "border border-white/70 bg-gradient-to-b from-white/75 to-white/45",
+                    "shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_1px_3px_hsl(var(--foreground)/0.06)]",
+                    "hover:border-[hsl(var(--ring)/0.55)] hover:from-white/90 hover:to-white/65",
+                    "hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_6px_18px_hsl(var(--ring)/0.22)]",
+                    // Dark mode glass — subtle frosted pane
+                    "dark:border-white/15 dark:from-white/[0.10] dark:to-white/[0.04]",
+                    "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_3px_rgba(0,0,0,0.35)]",
+                    "dark:hover:border-[hsl(var(--ring)/0.55)] dark:hover:from-white/[0.16] dark:hover:to-white/[0.08]",
+                    "dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_6px_18px_hsl(var(--ring)/0.28)]",
                     variant === "post" ? "px-3 py-2.5" : "px-4 py-3",
                   )}
                 >
@@ -98,9 +107,6 @@ export function RecentlyViewedPosts({
                         )}
                       >
                         {post.title}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {formatDate(post.date)}
                       </p>
                     </div>
                   </div>
@@ -123,7 +129,17 @@ export function RecentlyViewedPosts({
               {previousPost ? (
                 <Link
                   href={`/posts/${previousPost.slug}`}
-                  className="block rounded-2xl border border-transparent bg-background/30 px-3 py-2.5 transition-colors hover:border-[hsl(var(--ring)/0.25)] hover:bg-background/70"
+                  className={cn(
+                    "block rounded-2xl px-3 py-2.5 backdrop-blur-md backdrop-saturate-150 transition-[background,border-color,box-shadow]",
+                    "border border-white/70 bg-gradient-to-b from-white/75 to-white/45",
+                    "shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_1px_3px_hsl(var(--foreground)/0.06)]",
+                    "hover:border-[hsl(var(--ring)/0.55)] hover:from-white/90 hover:to-white/65",
+                    "hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_6px_18px_hsl(var(--ring)/0.22)]",
+                    "dark:border-white/15 dark:from-white/[0.10] dark:to-white/[0.04]",
+                    "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_3px_rgba(0,0,0,0.35)]",
+                    "dark:hover:border-[hsl(var(--ring)/0.55)] dark:hover:from-white/[0.16] dark:hover:to-white/[0.08]",
+                    "dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_6px_18px_hsl(var(--ring)/0.28)]",
+                  )}
                 >
                   <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground/60">
                     Previous
@@ -136,7 +152,17 @@ export function RecentlyViewedPosts({
               {nextPost ? (
                 <Link
                   href={`/posts/${nextPost.slug}`}
-                  className="block rounded-2xl border border-transparent bg-background/30 px-3 py-2.5 transition-colors hover:border-[hsl(var(--ring)/0.25)] hover:bg-background/70"
+                  className={cn(
+                    "block rounded-2xl px-3 py-2.5 backdrop-blur-md backdrop-saturate-150 transition-[background,border-color,box-shadow]",
+                    "border border-white/70 bg-gradient-to-b from-white/75 to-white/45",
+                    "shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_1px_3px_hsl(var(--foreground)/0.06)]",
+                    "hover:border-[hsl(var(--ring)/0.55)] hover:from-white/90 hover:to-white/65",
+                    "hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_6px_18px_hsl(var(--ring)/0.22)]",
+                    "dark:border-white/15 dark:from-white/[0.10] dark:to-white/[0.04]",
+                    "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_3px_rgba(0,0,0,0.35)]",
+                    "dark:hover:border-[hsl(var(--ring)/0.55)] dark:hover:from-white/[0.16] dark:hover:to-white/[0.08]",
+                    "dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_6px_18px_hsl(var(--ring)/0.28)]",
+                  )}
                 >
                   <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground/60">
                     Next
