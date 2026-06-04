@@ -22,6 +22,7 @@ export const siteConfig = {
     "React / Next.js",
     "JavaScript / TypeScript",
     "CSS / UI",
+    "Network",
     "Trouble Shooting",
     "TIL",
     "Project",
