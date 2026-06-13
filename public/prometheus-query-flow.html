@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PromQL 자원 사용량 쿼리 시각화</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --panel2: #1c2330; --border: #2d3644;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --counter: #e3a008; --gauge: #2ea043; --rate: #db61a2; --result: #58a6ff;
+    --green: #7EB26D; --yellow: #EAB839; --cyan: #6ED0E0; --orange: #EF843C; --red: #E24D42;
+    --mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, 'Pretendard', 'Segoe UI', sans-serif;
+    line-height: 1.6; padding: 32px 20px 80px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  h1 .sub { color: var(--muted); font-size: 14px; font-weight: 400; display: block; margin-top: 4px; }
+  h2 { font-size: 19px; margin: 44px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  code, .mono { font-family: var(--mono); }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin: 18px 0 8px; font-size: 13px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  /* concept top flow */
+  .concept { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; margin: 18px 0; }
+  .cbox { background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+          padding: 12px 16px; flex: 1; min-width: 130px; text-align: center; }
+  .cbox .t { font-weight: 700; font-size: 14px; }
+  .cbox .d { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .carrow { display: flex; align-items: center; color: var(--accent); font-size: 22px; padding: 0 8px; }
+
+  /* pipeline */
+  .pipe { background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+          padding: 22px; margin: 16px 0; }
+  .pipe .ptitle { display:flex; align-items:center; gap:10px; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .badge { font-size: 11px; padding: 2px 9px; border-radius: 20px; font-weight: 700; }
+  .b-counter { background: rgba(227,160,8,.16); color: var(--counter); border: 1px solid var(--counter); }
+  .b-gauge { background: rgba(46,160,67,.16); color: var(--gauge); border: 1px solid var(--gauge); }
+  .full-q { font-family: var(--mono); font-size: 13px; background: #0a0e14; border: 1px solid var(--border);
+            border-radius: 8px; padding: 12px 14px; margin: 12px 0 18px; color: #c9d1d9; white-space: pre-wrap; }
+  .full-q .hl { color: var(--rate); font-weight: 700; }
+  .full-q .hl2 { color: var(--result); font-weight: 700; }
+  .full-q .hl3 { color: var(--counter); }
+
+  .steps { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+  .step { flex: 1; min-width: 150px; background: var(--panel2); border: 1px solid var(--border);
+          border-radius: 10px; padding: 12px 13px; position: relative; }
+  .step .num { position: absolute; top: -10px; left: 12px; background: var(--accent); color: #001; font-weight: 800;
+               font-size: 11px; width: 20px; height: 20px; border-radius: 50%; display:flex; align-items:center; justify-content:center; }
+  .step .op { font-family: var(--mono); font-size: 12.5px; color: var(--accent); font-weight: 700; margin-top: 6px; }
+  .step .ex { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .step .ex b { color: var(--text); }
+  .step .desc { font-size: 12.5px; margin-top: 6px; }
+  .sarrow { display:flex; align-items:center; color: var(--accent); font-size: 20px; padding: 0 4px; align-self: center; }
+
+  table.vals { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-top: 8px; }
+  table.vals td, table.vals th { border: 1px solid var(--border); padding: 5px 8px; text-align: center; font-family: var(--mono); }
+  table.vals th { background: #0a0e14; color: var(--muted); font-weight: 600; }
+
+  .note { background: rgba(88,166,255,.08); border-left: 3px solid var(--accent); border-radius: 6px;
+          padding: 10px 14px; font-size: 13px; margin: 14px 0; }
+  .note b { color: var(--accent); }
+
+  /* tiny chart */
+  .chartbox { display:flex; gap: 18px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+  svg.spark { background:#0a0e14; border:1px solid var(--border); border-radius: 8px; }
+  .clabel { font-size: 13px; }
+  .clabel .nm { font-family: var(--mono); font-size: 12px; }
+  details { margin-top: 12px; }
+  summary { cursor: pointer; color: var(--accent); font-size: 13px; }
+  .foot { margin-top: 50px; color: var(--muted); font-size: 12px; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>PromQL 서버 자원 사용량 쿼리 시각화
+    <span class="sub">node_exporter 가 노출한 메트릭이 → PromQL 변환을 거쳐 → 차트가 되기까지 (Padion Frontend)</span>
+  </h1>
+
+  <!-- 공통 개념 흐름 -->
+  <div class="concept">
+    <div class="cbox"><div class="t">서버</div><div class="d">node_exporter<br/>/metrics 노출</div></div>
+    <div class="carrow">→</div>
+    <div class="cbox"><div class="t">Prometheus</div><div class="d">주기적 scrape<br/>시계열 저장</div></div>
+    <div class="carrow">→</div>
+    <div class="cbox"><div class="t">PromQL</div><div class="d">query_range<br/>로 가공 질의</div></div>
+    <div class="carrow">→</div>
+    <div class="cbox"><div class="t">변환</div><div class="d">prometheusTo<br/>UPlotSeries()</div></div>
+    <div class="carrow">→</div>
+    <div class="cbox"><div class="t">uPlot 차트</div><div class="d">서버별 선<br/>그래프</div></div>
+  </div>
+
+  <div class="note">
+    <b>핵심 두 타입.</b> &nbsp;
+    <span class="dot" style="background:var(--counter)"></span> <b style="color:var(--counter)">Counter</b> = 계속 누적 증가 → 그대로는 의미없고 <code>rate()</code>로 "초당 증가율"을 구해야 함.&nbsp;&nbsp;
+    <span class="dot" style="background:var(--gauge)"></span> <b style="color:var(--gauge)">Gauge</b> = 그 순간의 값 → 그대로 사용.
+  </div>
+
+  <!-- ============ CPU ============ -->
+  <h2>① CPU 사용률 — <span style="color:var(--muted);font-size:14px">Counter라서 rate()로 idle을 구해 뒤집는다</span></h2>
+  <div class="pipe">
+    <div class="ptitle">CPU Usage (%) <span class="badge b-counter">COUNTER</span></div>
+    <div class="full-q">100 - avg by (instance) ( <span class="hl">rate(</span><span class="hl3">node_cpu_seconds_total{mode="idle"}</span><span class="hl">[1m])</span> ) <span class="hl2">* 100</span></div>
+
+    <div class="steps">
+      <div class="step"><span class="num">1</span>
+        <div class="op">node_cpu_seconds_total{mode="idle"}</div>
+        <div class="desc">코어별 <b>idle 누적 초</b> (counter)</div>
+        <div class="ex">core0: <b>89,412s</b><br/>core1: <b>90,105s</b> · · ·</div>
+      </div>
+      <div class="sarrow">→</div>
+      <div class="step"><span class="num">2</span>
+        <div class="op">rate( … [1m] )</div>
+        <div class="desc">최근 1분 <b>초당 증가율</b><br/>= "1초 중 몇 초 놀았나" (0~1)</div>
+        <div class="ex">core0: <b>0.82</b><br/>core1: <b>0.90</b></div>
+      </div>
+      <div class="sarrow">→</div>
+      <div class="step"><span class="num">3</span>
+        <div class="op">avg by (instance)</div>
+        <div class="desc"><b>서버별</b> 코어 평균<br/>(서버 하나 = 선 하나)</div>
+        <div class="ex">srv1: <b>0.86</b></div>
+      </div>
+      <div class="sarrow">→</div>
+      <div class="step"><span class="num">4</span>
+        <div class="op">* 100  →  idle %</div>
+        <div class="desc">비율 → 퍼센트</div>
+        <div class="ex">srv1: <b>86%</b> idle</div>
+      </div>
+      <div class="sarrow">→</div>
+      <div class="step"><span class="num">5</span>
+        <div class="op">100 - (…)</div>
+        <div class="desc"><b>뒤집어 사용률</b></div>
+        <div class="ex" style="color:var(--green)">srv1: <b>14%</b> 사용</div>
+      </div>
+    </div>
+    <div class="chartbox">
+      <svg class="spark" width="320" height="90" viewBox="0 0 320 90">
+        <polyline fill="none" stroke="#7EB26D" stroke-width="2"
+          points="0,70 40,64 80,72 120,55 160,40 200,48 240,30 280,38 320,25"/>
+        <polyline fill="none" stroke="#EAB839" stroke-width="2"
+          points="0,80 40,76 80,68 120,72 160,60 200,66 240,58 280,50 320,55"/>
+      </svg>
+      <div class="clabel">
+        <div><span class="dot" style="background:var(--green)"></span> <span class="nm">{instance="srv1"}</span></div>
+        <div><span class="dot" style="background:var(--yellow)"></span> <span class="nm">{instance="srv2"}</span></div>
+        <div style="color:var(--muted);font-size:12px;margin-top:6px">y축 = 사용률 %, x축 = 시간</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Memory ============ -->
+  <h2>② 메모리 사용률 — <span style="color:var(--muted);font-size:14px">Gauge라서 rate() 없이 비율 직접 계산</span></h2>
+  <div class="pipe">
+    <div class="ptitle">Memory Usage (%) <span class="badge b-gauge">GAUGE</span></div>
+    <div class="full-q">( 1 - ( <span class="hl3">node_memory_MemAvailable_bytes</span> / <span class="hl3">node_memory_MemTotal_bytes</span> ) ) <span class="hl2">* 100</span></div>
+
+    <div class="steps">
+      <div class="step"><span class="num">1</span>
+        <div class="op">MemAvailable / MemTotal</div>
+        <div class="desc">현재값 두 개 (gauge)<br/>→ <b>여유 비율</b></div>
+        <div class="ex">6.4GB / 16GB = <b>0.40</b></div>
+      </div>
+      <div class="sarrow">→</div>
+      <div class="step"><span class="num">2</span>
+        <div class="op">1 - (…)</div>
+        <div class="desc">뒤집어 <b>사용 비율</b></div>
+        <div class="ex">1 - 0.40 = <b>0.60</b></div>
+      </div>
+      <div class="sarrow">→</div>
+      <div class="step"><span class="num">3</span>
+        <div class="op">* 100</div>
+        <div class="desc">퍼센트</div>
+        <div class="ex" style="color:var(--cyan)"><b>60%</b> 사용</div>
+      </div>
+    </div>
+    <div class="note" style="margin-top:16px">
+      <b>왜 rate()가 없나?</b> MemAvailable·MemTotal은 "지금 이 순간의 바이트"인 <b>Gauge</b>라
+      그 자체로 의미가 있습니다. 반대로 CPU·Network는 "누적 합계"인 Counter라 반드시 <code>rate()</code>가 필요합니다.
+    </div>
+  </div>
+
+  <!-- ============ Network ============ -->
+  <h2>③ 네트워크 — <span style="color:var(--muted);font-size:14px">Counter rate() 후 단위 환산(B/s → Mbps), 차트 2개</span></h2>
+  <div class="pipe">
+    <div class="ptitle">Network TX / RX (Mbps) <span class="badge b-counter">COUNTER</span></div>
+    <div class="full-q">TX:  <span class="hl">rate(</span><span class="hl3">node_network_transmit_bytes_total</span><span class="hl">[1m])</span> <span class="hl2">* 8 / 1024 / 1024</span>
+RX:  <span class="hl">rate(</span><span class="hl3">node_network_receive_bytes_total</span><span class="hl">[1m])</span> <span class="hl2">* 8 / 1024 / 1024</span></div>
+
+    <div class="steps">
+      <div class="step"><span class="num">1</span>
+        <div class="op">…_bytes_total</div>
+        <div class="desc"><b>누적 전송 바이트</b> (counter)</div>
+        <div class="ex"><b>9,812,400,128 B</b></div>
+      </div>
+      <div class="sarrow">→</div>
+      <div class="step"><span class="num">2</span>
+        <div class="op">rate( … [1m] )</div>
+        <div class="desc"><b>초당 바이트</b> (B/s)</div>
+        <div class="ex"><b>1,310,720 B/s</b></div>
+      </div>
+      <div class="sarrow">→</div>
+      <div class="step"><span class="num">3</span>
+        <div class="op">* 8</div>
+        <div class="desc">바이트 → <b>비트</b></div>
+        <div class="ex"><b>10,485,760 b/s</b></div>
+      </div>
+      <div class="sarrow">→</div>
+      <div class="step"><span class="num">4</span>
+        <div class="op">/ 1024 / 1024</div>
+        <div class="desc">→ <b>Mbps</b></div>
+        <div class="ex" style="color:var(--orange)"><b>10 Mbps</b></div>
+      </div>
+    </div>
+    <div class="note" style="margin-top:16px">
+      네트워크만 <code>query</code> 배열에 항목이 <b>2개</b>(TX, RX)라서 <code>Promise.all</code>로 병렬 호출되고
+      <b>차트 2개</b>가 그려집니다. CPU·Memory는 1개.
+    </div>
+  </div>
+
+  <!-- ============ GPU ============ -->
+  <h2>④ GPU — <span style="color:var(--muted);font-size:14px">이 프로젝트엔 미구현 (참고)</span></h2>
+  <div class="pipe" style="border-style:dashed; opacity:.92">
+    <div class="ptitle">GPU Usage <span class="badge" style="background:rgba(139,148,158,.16);color:var(--muted);border:1px solid var(--muted)">미구현</span></div>
+    <div class="full-q" style="color:var(--muted)">PROMETHEUS_QUERY.gpu = []   <span style="color:#555">// 드롭다운엔 있지만 쿼리가 빈 배열 → 차트 안 그려짐</span></div>
+    <div style="font-size:13px">
+      GPU는 <code>node_exporter</code>가 주지 않습니다. <b>NVIDIA DCGM exporter</b>를 따로 설치하면
+      아래처럼 쿼리할 수 있습니다 (대부분 Gauge라 rate 불필요):
+      <div class="full-q" style="margin-top:10px">DCGM_FI_DEV_GPU_UTIL                          <span style="color:#555">// GPU 사용률 % (gauge)</span>
+DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE) * 100   <span style="color:#555">// GPU 메모리 %</span></div>
+      <span style="color:var(--muted);font-size:12.5px">※ 프로젝트의 <code>hostGpuCnt</code>/<code>hostGpuMemSize</code>는 Prometheus 메트릭이 아니라 호스트 등록 폼의 수동 입력값입니다.</span>
+    </div>
+  </div>
+
+  <!-- ============ 요약표 ============ -->
+  <h2>한눈 요약</h2>
+  <table class="vals" style="font-family:inherit; font-size:13px">
+    <tr><th>리소스</th><th>메트릭 타입</th><th>rate() 필요?</th><th>핵심 변환</th><th>차트 수</th></tr>
+    <tr><td><b>CPU</b></td><td style="color:var(--counter)">Counter</td><td>✅ 필요</td><td>idle율 구해 <code>100-</code>로 뒤집기</td><td>1</td></tr>
+    <tr><td><b>Memory</b></td><td style="color:var(--gauge)">Gauge</td><td>❌ 불필요</td><td>(1 - 여유/전체) × 100</td><td>1</td></tr>
+    <tr><td><b>Network</b></td><td style="color:var(--counter)">Counter</td><td>✅ 필요</td><td>B/s → ×8 → Mbps 환산</td><td>2 (TX·RX)</td></tr>
+    <tr><td><b>GPU</b></td><td style="color:var(--muted)">(DCGM)</td><td>대개 ❌</td><td style="color:var(--muted)">미구현 — DCGM exporter 필요</td><td>0</td></tr>
+  </table>
+
+  <div class="note" style="margin-top:18px">
+    <b>서버 선택은 어디에?</b> 위 모든 쿼리의 메트릭 뒤에 <code>injectNameMatcher()</code>가
+    <code>name="srv1"</code>(1개) 또는 <code>name=~"srv1|srv2"</code>(여러 개)를 동적으로 끼워넣습니다.
+    그래서 응답이 서버별로 갈라지고 → 차트에 서버마다 선 하나로 그려집니다.
+  </div>
+
+  <div class="foot">Padion Frontend · constants/prometheus.ts + util/prometheus.ts 기반 · 값은 설명용 예시</div>
+</div>
+</body>
+</html>
