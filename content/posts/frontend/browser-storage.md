@@ -86,6 +86,103 @@ localStorage.removeItem("theme");
 
 ---
 
+## 실무 — IndexedDB를 유틸 함수로 감싸기
+
+원시 IndexedDB API는 두 가지가 불편하다. **이벤트 기반**이라 `request.onsuccess`/`onerror` 콜백을 매번 달아야 하고, **트랜잭션과 object store를 호출할 때마다 새로 열어야** 한다. SQL 에디터를 만들면서 탭과 작성 중인 쿼리를 IndexedDB에 저장했는데, 컴포넌트에서 이 보일러플레이트를 직접 쓰지 않도록 한 겹 감싸 `addTab(...)`, `getAllContents(...)` 같은 도메인 함수만 노출했다.
+
+### 1. 이벤트 API를 Promise로 래핑
+
+모든 작동(add·get·edit·del·clear)을 한 함수로 모으고, 콜백을 Promise로 바꾼다.
+
+```js
+function makePromise(runType, dbName, storageName, value, onSuccess) {
+  return new Promise((resolve, reject) => {
+    const request = createIdbRequest(dbName); // open + onupgradeneeded
+
+    request.onsuccess = () => {
+      const db = request.result;
+      const tx = db.transaction(storageName, 'readwrite');
+      const store = tx.objectStore(storageName);
+
+      let op;
+      switch (runType) {
+        case 'add':   op = store.add(value); break;
+        case 'get':   op = value === undefined ? store.getAll() : store.get(value); break;
+        case 'edit':  op = store.put(value); break;
+        case 'del':   op = store.delete(value); break;
+        case 'clear': op = store.clear(); break;
+        default: console.error('unknown runType', runType); return;
+      }
+
+      op.onsuccess = () => onSuccess(op, resolve, reject);
+      op.onerror = (e) => console.error('IDB op error', e);
+    };
+  });
+}
+```
+
+`runType` 하나로 CRUD를 분기하니 트랜잭션을 여는 코드가 한 곳에만 남는다.
+
+### 2. object store는 onupgradeneeded에서 한 번만 생성
+
+스키마(저장소) 생성은 DB 버전이 올라갈 때 호출되는 `onupgradeneeded`에서만 한다.
+
+```js
+function makeObjectStore(db, name) {
+  if (!db.objectStoreNames.contains(name)) {
+    db.createObjectStore(name, { keyPath: 'id' });
+  }
+}
+
+request.onupgradeneeded = () => {
+  const db = request.result;
+  makeObjectStore(db, TAB_STORAGE);
+  makeObjectStore(db, CONTENTS_STORAGE);
+};
+```
+
+스키마를 바꾸려면 버전(`idbVersion`)을 올려야 다시 호출된다. SSR 환경을 위해 `window` 가드와 벤더 프리픽스 폴백도 둔다.
+
+```js
+const idb = typeof window !== 'undefined'
+  ? window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB
+  : null;
+```
+
+### 3. 도메인 함수로 노출
+
+제네릭 한 겹 위에 저장소별 얇은 래퍼를 얹는다. 컴포넌트는 IndexedDB를 전혀 모르고 `addTab`/`getAllContents`만 부른다.
+
+```js
+const addData = (db, store, v, cb) =>
+  makePromise('add', db, store, v, resolveResult).then(cb);
+
+export const addTab      = (db, v, cb) => addData(db, TAB_STORAGE, v, cb);
+export const addContents = (db, v, cb) => addData(db, CONTENTS_STORAGE, v, cb);
+```
+
+호출부는 이렇게 단순해진다.
+
+```js
+import { getAllTab, editContents } from '@util/IndexedDB';
+
+getAllTab(userId, (tabs) => { /* ... */ });
+```
+
+### 얻은 것
+
+| 원시 API | 유틸 래퍼 |
+|---|---|
+| `onsuccess` 콜백 중첩 | `.then()` / `await` |
+| 매번 transaction·store 열기 | `makePromise` 한 곳 |
+| 컴포넌트가 store 이름·키를 직접 다룸 | `addTab(...)` 도메인 함수 |
+
+추가로 이 프로젝트에서는 저장할 때마다 레코드를 `Blob`으로 직렬화해 **용량을 계산**(`new Blob([JSON.stringify(record)]).size`)하고, 읽어온 데이터를 Redux로 **미러링**해 두었다. IndexedDB를 단일 진실 원본으로 두고 Redux는 동기 읽기용 캐시로 쓰는 구성이다.
+
+> 비동기 대용량 저장소가 필요할 때 직접 래핑하는 대신 `idb`(약 1KB) 같은 라이브러리를 써도 된다. 위 패턴은 그 라이브러리가 내부에서 하는 일과 거의 같다.
+
+---
+
 ## 무엇을 언제 쓰나
 
 | 상황 | 추천 |
