@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { Comments } from "@/components/blog/comments";
 import { MarkdownRenderer } from "@/components/blog/markdown-renderer";
 import { PostListItem } from "@/components/blog/post-list-item";
 import { PostViewTracker } from "@/components/blog/post-view-tracker";
@@ -122,6 +123,8 @@ export default function PostPage({ params }: PostPageProps) {
             </div>
           </section>
         ) : null}
+
+        <Comments slug={post.slug} />
       </article>
 
       <div className="space-y-6">

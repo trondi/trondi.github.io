@@ -1,0 +1,16 @@
+# Supabase 무료 프로젝트는 7일간 요청이 없으면 일시정지된다.
+# 주 2회 Edge Function에 ping을 보내 활성 상태를 유지한다.
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    - cron: "0 0 * * 1,4" # 매주 월/목 00:00 UTC
+  workflow_dispatch: # 수동 실행도 가능
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping comments function
+        run: |
+          curl -sf "${{ secrets.COMMENTS_API_URL }}?slug=ping" || exit 1
