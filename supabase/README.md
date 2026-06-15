@@ -1,6 +1,6 @@
 # 댓글 시스템 셋업 가이드 (Supabase)
 
-익명 댓글(이름 + 선택 비밀번호, IP 해시 저장, 삭제 불가) 시스템.
+익명 댓글(이름 + 선택 비밀번호, IP 해시 저장, 비밀번호 검증 삭제) 시스템.
 블로그는 GitHub Pages 정적 배포이므로, 서버 역할은 Supabase Edge Function이 담당한다.
 
 ```
@@ -65,10 +65,12 @@ https://<PROJECT_REF>.supabase.co/functions/v1/comments
 ## 운영 메모
 
 - **댓글 숨김**: Studio → Table Editor → comments → 해당 행 `is_hidden = true`
-- **삭제/수정 불가**: UPDATE/DELETE 엔드포인트 자체가 없다. RLS 정책도 없어
-  anon 키로는 어떤 쓰기도 불가. 운영자만 Studio에서 직접 처리.
+- **본인 삭제**: DELETE 엔드포인트에 댓글 id + 비밀번호를 보내면, 저장된
+  PBKDF2 해시와 검증 후 일치할 때만 삭제. 비밀번호 없이 작성한 댓글은
+  본인 삭제 불가(403) — 운영자만 Studio에서 처리.
+- **수정 불가**: UPDATE 엔드포인트는 없다. RLS 정책도 없어 anon 키로는
+  직접 쓰기 불가, 모든 변경은 Edge Function을 거친다.
 - **IP**: 평문 저장하지 않는다. `ip_hash`(전체 해시, 비공개)와
   `anon_id`(글 단위 6자리, 공개) 두 가지만 저장.
-- **비밀번호**: PBKDF2 해시로 저장만 해둠. 추후 "비밀번호 검증 후 본인 삭제"
-  기능을 열 때 소급 활용 가능.
+- **비밀번호**: PBKDF2-SHA256 해시로 저장하며, 삭제 시 상수 시간 비교로 검증.
 - **도배 차단**: 같은 IP 60초 내 3개 초과 시 429.

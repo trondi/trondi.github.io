@@ -1,8 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // comments — 익명 댓글 Edge Function
 //
-//   GET  ?slug=<post_slug>   해당 글의 댓글 목록 (공개 컬럼만)
-//   POST { slug, name, content, password? }   댓글 작성
+//   GET    ?slug=<post_slug>              댓글 목록 (공개 컬럼만)
+//   POST   { slug, name, content, password? }   댓글 작성
+//   DELETE { id, password }              본인 댓글 삭제 (비밀번호 필수)
 //
 // 배포: supabase functions deploy comments --no-verify-jwt
 //   (--no-verify-jwt: 로그인 없는 익명 사용자가 호출해야 하므로 JWT 검증 해제)
@@ -36,7 +37,7 @@ function corsHeadersFor(req: Request): Record<string, string> {
       : ALLOWED_ORIGINS[0] ?? "*";
   return {
     "Access-Control-Allow-Origin": allow,
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "content-type",
     "Vary": "Origin",
   };
@@ -83,6 +84,44 @@ async function hashPassword(password: string): Promise<string> {
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
   return `pbkdf2$${iterations}$${toHex(salt)}$${toHex(bits)}`;
+}
+
+// hashPassword가 만든 "pbkdf2$<iter>$<saltHex>$<hashHex>" 포맷을 검증.
+// 저장된 salt/iter로 동일하게 유도한 뒤 상수 시간 비교.
+async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  const parts = stored.split("$");
+  if (parts.length !== 4 || parts[0] !== "pbkdf2") return false;
+  const iterations = Number(parts[1]);
+  if (!Number.isFinite(iterations) || iterations <= 0) return false;
+
+  const fromHex = (hex: string) =>
+    new Uint8Array(hex.match(/.{2}/g)?.map((h) => parseInt(h, 16)) ?? []);
+  const salt = fromHex(parts[2]);
+  const expected = parts[3];
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations },
+    key,
+    256,
+  );
+  const actual = Array.from(new Uint8Array(bits))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  // 상수 시간 비교 (타이밍 공격 방지)
+  if (actual.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < actual.length; i++) {
+    diff |= actual.charCodeAt(i) ^ expected.charCodeAt(i);
+  }
+  return diff === 0;
 }
 
 function getClientIp(req: Request): string | null {
@@ -169,6 +208,38 @@ Deno.serve(async (req) => {
 
     if (error) return json(req, { error: "db error" }, 500);
     return json(req, { comment: data }, 201);
+  }
+
+  // ── DELETE: 비밀번호 검증 후 본인 삭제 ─────────────────────────────────────
+  if (req.method === "DELETE") {
+    let body: { id?: string; password?: string };
+    try {
+      body = await req.json();
+    } catch {
+      return json(req, { error: "invalid json" }, 400);
+    }
+
+    const id = body.id?.trim();
+    const password = body.password ?? "";
+    if (!id || !password) return json(req, { error: "missing fields" }, 400);
+
+    const { data: row, error: findErr } = await supabase
+      .from("comments")
+      .select("id, password_hash")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (findErr) return json(req, { error: "db error" }, 500);
+    if (!row) return json(req, { error: "not found" }, 404);
+    // 비밀번호 없이 작성된 댓글은 본인 삭제 불가 (운영자만 Studio에서 처리)
+    if (!row.password_hash) return json(req, { error: "no password set" }, 403);
+
+    const ok = await verifyPassword(password, row.password_hash);
+    if (!ok) return json(req, { error: "wrong password" }, 403);
+
+    const { error: delErr } = await supabase.from("comments").delete().eq("id", id);
+    if (delErr) return json(req, { error: "db error" }, 500);
+    return json(req, { ok: true });
   }
 
   return json(req, { error: "method not allowed" }, 405);

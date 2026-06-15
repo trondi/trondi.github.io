@@ -31,6 +31,12 @@ export function Comments({ slug }: CommentsProps) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // 삭제 UI 상태 — 어떤 댓글의 삭제창이 열려있는지, 입력 비번, 진행/에러
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     if (!COMMENTS_API) return;
     try {
@@ -49,6 +55,40 @@ export function Comments({ slug }: CommentsProps) {
   }, [load]);
 
   if (!COMMENTS_API) return null;
+
+  const openDelete = (id: string) => {
+    setDeletingId(id);
+    setDeletePassword("");
+    setDeleteError(null);
+  };
+
+  const confirmDelete = async (id: string) => {
+    if (deleteBusy || !deletePassword) return;
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(COMMENTS_API, {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id, password: deletePassword }),
+      });
+      if (res.status === 403) {
+        setDeleteError("비밀번호가 일치하지 않습니다.");
+        return;
+      }
+      if (!res.ok) {
+        setDeleteError("삭제에 실패했습니다.");
+        return;
+      }
+      setDeletingId(null);
+      setDeletePassword("");
+      await load();
+    } catch {
+      setDeleteError("네트워크 오류가 발생했습니다.");
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -103,23 +143,64 @@ export function Comments({ slug }: CommentsProps) {
               key={comment.id}
               className="rounded-2xl border border-border bg-card/70 p-5"
             >
-              <div className="flex items-baseline gap-2 text-xs text-muted-foreground">
-                <span className="text-sm font-semibold text-foreground">
-                  {comment.author_name}
-                </span>
-                {comment.anon_id ? (
-                  <span className="font-mono text-[10px] text-muted-foreground/60">
-                    ({comment.anon_id})
+              <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm font-semibold text-foreground">
+                    {comment.author_name}
                   </span>
-                ) : null}
-                <span aria-hidden>·</span>
-                <time dateTime={comment.created_at}>
-                  {formatDate(comment.created_at)}
-                </time>
+                  {comment.anon_id ? (
+                    <span className="font-mono text-[10px] text-muted-foreground/60">
+                      ({comment.anon_id})
+                    </span>
+                  ) : null}
+                  <span aria-hidden>·</span>
+                  <time dateTime={comment.created_at}>
+                    {formatDate(comment.created_at)}
+                  </time>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    deletingId === comment.id
+                      ? setDeletingId(null)
+                      : openDelete(comment.id)
+                  }
+                  className="shrink-0 text-[11px] text-muted-foreground/60 transition-colors hover:text-foreground"
+                >
+                  {deletingId === comment.id ? "취소" : "삭제"}
+                </button>
               </div>
               <p className="mt-2.5 whitespace-pre-wrap text-[15px] leading-7 text-foreground">
                 {comment.content}
               </p>
+
+              {deletingId === comment.id ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+                  <input
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="작성 시 입력한 비밀번호"
+                    maxLength={50}
+                    autoComplete="off"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") confirmDelete(comment.id);
+                    }}
+                    className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-[hsl(var(--ring))] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => confirmDelete(comment.id)}
+                    disabled={deleteBusy || !deletePassword}
+                    className="shrink-0 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    {deleteBusy ? "삭제 중..." : "삭제 확인"}
+                  </button>
+                  {deleteError ? (
+                    <p className="w-full text-xs text-red-500">{deleteError}</p>
+                  ) : null}
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>
