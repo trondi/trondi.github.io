@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { Comments } from "@/components/blog/comments";
 import { MarkdownRenderer } from "@/components/blog/markdown-renderer";
+import { Reactions } from "@/components/blog/reactions";
 import { PostListItem } from "@/components/blog/post-list-item";
 import { PostViewTracker } from "@/components/blog/post-view-tracker";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
@@ -123,6 +124,8 @@ export default function PostPage({ params }: PostPageProps) {
             </div>
           </section>
         ) : null}
+
+        <Reactions slug={post.slug} />
 
         <Comments slug={post.slug} />
       </article>
