@@ -120,6 +120,13 @@ spec:
 
 ## Pod에 주입
 
+Secret 객체는 클러스터(etcd)에 저장된 데이터 한 덩어리이고, Pod이 이를 **참조**해
+컨테이너에 **주입**한다. 주입 방식에 따라 컨테이너에서 환경변수로 보이거나 파일로 보인다.
+
+```diagram
+k8s-secret-injection
+```
+
 ConfigMap과 같은 4가지 방식.
 
 ```yaml

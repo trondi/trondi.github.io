@@ -13,6 +13,7 @@ const registry: Record<string, React.LazyExoticComponent<() => React.ReactElemen
   "alarm-data-flow":       lazy(() => import("./alarm-data-flow").then((m) => ({ default: m.AlarmDataFlowDiagram }))),
   "alarm-update-strategy": lazy(() => import("./alarm-update-strategy").then((m) => ({ default: m.AlarmUpdateStrategyDiagram }))),
   "alarm-querykey-map":    lazy(() => import("./alarm-querykey-map").then((m) => ({ default: m.AlarmQuerykeyMapDiagram }))),
+  "k8s-secret-injection":  lazy(() => import("./k8s-secret-injection").then((m) => ({ default: m.K8sSecretInjectionDiagram }))),
 };
 
 export function DiagramBlock({ name }: { name: string }) {
