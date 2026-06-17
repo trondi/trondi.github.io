@@ -49,6 +49,22 @@ export function HeaderSearch({ entries }: HeaderSearchProps) {
     return () => cancelAnimationFrame(raf);
   }, [open]);
 
+  // 패널이 열린 동안 배경(body) 스크롤 잠금.
+  // 스크롤바가 사라지며 생기는 레이아웃 시프트는 paddingRight로 보정.
+  useEffect(() => {
+    if (!open) return;
+    const { body } = document;
+    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+    const prevOverflow = body.style.overflow;
+    const prevPadding = body.style.paddingRight;
+    body.style.overflow = "hidden";
+    if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`;
+    return () => {
+      body.style.overflow = prevOverflow;
+      body.style.paddingRight = prevPadding;
+    };
+  }, [open]);
+
   // Close on outside click or Escape
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
@@ -163,8 +179,12 @@ export function HeaderSearch({ entries }: HeaderSearchProps) {
           )}
         </div>
 
-        {/* Results */}
-        <div className="max-h-[min(28rem,60vh)] overflow-y-auto">
+        {/* Results — data-lenis-prevent: Lenis 부드러운 스크롤이 이 영역을
+            가로채지 않고 네이티브 스크롤로 동작하게 함 (배경 스크롤 방지) */}
+        <div
+          data-lenis-prevent
+          className="max-h-[min(28rem,60vh)] overflow-y-auto overscroll-contain"
+        >
           {q ? (
             results.length ? (
               <ul className="divide-y divide-border">
