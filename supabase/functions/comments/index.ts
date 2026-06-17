@@ -9,6 +9,7 @@
 //   (--no-verify-jwt: 로그인 없는 익명 사용자가 호출해야 하므로 JWT 검증 해제)
 //
 // 시크릿: supabase secrets set IP_SALT=<랜덤 문자열> ALLOWED_ORIGIN=<블로그 주소>
+//   NOTIFY_WEBHOOK_URL=<Discord 등 웹훅 URL>  (선택 — 새 댓글 알림)
 //   SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 는 런타임이 자동 주입한다.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -207,6 +208,24 @@ Deno.serve(async (req) => {
       .single();
 
     if (error) return json(req, { error: "db error" }, 500);
+
+    // 새 댓글 알림 (Discord 등 웹훅). fire-and-forget — 알림 실패가
+    // 댓글 작성 응답을 지연/실패시키지 않도록 await 하지 않는다.
+    const webhook = Deno.env.get("NOTIFY_WEBHOOK_URL");
+    if (webhook) {
+      const preview = content.length > 500 ? content.slice(0, 500) + "…" : content;
+      // 글로 바로 이동할 링크. SITE_URL 미설정 시 허용 도메인 첫 항목을 사용.
+      const siteUrl = (Deno.env.get("SITE_URL") ?? ALLOWED_ORIGINS[0] ?? "").replace(/\/$/, "");
+      const link = siteUrl ? `\n${siteUrl}/posts/${slug}` : "";
+      fetch(webhook, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          content: `💬 **새 댓글** \`${slug}\`\n**${name}**: ${preview}${link}`,
+        }),
+      }).catch(() => {});
+    }
+
     return json(req, { comment: data }, 201);
   }
 
