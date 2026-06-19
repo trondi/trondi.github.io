@@ -10,6 +10,7 @@ import { PostViewTracker } from "@/components/blog/post-view-tracker";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
 import { TableOfContents } from "@/components/blog/table-of-contents";
 import { TagChip } from "@/components/blog/tag-chip";
+import { ViewCount } from "@/components/blog/view-count";
 import {
   getAdjacentPosts,
   getAllPosts,
@@ -72,6 +73,8 @@ export default function PostPage({ params }: PostPageProps) {
             <time dateTime={post.date}>{formatDate(post.date)}</time>
             <span>·</span>
             <span>{post.readingTime}</span>
+            <span>·</span>
+            <ViewCount slug={post.slug} />
           </div>
           <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
             {post.title}
