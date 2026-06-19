@@ -8,6 +8,8 @@ tags:
   - Container
   - DevOps
 featured: false
+series: "Docker 입문"
+seriesOrder: 3
 ---
 
 # Docker 시리즈 ③ Container — 컨테이너의 생애 주기

@@ -9,6 +9,8 @@ tags:
   - Bind Mount
   - DevOps
 featured: false
+series: "Docker 입문"
+seriesOrder: 5
 ---
 
 # Docker 시리즈 ⑤ Volume — 데이터를 어떻게 보존하는가

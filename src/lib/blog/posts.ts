@@ -4,7 +4,7 @@ import { cache } from "react";
 
 import { parseMarkdown } from "@/lib/blog/markdown";
 import { siteConfig } from "@/lib/blog/config";
-import { Post, PostFrontmatter, PostSummary, SearchEntry, TaxonomyItem } from "@/lib/blog/types";
+import { Post, PostFrontmatter, PostSummary, SearchEntry, SeriesEntry, TaxonomyItem } from "@/lib/blog/types";
 import { estimateReadingTime, slugify, stripMarkdown } from "@/lib/blog/utils";
 
 const postsDirectory = path.join(process.cwd(), "content/posts");
@@ -76,6 +76,8 @@ function validateFrontmatter(metadata: Partial<PostFrontmatter>, slug: string): 
     tags: metadata.tags ?? [],
     featured: metadata.featured ?? false,
     draft: metadata.draft ?? false,
+    series: metadata.series,
+    seriesOrder: metadata.seriesOrder !== undefined ? Number(metadata.seriesOrder) : undefined,
   };
 }
 
@@ -288,6 +290,26 @@ export function getRelatedPosts(slug: string, limit = 3) {
     .sort((a, b) => b.score - a.score || +new Date(b.post.date) - +new Date(a.post.date))
     .slice(0, limit)
     .map((entry) => entry.post);
+}
+
+// 같은 series에 속한 글들을 seriesOrder 순으로 반환.
+// 현재 글이 시리즈에 속하지 않거나 시리즈 글이 1편뿐이면 null.
+export function getSeriesForSlug(slug: string): { name: string; entries: SeriesEntry[] } | null {
+  const current = getPostBySlug(slug);
+  if (!current?.series) return null;
+
+  const entries = getAllPosts()
+    .filter((post) => post.series === current.series)
+    .sort((a, b) => (a.seriesOrder ?? 0) - (b.seriesOrder ?? 0))
+    .map((post) => ({
+      slug: post.slug,
+      title: post.title,
+      order: post.seriesOrder ?? 0,
+      current: post.slug === slug,
+    }));
+
+  if (entries.length < 2) return null;
+  return { name: current.series, entries };
 }
 
 export function getArchiveGroups() {

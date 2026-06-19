@@ -9,6 +9,8 @@ tags:
   - WSL2
   - DevOps
 featured: false
+series: "Docker 입문"
+seriesOrder: 1
 ---
 
 # Docker 시리즈 ① Host — Docker는 어디서 어떻게 도는 걸까?

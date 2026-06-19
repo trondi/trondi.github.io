@@ -9,6 +9,8 @@ tags:
   - Bridge
   - DevOps
 featured: false
+series: "Docker 입문"
+seriesOrder: 4
 ---
 
 # Docker 시리즈 ④ Network — 컨테이너는 어떻게 통신하는가

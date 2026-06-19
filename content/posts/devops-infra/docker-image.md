@@ -9,6 +9,8 @@ tags:
   - Layer
   - DevOps
 featured: false
+series: "Docker 입문"
+seriesOrder: 2
 ---
 
 # Docker 시리즈 ② Image — 이미지는 어떻게 생긴 걸까?

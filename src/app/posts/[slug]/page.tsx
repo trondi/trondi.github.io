@@ -9,6 +9,7 @@ import { PostListItem } from "@/components/blog/post-list-item";
 import { PostViewTracker } from "@/components/blog/post-view-tracker";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
 import { TableOfContents } from "@/components/blog/table-of-contents";
+import { SeriesNav } from "@/components/blog/series-nav";
 import { TagChip } from "@/components/blog/tag-chip";
 import { ViewCount } from "@/components/blog/view-count";
 import {
@@ -17,6 +18,7 @@ import {
   getPostBySlug,
   getVisiblePostSlugs,
   getRelatedPosts,
+  getSeriesForSlug,
 } from "@/lib/blog/posts";
 import { formatDate, slugify } from "@/lib/blog/utils";
 
@@ -59,6 +61,7 @@ export default function PostPage({ params }: PostPageProps) {
   const adjacent = getAdjacentPosts(post.slug);
   const relatedPosts = getRelatedPosts(post.slug);
   const allPosts = getAllPosts();
+  const series = getSeriesForSlug(post.slug);
 
   return (
     <div className="grid gap-12 xl:grid-cols-[minmax(0,1fr)_240px]">
@@ -86,6 +89,12 @@ export default function PostPage({ params }: PostPageProps) {
             ))}
           </div>
         </div>
+
+        {series ? (
+          <div className="max-w-3xl">
+            <SeriesNav name={series.name} entries={series.entries} />
+          </div>
+        ) : null}
 
         <div className="mt-12 max-w-3xl">
           <MarkdownRenderer blocks={post.blocks} />

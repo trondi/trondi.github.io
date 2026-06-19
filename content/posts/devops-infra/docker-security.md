@@ -8,6 +8,8 @@ tags:
   - Security
   - DevOps
 featured: false
+series: "Docker 입문"
+seriesOrder: 8
 ---
 
 # Docker 시리즈 ⑧ Security — 컨테이너 보안의 기본

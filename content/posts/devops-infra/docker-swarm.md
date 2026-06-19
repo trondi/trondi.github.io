@@ -9,6 +9,8 @@ tags:
   - Orchestration
   - DevOps
 featured: false
+series: "Docker 입문"
+seriesOrder: 9
 ---
 
 # Docker 시리즈 ⑨ Swarm — 여러 호스트로 확장하기, 그리고 Kubernetes로

@@ -8,6 +8,8 @@ tags:
   - Dockerfile
   - DevOps
 featured: false
+series: "Docker 입문"
+seriesOrder: 6
 ---
 
 # Docker 시리즈 ⑥ Dockerfile — 이미지를 만드는 레시피

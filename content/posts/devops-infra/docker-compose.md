@@ -8,6 +8,8 @@ tags:
   - Docker Compose
   - DevOps
 featured: false
+series: "Docker 입문"
+seriesOrder: 7
 ---
 
 # Docker 시리즈 ⑦ Compose — 여러 컨테이너 한꺼번에 다루기

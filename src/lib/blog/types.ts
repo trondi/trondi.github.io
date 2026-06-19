@@ -6,6 +6,15 @@ export type PostFrontmatter = {
   tags: string[];
   featured: boolean;
   draft: boolean;
+  series?: string;       // 시리즈 이름 (같은 값을 가진 글들이 한 시리즈)
+  seriesOrder?: number;  // 시리즈 내 순서 (1부터)
+};
+
+export type SeriesEntry = {
+  slug: string;
+  title: string;
+  order: number;
+  current: boolean;
 };
 
 export type PostSummary = PostFrontmatter & {
