@@ -15,6 +15,7 @@ export const siteConfig = {
   primaryNav: [
     { label: "Home", href: "/" },
     { label: "Posts", href: "/posts" },
+    { label: "Guestbook", href: "/guestbook" },
     { label: "About", href: "/about" },
   ],
   categories: [
@@ -23,6 +24,7 @@ export const siteConfig = {
     "JavaScript / TypeScript",
     "CSS / UI",
     "Network",
+    "AI",
     "Trouble Shooting",
     "TIL",
     "Project",
