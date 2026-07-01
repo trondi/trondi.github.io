@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   description: siteConfig.description,
   applicationName: siteConfig.title,
   keywords: ["frontend", "react", "next.js", "typescript", "blog"],
+  verification: {
+    google: "WIC4u1W9icxZ-LnSKCBoNO-HXEVAVx1ZA4C16RkIQa4",
+  },
   authors: [{ name: siteConfig.author.name }],
   creator: siteConfig.author.name,
   openGraph: {
