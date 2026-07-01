@@ -14,6 +14,9 @@ const registry: Record<string, React.LazyExoticComponent<() => React.ReactElemen
   "alarm-update-strategy": lazy(() => import("./alarm-update-strategy").then((m) => ({ default: m.AlarmUpdateStrategyDiagram }))),
   "alarm-querykey-map":    lazy(() => import("./alarm-querykey-map").then((m) => ({ default: m.AlarmQuerykeyMapDiagram }))),
   "k8s-secret-injection":  lazy(() => import("./k8s-secret-injection").then((m) => ({ default: m.K8sSecretInjectionDiagram }))),
+  "rsc-render-flow":       lazy(() => import("./rsc-render-flow").then((m) => ({ default: m.RscRenderFlowDiagram }))),
+  "server-client-boundary":lazy(() => import("./server-client-boundary").then((m) => ({ default: m.ServerClientBoundaryDiagram }))),
+  "rsc-bundle-size":       lazy(() => import("./rsc-bundle-size").then((m) => ({ default: m.RscBundleSizeDiagram }))),
 };
 
 export function DiagramBlock({ name }: { name: string }) {

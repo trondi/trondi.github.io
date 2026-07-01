@@ -34,6 +34,12 @@ RSC는 **서버에서만 실행되는 컴포넌트**다. 렌더링 결과가 직
 RSC 실행 → 직렬화 데이터 전송 →   화면에 출력 (Hydration 없음)
 ```
 
+클라이언트로 전송되는 건 HTML이 아니라 **RSC Payload**라는 직렬화 포맷이다. 브라우저는 먼저 HTML로 화면을 빠르게 보여주고, RSC Payload로 서버/클라이언트 트리를 맞춘 뒤, **클라이언트 컴포넌트만 hydration**해 상호작용을 붙인다. 즉 hydration이 통째로 사라지는 게 아니라, 상호작용이 필요한 클라이언트 컴포넌트로 **범위가 좁혀지는** 것이다.
+
+```diagram
+rsc-render-flow
+```
+
 Next.js App Router에서는 `app/` 디렉토리 안의 모든 컴포넌트가 기본적으로 **서버 컴포넌트**다.
 
 ---
@@ -60,6 +66,10 @@ export function ArticleDate({ date }: { date: string }) {
 // 클라이언트 컴포넌트였다면 date-fns 전체가 번들에 포함됨
 'use client';
 import { format } from 'date-fns'; // ~70KB
+```
+
+```diagram
+rsc-bundle-size
 ```
 
 ### 2. 데이터 패칭 단순화
@@ -101,6 +111,23 @@ export function PostList() {
 
 서버 컴포넌트 쪽이 코드가 훨씬 단순하고, 클라이언트-서버 왕복(waterfall)도 없다.
 
+이 차이는 브라우저 개발자 도구에서도 드러난다. 클라이언트 컴포넌트 방식은 `/api/posts` 요청이 **Network 탭에 그대로 찍히지만**, 서버 컴포넌트는 데이터 조회가 서버에서 끝나고 렌더링된 결과만 페이로드로 내려오기 때문에 **Network 탭에 별도 API 호출이 보이지 않는다.** "API를 분명히 호출하는데 네트워크 탭엔 안 보인다"면 서버 컴포넌트에서 처리되고 있다는 신호다. 같은 이유로 `console.log`도 브라우저 콘솔이 아니라 **서버 터미널**에 찍힌다.
+
+또한 느린 데이터 조회는 `<Suspense>`로 감싸 **스트리밍**할 수 있다. 페이지 전체가 데이터를 기다리지 않고, 준비된 부분부터 먼저 보낸 뒤 느린 조각은 완성되는 대로 흘려보낸다.
+
+```tsx
+export default function Page() {
+  return (
+    <>
+      <Header />                         {/* 즉시 전송 */}
+      <Suspense fallback={<Skeleton />}>
+        <SlowPostList />                 {/* 준비되면 스트리밍 */}
+      </Suspense>
+    </>
+  );
+}
+```
+
 ### 3. 보안
 
 DB 연결 정보, API 키 등이 서버 컴포넌트 안에서만 사용되면 클라이언트로 노출될 위험이 없다.
@@ -111,6 +138,8 @@ const data = await fetch('https://api.example.com/data', {
   headers: { Authorization: `Bearer ${process.env.SECRET_API_KEY}` }
 });
 ```
+
+다만 모듈은 서버/클라이언트 양쪽에서 import될 수 있어서, 서버 전용 코드가 실수로 클라이언트 번들에 섞일 수 있다. 이를 막으려면 해당 모듈 맨 위에 `import 'server-only'`를 넣는다. 클라이언트 컴포넌트에서 import하면 **빌드 타임에 에러**가 나서 사고를 미리 잡아준다.
 
 ---
 
@@ -146,11 +175,8 @@ export function LikeButton({ postId }: { postId: string }) {
 
 서버/클라이언트 컴포넌트를 혼용할 때의 핵심 원칙: **클라이언트 컴포넌트를 트리의 최대한 아래로 내려라.**
 
-```
-Page (서버)
-  └─ ArticleLayout (서버)
-       ├─ ArticleContent (서버)   ← DB에서 데이터 조회
-       └─ ArticleActions (클라이언트) ← 좋아요, 공유 버튼만
+```diagram
+server-client-boundary
 ```
 
 페이지 전체가 클라이언트 컴포넌트가 되면 그 아래 모든 컴포넌트도 클라이언트로 실행된다. 상호작용이 필요한 부분만 클라이언트로 분리하면 나머지는 서버에서 실행할 수 있다.
@@ -176,8 +202,11 @@ export default async function ArticlePage({ params }) {
 
 ## 주의할 점
 
+- 서버 컴포넌트는 **hydration되지 않는다.** 서버에서 한 번 렌더링되고 끝이라 상태도 리렌더링도 없다 — `useState`, `useEffect`를 못 쓰는 건 이 때문이다.
 - 서버 컴포넌트는 **직렬화 가능한 props만** 클라이언트 컴포넌트로 넘길 수 있다. 함수를 props로 전달하려면 클라이언트 컴포넌트끼리 전달해야 한다.
 - `'use client'` 경계 위에 있는 컴포넌트는 서버 컴포넌트여도 그 안에서 클라이언트 컴포넌트를 children으로 받을 수 있다.
+- **`createContext`/`useContext`는 서버 컴포넌트에서 못 쓴다.** Provider를 클라이언트 컴포넌트로 만들어 `children`을 감싸는 형태로 써야 한다.
+- **`'use client'`가 없는 서드파티 컴포넌트**가 내부에서 `useState` 등을 쓰면 서버 컴포넌트에서 직접 렌더링할 수 없다. `'use client'`를 붙인 래퍼로 한 번 감싸 쓴다.
 - `use server`와 Server Actions는 별개 개념이다(폼 제출, 데이터 뮤테이션에 사용).
 
 ---
