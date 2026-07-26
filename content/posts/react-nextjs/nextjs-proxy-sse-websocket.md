@@ -95,6 +95,8 @@ app
             └─ route.ts
 ```
 
+> 이 글은 2026년 5월 구현 기준이다. 이후 k8s 스코프가 추가되면서 SSE 엔드포인트가 `/alarm/connect`와 `/k8s/alarm/connect` 둘이 됐고, 같은 스트리밍 코드를 두 벌로 두지 않으려고 catch-all 라우트 `app/api/proxy/[...path]/route.ts` 하나로 합쳤다. Proxy의 통과 조건도 경로 하나 비교에서 배열 검사로 바뀌었다. 자세한 내용은 [SharedWorker는 이름이 인스턴스다](/posts/sharedworker-scope-partitioning)에 있다.
+
 SSE는 Node.js runtime에서 직접 stream을 반환하는 편이 안전하다.
 
 ```ts
