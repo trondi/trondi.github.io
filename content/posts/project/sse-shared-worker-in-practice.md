@@ -24,7 +24,7 @@ featured: true
 - **WebSocket**: 양방향 실시간 통신
 - **SSE(Server-Sent Events)**: 서버 → 클라이언트 단방향 스트리밍
 
-알람은 서버에서 클라이언트 방향으로만 흐른다. 클라이언트가 서버에 실시간으로 메시지를 보낼 필요가 없다. 그렇다면 WebSocket은 오버스펙이고, SSE가 적합하다. 폴링은 최신성과 서버 부하 사이에서 균형을 맞추기 어려웠다. (같은 프로젝트에서 클러스터 설치 상태에는 오히려 폴링을 골랐는데, 그 판단 기준은 [Polling, SSE, WebSocket 비교 글](/posts/project/polling-vs-realtime)에 따로 정리했다.)
+알람은 서버에서 클라이언트 방향으로만 흐른다. 클라이언트가 서버에 실시간으로 메시지를 보낼 필요가 없다. 그렇다면 WebSocket은 오버스펙이고, SSE가 적합하다. 폴링은 최신성과 서버 부하 사이에서 균형을 맞추기 어려웠다. (같은 프로젝트에서 클러스터 설치 상태에는 오히려 폴링을 골랐는데, 그 판단 기준은 [Polling, SSE, WebSocket 비교 글](/posts/polling-vs-realtime)에 따로 정리했다.)
 
 SSE로 결정한 이후, 진짜 고민이 시작됐다.
 
@@ -52,6 +52,8 @@ useEffect(() => {
 ### Shared Worker로 연결을 1개로 줄이기
 
 **Shared Worker**는 같은 오리진의 모든 탭이 하나의 백그라운드 스레드를 공유하는 Web API다. `new SharedWorker(url, { name: 'PadionAlarmWorker' })`처럼 이름을 지정하면 브라우저는 같은 이름의 Worker가 이미 있으면 새로 만들지 않고 기존 것을 재사용한다.
+
+> 이 글은 2026년 4월 구현 기준이다. 이후 k8s 스코프가 추가되면서 워커 이름을 `PadionAlarmWorker-k8s`로 분리했다. 이름을 고정하면 먼저 연 탭의 스코프로 SSE 연결이 굳어버리기 때문인데, 그 과정은 [SharedWorker는 이름이 인스턴스다](/posts/sharedworker-scope-partitioning)에 정리했다.
 
 ```
 [ 탭1: Host 목록 ]  ─┐
@@ -353,6 +355,8 @@ function attemptReconnect(baseURL: string) {
 
 헤더에 알람 벨 아이콘이 있다. 읽지 않은 알람이 있으면 빨간 점이 표시된다. 탭 1에서 읽음 처리를 하면 탭 2의 빨간 점도 사라져야 한다.
 
+> 이 절도 2026년 4월 기준이라 읽음 마커가 하나뿐이다. 이후 알람이 noti/cmd 두 채널로 나뉘고 아이콘도 둘이 되면서 마커가 3개로 늘었고, 저장 키의 접미사도 `_seq`에서 `_ts`로 바뀌었다. 왜 아이콘이 2개인데 마커는 3개가 필요한지는 [한 스트림, 두 아이콘](/posts/one-stream-two-icons-three-markers)에서, 값의 기준을 seq에서 수신 시각으로 옮긴 이유는 [알림 점등 기준을 seq에서 수신 시각으로 바꾼 이유](/posts/alarm-unread-receivedat)에서 다룬다.
+
 Shared Worker의 메모리(`lastReadNotiSeq`)는 Worker가 살아있는 동안 유지된다. 하지만 새 탭이 열리면 처음에 Worker에 `REGISTER` 메시지를 보내서 현재 읽음 상태를 받아와야 한다.
 
 더 큰 문제는 **Worker가 종료됐을 때**다. 모든 탭이 닫히면 Shared Worker도 종료된다. 새 탭을 열면 Worker가 새로 생성되고 읽음 상태가 초기화된다.
@@ -436,6 +440,10 @@ function broadcastAlarm(alarm: AlarmInfo) {
 
 실제로 사용하면서 눈에 띈 개선 포인트 세 가지다.
 
+> 이 개선점들은 이후 실사용을 거치며 실제로 손보게 됐다. 그 과정은
+> [알람 SSE 리워크 시리즈](/posts/alarm-unread-receivedat) 9편에 정리했다 —
+> 재연결 백오프 일원화, 읽음 기준의 수신시각 전환, noti/cmd 채널 분리까지.
+
 **5회 재연결 실패 시 영구 단절**
 
 현재는 `reconnectAttempt >= MAX_RECONNECT_ATTEMPTS`가 되면 재연결을 완전히 포기한다. 사용자가 탭을 새로고침하기 전까지 실시간 알람을 받을 수 없다. 더 나은 방법은 5회 실패 이후에도 긴 간격(예: 5분)으로 계속 재시도하는 것이다.
@@ -482,7 +490,8 @@ Shared Worker는 DOM API에 접근할 수 없어 localStorage를 직접 읽지 �
 
 ## 참고
 
-- [Polling, SSE, WebSocket — 클러스터 설치 상태에 무엇을 골랐나](/posts/project/polling-vs-realtime)
-- [SSE와 Shared Worker — 실시간 통신의 두 가지 접근](/posts/project/sse-shared-worker)
-- [SSE 알람으로 테이블을 실시간 업데이트하는 법 — SharedWorker + React Query 캐시 전략](/posts/react-nextjs/sse-alarm-table-update)
-- [Next.js에서 SSE와 WebSocket은 Proxy로 처리해도 될까](/posts/react-nextjs/nextjs-proxy-sse-websocket)
+- **알람 SSE 리워크 시리즈** (이 글의 후속, 전 9편) — [1편: 알림 점등 기준을 seq에서 '수신 시각'으로 바꾼 이유](/posts/alarm-unread-receivedat)
+- [Polling, SSE, WebSocket — 클러스터 설치 상태에 무엇을 골랐나](/posts/polling-vs-realtime)
+- [SSE와 Shared Worker — 실시간 통신의 두 가지 접근](/posts/sse-shared-worker)
+- [SSE 알람으로 테이블을 실시간 업데이트하는 법 — SharedWorker + React Query 캐시 전략](/posts/sse-alarm-table-update)
+- [Next.js에서 SSE와 WebSocket은 Proxy로 처리해도 될까](/posts/nextjs-proxy-sse-websocket)

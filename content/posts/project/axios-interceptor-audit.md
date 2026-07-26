@@ -73,7 +73,7 @@ axiosInstance.interceptors.response.use(
 );
 ```
 
-baseURL이 `/api/proxy`인 건 의도된 거다. Next.js의 BFF 프록시를 한 번 거치는 구조라서 [Next.js Proxy — 실제 프로젝트 코드로 보는 사용 기준](/posts/react-nextjs/nextjs-proxy-from-real-projects) 글에서 다룬 패턴과 같다. 이 글에서는 그 뒤편, **인스턴스 자체의 인터셉터 동작**만 본다.
+baseURL이 `/api/proxy`인 건 의도된 거다. Next.js의 BFF 프록시를 한 번 거치는 구조라서 [Next.js Proxy로 BFF 만들기](/posts/nextjs-proxy-bff-pattern) 글에서 다룬 패턴과 같다. 이 글에서는 그 뒤편, **인스턴스 자체의 인터셉터 동작**만 본다.
 
 ---
 
