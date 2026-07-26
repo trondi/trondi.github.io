@@ -330,7 +330,7 @@ polling보다 거의 모든 면에서 우월하지만, WebSocket보다는 제한
 
 ## 참고
 
-- [실무에서 SSE + Shared Worker를 도입하며 마주친 것들](/posts/project/sse-shared-worker-in-practice) — 이 SSE를 실무에서 적용한 사례
+- [실무에서 SSE + Shared Worker를 도입하며 마주친 것들](/posts/sse-shared-worker-in-practice) — 이 SSE를 실무에서 적용한 사례
 - [WHATWG HTML — Server-sent events](https://html.spec.whatwg.org/multipage/server-sent-events.html)
 - [MDN — Using server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)
 - [MDN — EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource)

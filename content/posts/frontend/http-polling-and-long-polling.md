@@ -224,7 +224,7 @@ polling 계열의 한계를 정리하면 자연스럽게 다음 도구로 넘어
 
 ## 참고
 
-- [Polling, SSE, WebSocket — 클러스터 설치 상태에 무엇을 골랐나](/posts/project/polling-vs-realtime) — 이 개념을 실무에서 적용한 사례
+- [Polling, SSE, WebSocket — 클러스터 설치 상태에 무엇을 골랐나](/posts/polling-vs-realtime) — 이 개념을 실무에서 적용한 사례
 - [RFC 9110 — HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110.html)
 - [Wikipedia — Comet (programming)](https://en.wikipedia.org/wiki/Comet_(programming))
 - [Wikipedia — Push technology](https://en.wikipedia.org/wiki/Push_technology)

@@ -42,7 +42,7 @@ SSE로 서버 이벤트를 받고, Shared Worker로 그 이벤트를 여러 탭�
 
 서버는 응답을 끊지 않고 `text/event-stream`으로 이벤트를 흘려보내고, 클라이언트는 `EventSource` 하나로 받는다. `data` / `event` / `id` / `retry` 네 필드, Last-Event-ID 기반 자동 재연결, `EventSource`의 헤더 지정 제약, HTTP/2와의 궁합 같은 SSE의 포맷·API 동작은 개념 레퍼런스에 따로 정리했다.
 
-→ [Server-Sent Events — HTTP 위의 단방향 스트림](/posts/frontend/server-sent-events)
+→ [Server-Sent Events — HTTP 위의 단방향 스트림](/posts/server-sent-events)
 
 이 글은 그 SSE를 **여러 탭이 공유하도록** Shared Worker와 묶는 부분에 집중한다.
 
@@ -50,7 +50,7 @@ SSE로 서버 이벤트를 받고, Shared Worker로 그 이벤트를 여러 탭�
 
 ## Shared Worker
 
-라이프사이클(누가 살리고 죽이나), MessagePort, `onconnect`, Safari iOS 미지원, 디버깅 같은 Shared Worker 자체의 동작은 [Shared Worker — 여러 탭이 공유하는 워커](/posts/frontend/shared-worker)에 자세히 정리했다. 여기서는 SSE 연결을 공유하는 데 필요한 만큼만 본다.
+라이프사이클(누가 살리고 죽이나), MessagePort, `onconnect`, Safari iOS 미지원, 디버깅 같은 Shared Worker 자체의 동작은 [Shared Worker — 여러 탭이 공유하는 워커](/posts/shared-worker)에 자세히 정리했다. 여기서는 SSE 연결을 공유하는 데 필요한 만큼만 본다.
 
 ### Worker 종류 비교
 

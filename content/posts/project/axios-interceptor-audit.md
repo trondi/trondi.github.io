@@ -14,7 +14,7 @@ featured: false
 
 # 운영 프로젝트의 axios 인터셉터 설정을 점검해봤다
 
-[Redux 구조 점검 글](/posts/project/redux-structure-audit)을 쓰고 나서 같은 프로젝트의 네트워크 계층도 한 번 보기로 했다. 모든 service 파일이 `import $axios from '@hook/axiosConfig'`로 시작하니까, 사실상 이 파일 하나가 프로젝트의 모든 API 호출을 통과하는 관문이다. 그 관문이 어떻게 생겼고, 어디가 어긋나 있는지 정리한 기록이다.
+[Redux 구조 점검 글](/posts/redux-structure-audit)을 쓰고 나서 같은 프로젝트의 네트워크 계층도 한 번 보기로 했다. 모든 service 파일이 `import $axios from '@hook/axiosConfig'`로 시작하니까, 사실상 이 파일 하나가 프로젝트의 모든 API 호출을 통과하는 관문이다. 그 관문이 어떻게 생겼고, 어디가 어긋나 있는지 정리한 기록이다.
 
 결론부터 말하면 네 가지가 걸린다. 그 중 두 개는 인터셉터를 "썼다"고 부르기 애매할 정도로 형식적이고, 나머지 두 개는 실제로 토큰이 헤더에 안 붙는 순간이 생길 수 있는 잠재적 결함이다.
 

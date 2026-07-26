@@ -14,7 +14,7 @@ featured: true
 
 # 운영 중인 프로젝트의 Redux 구조를 점검해봤다
 
-지난 글([Redux Toolkit — 내가 정리한 표준 폴더 구조](/posts/react-nextjs/redux-toolkit-structure))에서 정리한 베이스라인이 있다. 이번에는 실제로 운영 중인 Next.js 프로젝트의 Redux 구조를 그 기준으로 점검한 기록이다.
+지난 글([Redux Toolkit — 내가 정리한 표준 폴더 구조](/posts/redux-toolkit-structure))에서 정리한 베이스라인이 있다. 이번에는 실제로 운영 중인 Next.js 프로젝트의 Redux 구조를 그 기준으로 점검한 기록이다.
 
 결론부터 말하면, 표준에서 어긋난 항목이 네 개 있었다. 그 중 하나는 잠깐 보고도 식은땀이 났던 항목이다 — **store 설정 파일이 두 개로 나뉘어 있어서, 사실상 store 인스턴스가 두 개 만들어지는 구조였다.** 더 정확히는, ReduxProvider가 쓰는 store와 컴포넌트들이 타입을 끌어다 쓰는 store가 서로 다른 파일에서 정의되고 있었다.
 
@@ -257,4 +257,4 @@ const { isOpen, modalType, btnText } = useModalState();
 
 **두 번째**, 컨벤션은 하나만 정해도 충분하다. selector 폴더가 두 군데로 갈린 건 “어디다 둘지” 합의가 없어서다. 어디든 좋다. 한 곳에만 두면 된다.
 
-다음에 새 프로젝트를 시작할 때, 위 [표준 구조 글](/posts/react-nextjs/redux-toolkit-structure)의 체크리스트를 그대로 들고 가서 첫 PR에 적용할 생각이다.
+다음에 새 프로젝트를 시작할 때, 위 [표준 구조 글](/posts/redux-toolkit-structure)의 체크리스트를 그대로 들고 가서 첫 PR에 적용할 생각이다.
