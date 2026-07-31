@@ -307,17 +307,10 @@ axiosInstance.interceptors.request.use(
 
 PR 단위로 쪼개면 이런 순서다.
 
-1. **응답 인터셉터의 try/catch 제거 (긴급)**
-   silent하게 에러가 success로 둔갑하는 케이스를 먼저 차단한다. caller가 에러를 받기 시작하면 일부 화면에서 그동안 안 뜨던 에러 토스트가 뜰 수 있으니, 변경 직후 회귀 점검 필수. 가능하면 이 PR만 따로 떼서 작게 간다.
-
-2. **토큰 주입을 request 인터셉터로 일원화**
-   `store.subscribe` 블록과 `if (!process.browser)` 분기 안의 인스턴스 재생성도 함께 정리. service 파일들에서 **default와 같은 값을 박는** 수동 X-AUTH-TOKEN 라인 제거. `RefreshToken`처럼 *다른 토큰을 박는* 케이스만 남긴다.
-
-3. **`process.browser` → `typeof window === 'undefined'`**
-   분기 자체를 살릴 거라면 표현만 현행화. SSR에서 axios 인스턴스를 안 쓰는 게 확실해지면 분기째 삭제.
-
-4. **(선택) 401 자동 refresh 흐름**
-   응답 인터셉터에서 401을 잡아 `RefreshToken` 호출 후 원래 요청을 한 번 재시도하는 흐름. 이건 별도 설계가 필요하니 위 3개와 분리.
+1. **응답 인터셉터의 try/catch 제거 (긴급)** — silent하게 에러가 success로 둔갑하는 케이스를 먼저 차단한다. caller가 에러를 받기 시작하면 일부 화면에서 그동안 안 뜨던 에러 토스트가 뜰 수 있으니, 변경 직후 회귀 점검이 필수다. 가능하면 이 PR만 따로 떼서 작게 간다.
+2. **토큰 주입을 request 인터셉터로 일원화** — `store.subscribe` 블록과 `if (!process.browser)` 분기 안의 인스턴스 재생성도 함께 정리한다. service 파일들에서 **default와 같은 값을 박는** 수동 X-AUTH-TOKEN 라인은 제거하고, `RefreshToken`처럼 *다른 토큰을 박는* 케이스만 남긴다.
+3. **`process.browser` → `typeof window === 'undefined'`** — 분기 자체를 살릴 거라면 표현만 현행화한다. SSR에서 axios 인스턴스를 안 쓰는 게 확실해지면 분기째 삭제한다.
+4. **(선택) 401 자동 refresh 흐름** — 응답 인터셉터에서 401을 잡아 `RefreshToken` 호출 후 원래 요청을 한 번 재시도하는 흐름이다. 이건 별도 설계가 필요하니 위 3개와 분리한다.
 
 ---
 

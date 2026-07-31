@@ -232,20 +232,16 @@ const { isOpen, modalType, btnText } = useModalState();
 
 리팩터링 PR을 쪼개는 순서다. 한 번에 다 바꾸면 리뷰가 안 된다.
 
-1. **확장자 통일** (`.tsx` → `.ts`)
-   `git mv`만 하면 끝. import 경로에 확장자 없으니 코드 변경 없음. 가장 안전한 첫 PR.
+1. **확장자 통일** (`.tsx` → `.ts`) — `git mv`만 하면 끝난다. import 경로에 확장자가 없으니 코드 변경도 없다. 가장 안전한 첫 PR이다.
+2. **selector 폴더 통합** — `modalSelectors.ts`를 `selectors/` 안으로 옮기고 `configSelector.ts`를 `configSelectors.ts`로 rename한 뒤 import 경로를 일괄 변경한다.
+3. **store 설정 파일 통합 (가장 큰 변경)** — `RootReducer.tsx`의 persistConfig·HYDRATE 처리를 `index.ts`에 병합하고 `@store/RootReducer` import 경로를 `@store/index`로 일괄 변경한다. PR 하나로 가되 변경 직후 회귀 테스트가 필수다.
+4. **createStateHook 사용 기준 문서화** — `standards/frontend/redux.md`에 "편의 hook vs 단일 selector" 기준을 명시하고 코드 리뷰에서 사용한다.
 
-2. **selector 폴더 통합**
-   `modalSelectors.ts`를 `selectors/` 안으로 이동, `configSelector.ts`를 `configSelectors.ts`로 rename. import 경로 일괄 변경.
+3번 PR 직후 확인할 항목은 세 가지다.
 
-3. **store 설정 파일 통합 (가장 큰 변경)**
-   `RootReducer.tsx`의 persistConfig·HYDRATE 처리를 `index.ts`에 병합. `@store/RootReducer` import 경로를 `@store/index`로 일괄 변경. PR 하나로 가되, 변경 직후 회귀 테스트 필수.
-   - persist blacklist가 적용되는지: 새로고침 후 modal/error/table이 초기 상태인가
-   - logger가 dev에서만 켜지는지
-   - HYDRATE를 살리기로 했다면 SSR 페이지에서 store 초기화가 동작하는지
-
-4. **createStateHook 사용 기준 문서화**
-   `standards/frontend/redux.md`에 “편의 hook vs 단일 selector” 기준 명시. 코드 리뷰에서 사용.
+- persist blacklist가 적용되는지: 새로고침 후 modal/error/table이 초기 상태인가
+- logger가 dev에서만 켜지는지
+- HYDRATE를 살리기로 했다면 SSR 페이지에서 store 초기화가 동작하는지
 
 ---
 

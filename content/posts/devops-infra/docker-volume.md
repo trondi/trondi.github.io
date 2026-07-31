@@ -320,10 +320,7 @@ docker volume prune
 ## 정리
 
 - 컨테이너 삭제 시 데이터도 사라지므로 **볼륨**이 필요
-- 3가지 방법:
-  - **Bind Mount**: 호스트 폴더 직접 연결 (개발용)
-  - **Named Volume**: Docker가 관리 (운영 표준)
-  - **tmpfs**: 메모리 (임시/민감 데이터)
+- 방법은 3가지 — **Bind Mount**(호스트 폴더 직접 연결, 개발용), **Named Volume**(Docker가 관리, 운영 표준), **tmpfs**(메모리, 임시/민감 데이터)
 - `-v`보다 **`--mount`가 명시적**이라 운영에 권장
 - `:ro`로 읽기 전용 마운트 가능
 - macOS bind mount 성능 이슈 주의
