@@ -37,11 +37,20 @@ export type TocItem = {
   level: number;
 };
 
+/**
+ * 리스트 항목. children 은 이 항목 아래 들여쓴 중첩 리스트다.
+ * 여러 줄에 걸쳐 쓴 항목은 파서가 text 하나로 이어붙인다.
+ */
+export type ListItem = {
+  text: string;
+  children?: MarkdownBlock[];
+};
+
 export type MarkdownBlock =
   | { type: "heading"; level: 1 | 2 | 3; text: string; id: string }
   | { type: "paragraph"; text: string }
-  | { type: "unordered-list"; items: string[] }
-  | { type: "ordered-list"; items: string[] }
+  | { type: "unordered-list"; items: ListItem[] }
+  | { type: "ordered-list"; items: ListItem[] }
   | { type: "blockquote"; text: string }
   | { type: "code"; language: string; code: string }
   | { type: "table"; headers: string[]; rows: string[][] }

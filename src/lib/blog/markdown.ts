@@ -1,5 +1,65 @@
-import { ParsedMarkdown } from "@/lib/blog/types";
+import { ListItem, MarkdownBlock, ParsedMarkdown } from "@/lib/blog/types";
 import { slugifyHeading, stripMarkdown } from "@/lib/blog/utils";
+
+const UNORDERED_ITEM = /^-\s+/;
+const ORDERED_ITEM = /^\d+\.\s+/;
+
+function indentOf(line: string) {
+  return line.length - line.trimStart().length;
+}
+
+/**
+ * 들여쓰기를 기준으로 리스트 하나를 파싱한다.
+ *
+ * - 같은 깊이의 마커  → 새 항목
+ * - 더 깊은 마커      → 직전 항목의 중첩 리스트(children)
+ * - 더 깊은 일반 텍스트 → 직전 항목에 이어붙임 (한 항목을 여러 줄로 쓴 경우)
+ *
+ * `-` 와 `1.` 이 같은 깊이에서 섞이면 서로 다른 리스트로 끊는다.
+ */
+function parseList(lines: string[], start: number, baseIndent: number) {
+  const ordered = ORDERED_ITEM.test(lines[start].trim());
+  const items: ListItem[] = [];
+  let index = start;
+
+  while (index < lines.length) {
+    const raw = lines[index];
+    const trimmed = raw.trim();
+    if (!trimmed) break;
+
+    const indent = indentOf(raw);
+    const isItem = UNORDERED_ITEM.test(trimmed) || ORDERED_ITEM.test(trimmed);
+    const last = items[items.length - 1];
+
+    if (isItem && indent === baseIndent) {
+      if (ordered !== ORDERED_ITEM.test(trimmed)) break;
+      items.push({ text: trimmed.replace(ordered ? ORDERED_ITEM : UNORDERED_ITEM, "") });
+      index += 1;
+      continue;
+    }
+
+    if (isItem && indent > baseIndent && last) {
+      const nested = parseList(lines, index, indent);
+      last.children = [...(last.children ?? []), nested.block];
+      index = nested.next;
+      continue;
+    }
+
+    if (indent > baseIndent && last && !isSpecialLine(trimmed)) {
+      last.text += ` ${trimmed}`;
+      index += 1;
+      continue;
+    }
+
+    break;
+  }
+
+  const block: MarkdownBlock = ordered
+    ? { type: "ordered-list", items }
+    : { type: "unordered-list", items };
+
+  return { block, next: index };
+}
 
 function isSpecialLine(line: string) {
   return (
@@ -122,23 +182,10 @@ export function parseMarkdown(content: string): ParsedMarkdown {
       continue;
     }
 
-    if (/^-\s+/.test(trimmedLine)) {
-      const items: string[] = [];
-      while (index < lines.length && /^-\s+/.test(lines[index].trim())) {
-        items.push(lines[index].trim().replace(/^-\s+/, ""));
-        index += 1;
-      }
-      blocks.push({ type: "unordered-list", items });
-      continue;
-    }
-
-    if (/^\d+\.\s+/.test(trimmedLine)) {
-      const items: string[] = [];
-      while (index < lines.length && /^\d+\.\s+/.test(lines[index].trim())) {
-        items.push(lines[index].trim().replace(/^\d+\.\s+/, ""));
-        index += 1;
-      }
-      blocks.push({ type: "ordered-list", items });
+    if (UNORDERED_ITEM.test(trimmedLine) || ORDERED_ITEM.test(trimmedLine)) {
+      const { block, next } = parseList(lines, index, indentOf(rawLine));
+      blocks.push(block);
+      index = next;
       continue;
     }
 

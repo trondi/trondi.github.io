@@ -19,8 +19,34 @@ if (!beforePath || !afterPath) {
   process.exit(2);
 }
 
-const before = JSON.parse(fs.readFileSync(beforePath, "utf-8"));
-const after = JSON.parse(fs.readFileSync(afterPath, "utf-8"));
+/**
+ * 리스트 항목을 정규형으로 맞춘다.
+ *
+ * 항목 표현이 문자열에서 { text, children } 객체로 바뀌어도,
+ * 중첩이 없으면 의미가 같으므로 같은 것으로 비교되어야 한다.
+ * 반대로 children 이 생기거나 사라지면 그건 진짜 변화라 그대로 드러난다.
+ */
+function normalizeBlock(block) {
+  if (block?.type !== "unordered-list" && block?.type !== "ordered-list") return block;
+
+  const items = (block.items ?? []).map((item) => {
+    if (typeof item === "string") return { text: item };
+    const children = (item.children ?? []).map(normalizeBlock);
+    return children.length ? { text: item.text, children } : { text: item.text };
+  });
+  return { ...block, items };
+}
+
+const load = (p) => {
+  const raw = JSON.parse(fs.readFileSync(p, "utf-8"));
+  for (const entry of Object.values(raw)) {
+    entry.blocks = (entry.blocks ?? []).map(normalizeBlock);
+  }
+  return raw;
+};
+
+const before = load(beforePath);
+const after = load(afterPath);
 
 const slugs = [...new Set([...Object.keys(before), ...Object.keys(after)])].sort();
 const changed = [];
