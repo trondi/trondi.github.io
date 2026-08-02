@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "parse:snapshot": "node scripts/parse-snapshot.mjs",
+    "parse:diff": "node scripts/parse-diff.mjs"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.3",
