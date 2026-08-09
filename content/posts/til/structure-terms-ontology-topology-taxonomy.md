@@ -9,7 +9,7 @@ tags:
   - Topology
   - Taxonomy
 featured: false
-draft: true
+draft: false
 ---
 
 # 온톨로지 · 토폴로지 · 택소노미
