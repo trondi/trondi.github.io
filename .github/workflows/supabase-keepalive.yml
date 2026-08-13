@@ -13,4 +13,4 @@ jobs:
     steps:
       - name: Ping comments function
         run: |
-          curl -sf "${{ secrets.COMMENTS_API_URL }}?slug=ping" || exit 1
+          curl -sf "${{ secrets.NEXT_PUBLIC_COMMENTS_API_URL }}?slug=ping" || exit 1

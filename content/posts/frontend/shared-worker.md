@@ -285,7 +285,7 @@ Shared Worker는 "**모든 탭이 닫히면 사라진다**"는 한계가 있다.
 
 ## 참고
 
-- [실무에서 SSE + Shared Worker를 도입하며 마주친 것들](/posts/project/sse-shared-worker-in-practice) — SSE 연결 공유에 Shared Worker를 적용한 사례
+- [실무에서 SSE + Shared Worker를 도입하며 마주친 것들](/posts/sse-shared-worker-in-practice) — SSE 연결 공유에 Shared Worker를 적용한 사례
 - [WHATWG HTML — Shared workers](https://html.spec.whatwg.org/multipage/workers.html#shared-workers)
 - [MDN — SharedWorker](https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker)
 - [MDN — Using Shared Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers#shared_workers)

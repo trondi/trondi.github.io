@@ -14,7 +14,7 @@ featured: false
 
 # Polling, SSE, WebSocket — 클러스터 설치 상태에 무엇을 골랐나
 
-알람 시스템에서는 [SSE를 골랐다](/posts/project/sse-shared-worker-in-practice). 그런데 같은 프로젝트의 클러스터 설치 상태 화면에서는 **Short Polling**을 선택했다.
+알람 시스템에서는 [SSE를 골랐다](/posts/sse-shared-worker-in-practice). 그런데 같은 프로젝트의 클러스터 설치 상태 화면에서는 **Short Polling**을 선택했다.
 
 둘 다 "서버에서 상태가 바뀌면 화면에 반영한다"는 같은 요구사항인데 왜 다른 선택을 했는지, 그리고 Polling을 고를 때 어떤 기준으로 short / long을 결정하는지 정리한다.
 
@@ -38,7 +38,7 @@ featured: false
 
 short/long이 내부에서 어떻게 동작하는지 — 서버가 응답을 어떻게 "보류"하는지(`bus.emit`/`await`), idle timeout, short vs long 흐름 비교, Comet/hanging GET의 역사까지 — 는 개념 레퍼런스에 따로 정리했다.
 
-→ [HTTP polling과 long polling — 실시간을 흉내내는 가장 오래된 방법](/posts/frontend/http-polling-and-long-polling)
+→ [HTTP polling과 long polling — 실시간을 흉내내는 가장 오래된 방법](/posts/http-polling-and-long-polling)
 
 이 글은 그 개념을 전제로, **padion에서 실제로 무엇을 골랐는지**에 집중한다.
 
@@ -195,7 +195,7 @@ useEffect(() => {
 }, []);
 ```
 
-SSE는 작은 무효화 신호(`{ type: 'invalidate', key: 'users' }`)만 보내고, 실제 조회는 기존 REST + useQuery 캐시/dedup을 그대로 활용한다. [알람 시스템](/posts/project/sse-shared-worker-in-practice)에서 ROW_UPDATE / FULL_REFRESH 전략으로 캐시를 갱신한 게 이 패턴의 변형이다.
+SSE는 작은 무효화 신호(`{ type: 'invalidate', key: 'users' }`)만 보내고, 실제 조회는 기존 REST + useQuery 캐시/dedup을 그대로 활용한다. [알람 시스템](/posts/sse-shared-worker-in-practice)에서 ROW_UPDATE / FULL_REFRESH 전략으로 캐시를 갱신한 게 이 패턴의 변형이다.
 
 ---
 
@@ -248,8 +248,8 @@ Polling은 종종 "구식"으로 취급되지만 — 짧고 유한한 모니터�
 
 ## 참고
 
-- [HTTP polling과 long polling — 실시간을 흉내내는 가장 오래된 방법](/posts/frontend/http-polling-and-long-polling) — polling 동작 메커니즘 상세
-- [SSE와 Shared Worker — 실시간 통신의 두 가지 접근](/posts/project/sse-shared-worker)
-- [실무에서 SSE + Shared Worker를 도입하며 마주친 것들](/posts/project/sse-shared-worker-in-practice)
-- [Next.js에서 SSE와 WebSocket은 Proxy로 처리해도 될까](/posts/react-nextjs/nextjs-proxy-sse-websocket)
+- [HTTP polling과 long polling — 실시간을 흉내내는 가장 오래된 방법](/posts/http-polling-and-long-polling) — polling 동작 메커니즘 상세
+- [SSE와 Shared Worker — 실시간 통신의 두 가지 접근](/posts/sse-shared-worker)
+- [실무에서 SSE + Shared Worker를 도입하며 마주친 것들](/posts/sse-shared-worker-in-practice)
+- [Next.js에서 SSE와 WebSocket은 Proxy로 처리해도 될까](/posts/nextjs-proxy-sse-websocket)
 - [TanStack Query — Refetching](https://tanstack.com/query/latest/docs/framework/react/guides/refetching)

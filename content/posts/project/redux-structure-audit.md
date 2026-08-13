@@ -14,7 +14,7 @@ featured: true
 
 # 운영 중인 프로젝트의 Redux 구조를 점검해봤다
 
-지난 글([Redux Toolkit — 내가 정리한 표준 폴더 구조](/posts/react-nextjs/redux-toolkit-structure))에서 정리한 베이스라인이 있다. 이번에는 실제로 운영 중인 Next.js 프로젝트의 Redux 구조를 그 기준으로 점검한 기록이다.
+지난 글([Redux Toolkit — 내가 정리한 표준 폴더 구조](/posts/redux-toolkit-structure))에서 정리한 베이스라인이 있다. 이번에는 실제로 운영 중인 Next.js 프로젝트의 Redux 구조를 그 기준으로 점검한 기록이다.
 
 결론부터 말하면, 표준에서 어긋난 항목이 네 개 있었다. 그 중 하나는 잠깐 보고도 식은땀이 났던 항목이다 — **store 설정 파일이 두 개로 나뉘어 있어서, 사실상 store 인스턴스가 두 개 만들어지는 구조였다.** 더 정확히는, ReduxProvider가 쓰는 store와 컴포넌트들이 타입을 끌어다 쓰는 store가 서로 다른 파일에서 정의되고 있었다.
 
@@ -232,20 +232,16 @@ const { isOpen, modalType, btnText } = useModalState();
 
 리팩터링 PR을 쪼개는 순서다. 한 번에 다 바꾸면 리뷰가 안 된다.
 
-1. **확장자 통일** (`.tsx` → `.ts`)
-   `git mv`만 하면 끝. import 경로에 확장자 없으니 코드 변경 없음. 가장 안전한 첫 PR.
+1. **확장자 통일** (`.tsx` → `.ts`) — `git mv`만 하면 끝난다. import 경로에 확장자가 없으니 코드 변경도 없다. 가장 안전한 첫 PR이다.
+2. **selector 폴더 통합** — `modalSelectors.ts`를 `selectors/` 안으로 옮기고 `configSelector.ts`를 `configSelectors.ts`로 rename한 뒤 import 경로를 일괄 변경한다.
+3. **store 설정 파일 통합 (가장 큰 변경)** — `RootReducer.tsx`의 persistConfig·HYDRATE 처리를 `index.ts`에 병합하고 `@store/RootReducer` import 경로를 `@store/index`로 일괄 변경한다. PR 하나로 가되 변경 직후 회귀 테스트가 필수다.
+4. **createStateHook 사용 기준 문서화** — `standards/frontend/redux.md`에 "편의 hook vs 단일 selector" 기준을 명시하고 코드 리뷰에서 사용한다.
 
-2. **selector 폴더 통합**
-   `modalSelectors.ts`를 `selectors/` 안으로 이동, `configSelector.ts`를 `configSelectors.ts`로 rename. import 경로 일괄 변경.
+3번 PR 직후 확인할 항목은 세 가지다.
 
-3. **store 설정 파일 통합 (가장 큰 변경)**
-   `RootReducer.tsx`의 persistConfig·HYDRATE 처리를 `index.ts`에 병합. `@store/RootReducer` import 경로를 `@store/index`로 일괄 변경. PR 하나로 가되, 변경 직후 회귀 테스트 필수.
-   - persist blacklist가 적용되는지: 새로고침 후 modal/error/table이 초기 상태인가
-   - logger가 dev에서만 켜지는지
-   - HYDRATE를 살리기로 했다면 SSR 페이지에서 store 초기화가 동작하는지
-
-4. **createStateHook 사용 기준 문서화**
-   `standards/frontend/redux.md`에 “편의 hook vs 단일 selector” 기준 명시. 코드 리뷰에서 사용.
+- persist blacklist가 적용되는지: 새로고침 후 modal/error/table이 초기 상태인가
+- logger가 dev에서만 켜지는지
+- HYDRATE를 살리기로 했다면 SSR 페이지에서 store 초기화가 동작하는지
 
 ---
 
@@ -257,4 +253,4 @@ const { isOpen, modalType, btnText } = useModalState();
 
 **두 번째**, 컨벤션은 하나만 정해도 충분하다. selector 폴더가 두 군데로 갈린 건 “어디다 둘지” 합의가 없어서다. 어디든 좋다. 한 곳에만 두면 된다.
 
-다음에 새 프로젝트를 시작할 때, 위 [표준 구조 글](/posts/react-nextjs/redux-toolkit-structure)의 체크리스트를 그대로 들고 가서 첫 PR에 적용할 생각이다.
+다음에 새 프로젝트를 시작할 때, 위 [표준 구조 글](/posts/redux-toolkit-structure)의 체크리스트를 그대로 들고 가서 첫 PR에 적용할 생각이다.

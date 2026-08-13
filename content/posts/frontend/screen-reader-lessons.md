@@ -9,7 +9,7 @@ tags:
   - VoiceOver
   - NVDA
 featured: false
-draft: true
+draft: false
 ---
 
 # 스크린 리더를 직접 써보고 알게 된 것들

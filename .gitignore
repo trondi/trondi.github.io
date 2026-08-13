@@ -44,3 +44,6 @@ next-env.d.ts
 
 # supabase local temp
 supabase/.temp
+
+# 파서 회귀 검증용 스냅샷 (생성물 - scripts/parse-snapshot.mjs 로 재생성)
+.parse-snapshots

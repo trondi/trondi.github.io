@@ -82,6 +82,20 @@ function parseTaskListItem(item: string) {
   };
 }
 
+/**
+ * 리스트 항목 아래 들여쓴 중첩 리스트를 그린다.
+ * 바깥 리스트의 여백/줄간격을 물려받지 않도록 감싸는 층에서 간격만 조정한다.
+ */
+function NestedBlocks({ blocks }: { blocks?: MarkdownBlock[] }) {
+  if (!blocks?.length) return null;
+
+  return (
+    <div className="mt-2 [&>div]:space-y-2 [&_ol]:list-[lower-alpha] [&_ul]:list-[circle]">
+      <MarkdownRenderer blocks={blocks} />
+    </div>
+  );
+}
+
 type MarkdownRendererProps = {
   blocks: MarkdownBlock[];
 };
@@ -115,7 +129,7 @@ export function MarkdownRenderer({ blocks }: MarkdownRendererProps) {
         }
 
         if (block.type === "unordered-list") {
-          const hasTaskItems = block.items.some((item) => parseTaskListItem(item));
+          const hasTaskItems = block.items.some((item) => parseTaskListItem(item.text));
 
           return (
             <ul
@@ -127,11 +141,11 @@ export function MarkdownRenderer({ blocks }: MarkdownRendererProps) {
               }
             >
               {block.items.map((item, itemIndex) => {
-                const taskItem = parseTaskListItem(item);
+                const taskItem = parseTaskListItem(item.text);
 
                 if (taskItem) {
                   return (
-                    <li key={`${item}-${itemIndex}`} className="flex items-start gap-3">
+                    <li key={`item-${itemIndex}`} className="flex items-start gap-3">
                       <input
                         type="checkbox"
                         checked={taskItem.checked}
@@ -140,14 +154,18 @@ export function MarkdownRenderer({ blocks }: MarkdownRendererProps) {
                         aria-label={taskItem.checked ? "완료" : "미완료"}
                         className="mt-2 h-4 w-4 flex-shrink-0 rounded border-slate-300 accent-slate-900 disabled:opacity-80 dark:border-slate-600 dark:accent-slate-200"
                       />
-                      <span>{renderInline(taskItem.text)}</span>
+                      <span>
+                        {renderInline(taskItem.text)}
+                        <NestedBlocks blocks={item.children} />
+                      </span>
                     </li>
                   );
                 }
 
                 return (
-                  <li key={`${item}-${itemIndex}`} className={hasTaskItems ? "ml-6 list-disc" : undefined}>
-                    {renderInline(item)}
+                  <li key={`item-${itemIndex}`} className={hasTaskItems ? "ml-6 list-disc" : undefined}>
+                    {renderInline(item.text)}
+                    <NestedBlocks blocks={item.children} />
                   </li>
                 );
               })}
@@ -158,8 +176,11 @@ export function MarkdownRenderer({ blocks }: MarkdownRendererProps) {
         if (block.type === "ordered-list") {
           return (
             <ol key={`ol-${index}`} className="list-decimal space-y-2 pl-6 text-[1.02rem] leading-8 text-slate-700 marker:text-slate-400 dark:text-slate-300/95 dark:marker:text-slate-600">
-              {block.items.map((item) => (
-                <li key={item}>{renderInline(item)}</li>
+              {block.items.map((item, itemIndex) => (
+                <li key={`item-${itemIndex}`}>
+                  {renderInline(item.text)}
+                  <NestedBlocks blocks={item.children} />
+                </li>
               ))}
             </ol>
           );

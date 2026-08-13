@@ -14,6 +14,10 @@ const registry: Record<string, React.LazyExoticComponent<() => React.ReactElemen
   "alarm-update-strategy": lazy(() => import("./alarm-update-strategy").then((m) => ({ default: m.AlarmUpdateStrategyDiagram }))),
   "alarm-querykey-map":    lazy(() => import("./alarm-querykey-map").then((m) => ({ default: m.AlarmQuerykeyMapDiagram }))),
   "k8s-secret-injection":  lazy(() => import("./k8s-secret-injection").then((m) => ({ default: m.K8sSecretInjectionDiagram }))),
+  "throttle-anchor-timeline": lazy(() => import("./throttle-anchor-timeline").then((m) => ({ default: m.ThrottleAnchorTimelineDiagram }))),
+  "sse-proxy-error-chain": lazy(() => import("./sse-proxy-error-chain").then((m) => ({ default: m.SseProxyErrorChainDiagram }))),
+  "alarm-read-markers":    lazy(() => import("./alarm-read-markers").then((m) => ({ default: m.AlarmReadMarkersDiagram }))),
+  "sharedworker-scope":    lazy(() => import("./sharedworker-scope").then((m) => ({ default: m.SharedworkerScopeDiagram }))),
 };
 
 export function DiagramBlock({ name }: { name: string }) {
