@@ -18,8 +18,8 @@ const VIEW_H = 430;
 /** 별 반지름: 글 수에 비례 */
 const R_MIN = 3.4;
 const R_RANGE = 5.6;
-/** 허브 태그 중 특히 큰 것들 — 핑크로 강조 */
-const HUB_HIGHLIGHT = new Set(["Kubernetes", "Next.js", "DevOps", "Docker"]);
+/** 글 수 상위 N개를 핑크로 강조 — 글이 쌓여도 자동으로 따라간다 */
+const HIGHLIGHT_TOP_N = 5;
 
 type Level = 1 | 2 | 3;
 
@@ -82,6 +82,12 @@ export function TagConstellationWindow({ data }: { data: TagConstellation }) {
     () => new Map(data.tags.map((tag) => [tag.name, tag])),
     [data.tags],
   );
+  const highlighted = useMemo(() => {
+    const top = [...data.tags]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, HIGHLIGHT_TOP_N);
+    return new Set(top.map((tag) => tag.name));
+  }, [data.tags]);
 
   const goBack = useCallback(() => {
     if (level === 3) {
@@ -257,7 +263,7 @@ export function TagConstellationWindow({ data }: { data: TagConstellation }) {
                       r={r}
                       className={cn(
                         twinkleClass(i),
-                        HUB_HIGHLIGHT.has(tag.name)
+                        highlighted.has(tag.name)
                           ? "fill-[hsl(var(--tc-pink))]"
                           : "fill-[hsl(var(--ring))]",
                       )}
