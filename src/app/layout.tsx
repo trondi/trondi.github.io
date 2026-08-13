@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { AuroraBackground } from "@/components/blog/aurora-background";
 import { LenisProvider } from "@/components/blog/lenis-provider";
 import { SeasonalOverlay } from "@/components/blog/seasonal-overlay";
 import { SmoothCursor } from "@/components/blog/smooth-cursor";
@@ -43,11 +44,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko" suppressHydrationWarning>
       <body className="font-sans text-foreground antialiased">
+        <AuroraBackground />
         <SmoothCursor />
         <LenisProvider>
           <SeasonalProvider>
             <ViewTransitionProvider>
-              <div className="min-h-screen">
+              <div className="relative z-[1] min-h-screen">
                 <SeasonalOverlay />
                 <SiteHeader />
                 <main className="mx-auto max-w-6xl px-6 pb-16 pt-4">{children}</main>

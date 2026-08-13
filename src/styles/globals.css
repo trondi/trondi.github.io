@@ -6,80 +6,242 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
 
 @layer base {
-  /* ── Light mode — warm cream ─────────────────────────────────────────── */
+  /* ── Light mode — aurora glass ───────────────────────────────────────── */
   :root {
-    --page: 250 247 242;
-    --background: 35 30% 97%;
-    --foreground: 22 28% 10%;
-    --card: 35 20% 100%;
-    --card-foreground: 22 28% 10%;
-    --popover: 35 20% 100%;
-    --popover-foreground: 22 28% 10%;
-    --primary: 22 28% 10%;
-    --primary-foreground: 35 30% 97%;
-    --secondary: 30 18% 93%;
-    --secondary-foreground: 22 28% 10%;
-    --muted: 30 18% 93%;
-    --muted-foreground: 25 14% 44%;
-    --accent: 30 18% 93%;
-    --accent-foreground: 22 28% 10%;
+    --page: 247 245 249;
+    --background: 270 30% 98%;
+    --foreground: 264 31% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 264 31% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 264 31% 16%;
+    --primary: 264 31% 16%;
+    --primary-foreground: 270 30% 98%;
+    --secondary: 268 30% 95%;
+    --secondary-foreground: 264 31% 16%;
+    --muted: 268 30% 95%;
+    --muted-foreground: 265 13% 39%;
+    --accent: 268 30% 95%;
+    --accent-foreground: 264 31% 16%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 30 20% 86%;
-    --input: 30 20% 86%;
-    --ring: 23 52% 55%;
+    --border: 267 24% 89%;
+    --input: 267 24% 89%;
+    --ring: 267 33% 51%;
     --radius: 0.5rem;
 
-    /* Amber accent */
-    --link: 23 58% 42%;
-    --link-dark: 25 65% 65%;
+    /* Lavender accent + pink secondary */
+    --link: 267 36% 44%;
+    --link-dark: 275 45% 78%;
+    --tc-pink: 328 46% 60%;
+
+    /* Aurora blobs */
+    --aurora-1: 275 55% 79%;
+    --aurora-2: 335 72% 86%;
+    --aurora-3: 217 62% 78%;
+    --aurora-opacity: 0.55;
+
+    /* Glass surfaces */
+    --glass-bg: 255 255 255 / 0.52;
+    --glass-border: 255 255 255 / 0.78;
+    --glass-shadow: 70 52 110 / 0.09;
   }
 
-  /* ── Dark mode — warm dark brown ─────────────────────────────────────── */
+  /* ── Dark mode — aurora midnight ─────────────────────────────────────── */
   .dark {
-    --page: 16 12 9; /* #100c09 */
-    --background: 23 22% 8%;
-    --foreground: 32 14% 91%;
-    --card: 24 20% 11%;
-    --card-foreground: 32 14% 91%;
-    --popover: 24 20% 11%;
-    --popover-foreground: 32 14% 91%;
-    --primary: 32 14% 91%;
-    --primary-foreground: 24 20% 11%;
-    --secondary: 25 15% 15%;
-    --secondary-foreground: 30 10% 76%;
-    --muted: 25 15% 15%;
-    --muted-foreground: 28 10% 56%;
-    --accent: 25 15% 15%;
-    --accent-foreground: 30 10% 76%;
+    --page: 21 17 32; /* #151120 */
+    --background: 259 30% 9%;
+    --foreground: 267 30% 93%;
+    --card: 260 26% 13%;
+    --card-foreground: 267 30% 93%;
+    --popover: 260 26% 13%;
+    --popover-foreground: 267 30% 93%;
+    --primary: 267 30% 93%;
+    --primary-foreground: 260 26% 13%;
+    --secondary: 259 28% 17%;
+    --secondary-foreground: 266 16% 79%;
+    --muted: 259 28% 17%;
+    --muted-foreground: 268 12% 62%;
+    --accent: 259 28% 17%;
+    --accent-foreground: 266 16% 79%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 25 14% 19%;
-    --input: 25 14% 19%;
-    --ring: 23 52% 55%;
+    --border: 260 24% 21%;
+    --input: 260 24% 21%;
+    --ring: 275 48% 76%;
 
-    --link: 23 58% 52%;
-    --link-dark: 25 68% 68%;
+    --link: 275 40% 72%;
+    --link-dark: 275 52% 84%;
+    --tc-pink: 330 52% 72%;
+
+    /* 같은 오로라, 더 어둡고 진하게 */
+    --aurora-1: 272 45% 42%;
+    --aurora-2: 322 40% 40%;
+    --aurora-3: 220 45% 40%;
+    --aurora-opacity: 0.42;
+
+    --glass-bg: 255 255 255 / 0.055;
+    --glass-border: 255 255 255 / 0.1;
+    --glass-shadow: 0 0 0 / 0.34;
   }
 }
 
 @layer components {
-  /* ── Glass surface aliases ────────────────────────────────────────────── */
-  .glass-surface,
-  .glass-card,
-  .glass-card-strong {
-    position: relative;
+  /* ── Aurora background — 느리게 부유하는 빛 얼룩 ───────────────────── */
+  .aurora-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
     overflow: hidden;
-    isolation: isolate;
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.04);
+    pointer-events: none;
   }
 
-  .dark .glass-surface,
-  .dark .glass-card,
-  .dark .glass-card-strong {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28), 0 4px 16px rgba(0, 0, 0, 0.18);
+  .aurora-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: var(--aurora-opacity);
+    will-change: transform;
+  }
+
+  .aurora-blob-1 {
+    width: 54vw;
+    height: 54vw;
+    left: -14vw;
+    top: -18vw;
+    background: radial-gradient(circle, hsl(var(--aurora-1) / 0.55), hsl(var(--aurora-1) / 0) 68%);
+    animation: aurora-drift-1 26s ease-in-out infinite;
+  }
+
+  .aurora-blob-2 {
+    width: 46vw;
+    height: 46vw;
+    right: -12vw;
+    top: -6vw;
+    background: radial-gradient(circle, hsl(var(--aurora-2) / 0.5), hsl(var(--aurora-2) / 0) 68%);
+    animation: aurora-drift-2 32s ease-in-out infinite;
+  }
+
+  .aurora-blob-3 {
+    width: 58vw;
+    height: 58vw;
+    left: 24vw;
+    bottom: -30vw;
+    background: radial-gradient(circle, hsl(var(--aurora-3) / 0.45), hsl(var(--aurora-3) / 0) 68%);
+    animation: aurora-drift-3 38s ease-in-out infinite;
+  }
+
+  @keyframes aurora-drift-1 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(6vw, 4vw); }
+  }
+  @keyframes aurora-drift-2 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-5vw, 6vw); }
+  }
+  @keyframes aurora-drift-3 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-6vw, -5vw); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .aurora-blob { animation: none; }
+  }
+
+  /* ── Glass surfaces ───────────────────────────────────────────────────── */
+  .glass-surface,
+  .glass-card,
+  .glass-card-strong,
+  .glass-window {
+    position: relative;
+    isolation: isolate;
+    background: rgb(var(--glass-bg));
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgb(var(--glass-border));
+    box-shadow: 0 12px 44px rgb(var(--glass-shadow));
+  }
+
+  .glass-window {
+    box-shadow:
+      0 18px 54px rgb(var(--glass-shadow)),
+      0 2px 6px rgb(var(--glass-shadow));
+  }
+
+  /* 글라스 필 — 내비게이션·칩·버튼 */
+  .glass-pill-surface {
+    background: rgb(var(--glass-bg));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgb(var(--glass-border));
+    box-shadow: 0 1px 6px rgb(var(--glass-shadow));
+  }
+
+  /* ── Tag constellation ────────────────────────────────────────────────── */
+  .tc-star text { transition: fill 150ms ease; }
+  .tc-star circle { transition: fill 150ms ease, r 200ms ease; }
+  .tc-star:hover circle { fill: hsl(var(--tc-pink)); }
+  .tc-star:hover text { fill: hsl(var(--foreground)); font-weight: 700; }
+
+  /* 단계 전환 — 나가는 화면은 살짝 멀어지며 사라지고, 들어오는 화면은 다가온다 */
+  .tc-view {
+    transition:
+      opacity 190ms cubic-bezier(0.4, 0, 0.2, 1),
+      transform 190ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .tc-view[data-phase="out"] {
+    opacity: 0;
+    transform: scale(0.965);
+  }
+  .tc-view[data-phase="in"] {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* 별·연결선이 순차로 피어난다 */
+  @keyframes tc-pop {
+    from { opacity: 0; transform: scale(0.7); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes tc-draw {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .tc-pop {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: tc-pop 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .tc-draw { animation: tc-draw 420ms ease both; }
+
+  /* 글 목록 행 — 아래에서 살짝 올라오며 */
+  @keyframes tc-rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .tc-rise { animation: tc-rise 340ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tc-view { transition: none; }
+    .tc-pop, .tc-draw, .tc-rise { animation: none; }
+  }
+
+  @keyframes tc-twinkle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  .tc-tw1 { animation: tc-twinkle 3.4s ease-in-out infinite; }
+  .tc-tw2 { animation: tc-twinkle 4.3s ease-in-out infinite 1.2s; }
+  .tc-tw3 { animation: tc-twinkle 3.8s ease-in-out infinite 2.1s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tc-tw1, .tc-tw2, .tc-tw3 { animation: none; }
+  }
+
+  .tc-scroll::-webkit-scrollbar { width: 5px; }
+  .tc-scroll::-webkit-scrollbar-thumb {
+    background: hsl(var(--ring) / 0.28);
+    border-radius: 99px;
   }
 
   .glass-pill {
@@ -319,14 +481,14 @@
       monospace;
   }
 
-  /* Warm amber selection */
+  /* Eucalyptus selection */
   ::selection {
-    background: hsl(23 58% 52% / 0.18);
+    background: hsl(267 40% 55% / 0.18);
     color: hsl(var(--foreground));
   }
 
   .dark ::selection {
-    background: hsl(25 65% 65% / 0.22);
+    background: hsl(275 48% 76% / 0.24);
     color: hsl(var(--foreground));
   }
 }

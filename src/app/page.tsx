@@ -1,9 +1,10 @@
 import Link from "next/link";
 
-import { HeroTorusSceneShell } from "@/components/blog/three/hero-torus-scene-shell";
 import { PostListItem } from "@/components/blog/post-list-item";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
+import { TagConstellationWindow } from "@/components/blog/tag-constellation";
 import { getAllPosts, getFeaturedPosts, getLatestPosts } from "@/lib/blog/posts";
+import { getTagConstellation } from "@/lib/blog/tag-graph";
 
 const HERO_CATS = ["Frontend", "React / Next.js", "CSS / UI", "TypeScript", "TIL"] as const;
 
@@ -11,40 +12,25 @@ export default function HomePage() {
   const latestPosts   = getLatestPosts(5);
   const featuredPosts = getFeaturedPosts(3);
   const allPosts      = getAllPosts();
+  const constellation = getTagConstellation();
 
   return (
     <>
       <RecentlyViewedPosts posts={allPosts} variant="home" />
       <div className="space-y-24">
 
-        {/* ── Hero ─────────────────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden border-b border-border" style={{ height: "88vh", minHeight: 540 }}>
+        {/* ── Hero — 텍스트 + 태그 성좌 브라우저 창 ───────────────────────── */}
+        <section className="grid items-center gap-11 py-14 lg:grid-cols-[minmax(0,1fr)_580px]">
 
-          {/* Three.js torus rings */}
-          <HeroTorusSceneShell />
-
-          {/* Vignette */}
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{ background: "radial-gradient(ellipse 70% 90% at 20% 55%, transparent 30%, hsl(var(--background)) 78%)" }}
-            aria-hidden
-          />
-
-          {/* Scanline */}
-          <div className="hero-scanline" aria-hidden />
-
-          {/* Content */}
-          <div className="relative z-10 flex h-full flex-col justify-center px-8" style={{ maxWidth: 1120, margin: "0 auto" }}>
-
-            {/* Terminal prompt */}
-            <p className="fade-up fade-d1 font-mono text-[11px] tracking-[0.12em] text-[hsl(var(--ring))] opacity-75 mb-[22px]">
+          {/* Text */}
+          <div>
+            <p className="fade-up fade-d1 mb-[18px] font-mono text-[11px] tracking-[0.12em] text-[hsl(var(--ring))] opacity-85">
               &gt; frontend_archive.init()
             </p>
 
-            {/* Headline */}
             <h1
-              className="fade-up fade-d2 mb-[22px]"
-              style={{ fontSize: "clamp(2.3rem, 5.2vw, 4rem)", fontWeight: 600, lineHeight: 1.13, letterSpacing: "-0.025em", maxWidth: 560 }}
+              className="fade-up fade-d2 mb-4"
+              style={{ fontSize: "clamp(1.9rem, 3.6vw, 2.8rem)", fontWeight: 650, lineHeight: 1.16, letterSpacing: "-0.025em" }}
             >
               구현 기록을<br />
               <span className="text-[hsl(var(--ring))]">문서처럼</span>{" "}
@@ -52,46 +38,42 @@ export default function HomePage() {
               <span className="hero-blink-cursor" aria-hidden />
             </h1>
 
-            {/* Subtext */}
             <p
-              className="fade-up fade-d3 font-mono text-muted-foreground mb-8"
-              style={{ fontSize: 12, lineHeight: 1.85, maxWidth: 420 }}
+              className="fade-up fade-d3 mb-6 font-mono text-muted-foreground"
+              style={{ fontSize: 12, lineHeight: 1.85, maxWidth: 400 }}
             >
-              <span className="opacity-50">{"// "}</span>
+              <span className="opacity-55">{"// "}</span>
               React, Next.js, TypeScript, UI 설계와<br />
               트러블슈팅을 읽기 좋은 글로 정리합니다.
             </p>
 
-            {/* Category chips */}
-            <div className="fade-up fade-d4 flex flex-wrap gap-2 mb-10">
+            <div className="fade-up fade-d4 mb-7 flex flex-wrap gap-2">
               {HERO_CATS.map((c) => (
                 <span
                   key={c}
-                  className="font-mono text-[10px] text-muted-foreground border border-border rounded px-[10px] py-1 tracking-[0.04em]"
-                  style={{ background: "hsl(var(--ring) / 0.07)" }}
+                  className="glass-pill-surface rounded-full px-[13px] py-[5px] font-mono text-[10.5px] tracking-[0.03em] text-muted-foreground"
                 >
                   {c}
                 </span>
               ))}
             </div>
 
-            {/* CTA */}
             <Link
               href="/posts"
-              className="fade-up fade-d5 font-mono text-[12px] tracking-[0.06em] border border-[hsl(var(--ring))] rounded px-5 py-[9px] inline-flex w-fit transition-colors hover:bg-[hsl(var(--ring))] hover:text-white"
-              style={{ color: "hsl(var(--ring))", background: "hsl(var(--ring) / 0.08)" }}
+              className="glass-pill-surface fade-up fade-d5 inline-flex w-fit rounded-full px-[22px] py-2.5 font-mono text-[12px] tracking-[0.04em] text-[hsl(var(--ring))] transition-colors hover:bg-white/85 hover:text-foreground"
             >
               [ 전체 글 보기 ↓ ]
             </Link>
 
-            {/* Bottom-left coordinates */}
-            <div
-              className="absolute bottom-7 font-mono text-muted-foreground"
-              style={{ fontSize: 9, letterSpacing: "0.08em", lineHeight: 1.8 }}
-            >
-              <div className="text-[hsl(var(--ring))] opacity-50">◎ TROND ARCHIVE</div>
+            <div className="mt-8 font-mono text-muted-foreground" style={{ fontSize: 9, letterSpacing: "0.08em", lineHeight: 1.8 }}>
+              <div className="text-[hsl(var(--ring))] opacity-60">◎ TROND ARCHIVE</div>
               <div>Seoul, KR — Frontend Engineer</div>
             </div>
+          </div>
+
+          {/* Tag constellation */}
+          <div className="fade-up fade-d3">
+            <TagConstellationWindow data={constellation} />
           </div>
         </section>
 
