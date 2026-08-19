@@ -47,3 +47,6 @@ supabase/.temp
 
 # 파서 회귀 검증용 스냅샷 (생성물 - scripts/parse-snapshot.mjs 로 재생성)
 .parse-snapshots
+
+# 디자인 시안 (로컬 보관 — 배포 노출 방지)
+public/design-concepts
