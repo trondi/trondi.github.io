@@ -16,6 +16,7 @@ const registry: Record<string, React.LazyExoticComponent<() => React.ReactElemen
   "k8s-secret-injection":  lazy(() => import("./k8s-secret-injection").then((m) => ({ default: m.K8sSecretInjectionDiagram }))),
   "host-reverse-dependency": lazy(() => import("./host-reverse-dependency").then((m) => ({ default: m.HostReverseDependencyDiagram }))),
   "zone-restructure-map":  lazy(() => import("./zone-restructure-map").then((m) => ({ default: m.ZoneRestructureMapDiagram }))),
+  "swarm-deploy-flow":     lazy(() => import("./swarm-deploy-flow").then((m) => ({ default: m.SwarmDeployFlowDiagram }))),
   "throttle-anchor-timeline": lazy(() => import("./throttle-anchor-timeline").then((m) => ({ default: m.ThrottleAnchorTimelineDiagram }))),
   "sse-proxy-error-chain": lazy(() => import("./sse-proxy-error-chain").then((m) => ({ default: m.SseProxyErrorChainDiagram }))),
   "alarm-read-markers":    lazy(() => import("./alarm-read-markers").then((m) => ({ default: m.AlarmReadMarkersDiagram }))),
