@@ -60,7 +60,8 @@ https://<PROJECT_REF>.supabase.co/functions/v1/comments
 
 무료 프로젝트는 7일 미사용 시 일시정지된다.
 `.github/workflows/supabase-keepalive.yml`이 주 2회 ping을 보낸다.
-저장소 Secret `COMMENTS_API_URL`에 위 엔드포인트 주소를 등록할 것.
+저장소 Secret `NEXT_PUBLIC_COMMENTS_API_URL`에 위 엔드포인트 주소를 등록할 것.
+기존에 `COMMENTS_API_URL` 이름으로 등록해둔 저장소도 동작하도록 워크플로에서 fallback으로 읽는다.
 
 ## 운영 메모
 

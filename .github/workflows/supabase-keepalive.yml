@@ -12,5 +12,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping comments function
+        env:
+          NEXT_PUBLIC_COMMENTS_API_URL: ${{ secrets.NEXT_PUBLIC_COMMENTS_API_URL }}
+          COMMENTS_API_URL: ${{ secrets.COMMENTS_API_URL }}
         run: |
-          curl -sf "${{ secrets.NEXT_PUBLIC_COMMENTS_API_URL }}?slug=ping" || exit 1
+          url="${NEXT_PUBLIC_COMMENTS_API_URL:-${COMMENTS_API_URL:-}}"
+
+          if [ -z "$url" ]; then
+            echo "::error::Missing GitHub Actions secret NEXT_PUBLIC_COMMENTS_API_URL."
+            exit 1
+          fi
+
+          curl -fsS "${url}?slug=ping" >/dev/null
