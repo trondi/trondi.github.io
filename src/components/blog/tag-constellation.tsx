@@ -153,8 +153,9 @@ export function TagConstellationWindow({
     );
   }
 
+  // 성좌는 고정 비율이라 창이 너무 넓으면 양옆이 비므로 full에서는 폭을 잡는다
   return (
-    <div className="glass-window overflow-hidden rounded-2xl">
+    <div className={cn("glass-window overflow-hidden rounded-2xl", full && "mx-auto max-w-[980px]")}>
       {/* ── 타이틀바 ─────────────────────────────────────────────────── */}
       <div className="flex items-end gap-2.5 border-b border-[hsl(var(--ring)/0.12)] bg-white/35 px-3.5 pt-2.5 dark:bg-white/[0.04]">
         <span className="tc-lights flex gap-1.5 pb-2.5">
@@ -198,7 +199,7 @@ export function TagConstellationWindow({
       {/* 최소화 — 타이틀바만 남기고 접는다 */}
       <div
         className={cn("tc-collapse", minimized && "is-collapsed")}
-        style={{ "--tc-body-max": full ? "780px" : "580px" } as CSSProperties}
+        style={{ "--tc-body-max": full ? "860px" : "680px" } as CSSProperties}
       >
         <div>
 
@@ -271,7 +272,7 @@ export function TagConstellationWindow({
       <div
         className={cn(
           "tc-view relative bg-white/15 px-4 py-2 dark:bg-white/[0.02]",
-          full ? "min-h-[600px]" : "min-h-[432px]",
+          full ? "min-h-[674px]" : "min-h-[510px]",
         )}
         data-phase={phase}
       >
@@ -281,7 +282,7 @@ export function TagConstellationWindow({
             viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
             className={cn(
               "block w-full overflow-visible",
-              full ? "h-[586px]" : "h-[418px]",
+              full ? "h-[660px]" : "h-[496px]",
               level === 2 && "cursor-zoom-out",
             )}
             onClick={() => level === 2 && goBack()}

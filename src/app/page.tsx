@@ -20,7 +20,7 @@ export default function HomePage() {
       <div className="space-y-24">
 
         {/* ── Hero — 텍스트 + 태그 성좌 브라우저 창 ───────────────────────── */}
-        <section className="grid items-center gap-11 py-14 lg:grid-cols-[minmax(0,1fr)_580px]">
+        <section className="grid items-center gap-11 py-14 lg:grid-cols-[minmax(0,1fr)_680px]">
 
           {/* Text */}
           <div>

@@ -78,7 +78,7 @@ export function SiteHeaderClient({
     >
       {/* Reading progress (post 상세 페이지에서만 노출) */}
       <ReadingProgress />
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-7xl px-6">
         <div className={cn("flex flex-col transition-[gap,padding] duration-300", scrolled ? "gap-0 py-2.5" : "gap-3 py-4")}>
 
           {/* ── Top row ──────────────────────────────────────────────────── */}
