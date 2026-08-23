@@ -255,6 +255,12 @@
     outline-offset: 2px;
   }
 
+  /* 닫힌 창 — 바탕화면 앱 아이콘 */
+  .tc-appicon:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
   /* 최소화 — 타이틀바만 남기고 접기.
      grid-template-rows 0fr 전환은 브라우저에 따라 불안정해서 max-height를 쓴다.
      --tc-body-max는 창 크기별로 컴포넌트에서 주입한다. */
