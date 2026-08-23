@@ -21,6 +21,7 @@ const registry: Record<string, React.LazyExoticComponent<() => React.ReactElemen
   "sse-proxy-error-chain": lazy(() => import("./sse-proxy-error-chain").then((m) => ({ default: m.SseProxyErrorChainDiagram }))),
   "alarm-read-markers":    lazy(() => import("./alarm-read-markers").then((m) => ({ default: m.AlarmReadMarkersDiagram }))),
   "sharedworker-scope":    lazy(() => import("./sharedworker-scope").then((m) => ({ default: m.SharedworkerScopeDiagram }))),
+  "sparql-blanks":         lazy(() => import("./sparql-blanks").then((m) => ({ default: m.SparqlBlanksDiagram }))),
 };
 
 export function DiagramBlock({ name }: { name: string }) {
