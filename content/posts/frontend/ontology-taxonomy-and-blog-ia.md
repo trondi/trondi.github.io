@@ -28,21 +28,15 @@ draft: false
 
 이 글은 그 세 단계를 순서대로 짚는다. 각 단계가 **무슨 문제를 풀었고, 무엇을 여전히 못 푸는지**를 본다.
 
+```diagram
+blog-ia-layers
+```
+
 ---
 
 ## 1단계 — 카테고리 (옷장 서랍)
 
-이 블로그의 모든 글은 카테고리를 하나씩 갖는다. `Frontend`, `Network`, `React / Next.js` 같은 것들이다.
-
-```
-Posts
-├─ Frontend
-├─ Network
-├─ React / Next.js
-└─ ...
-```
-
-앞 글의 **옷장 서랍**, 곧 택소노미다. 글 하나가 서랍 하나에 들어간다.
+이 블로그의 모든 글은 카테고리를 하나씩 갖는다. `Frontend`, `Network`, `React / Next.js` 같은 것들이다. 앞 글의 **옷장 서랍**, 곧 택소노미다. 글 하나가 서랍 하나에 들어간다.
 
 **푼 문제** — 직관적이다. 폴더처럼 머릿속에 잘 들어오고, "네트워크 글 보고 싶다"가 바로 된다.
 
@@ -86,12 +80,7 @@ Posts
 - [SSE 실전](/posts/sse-shared-worker-in-practice)은 [SSE 개념](/posts/server-sent-events)의 **응용편**이다
 - [네트워크 토폴로지](/posts/network-topology)는 이 글과 **개념을 나눠 쓴다**
 
-이렇게 **선마다 이름표를 달면** 그게 앞 글에서 본 **가족관계도**, 곧 온톨로지다.
-
-```
-http-basics ──먼저 읽을 글──▶ tcp-udp-quic
-server-sent-events ──응용편──▶ sse-shared-worker-in-practice
-```
+이렇게 **선마다 이름표를 달면** 그게 앞 글에서 본 **가족관계도**, 곧 온톨로지다. 위 그림의 `3단계` 탭이 그 모습이다.
 
 무엇이 좋아질까. 독자에게 이렇게 보여줄 수 있다.
 

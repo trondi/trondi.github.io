@@ -51,8 +51,8 @@ export function generateMetadata({ params }: PostPageProps): Metadata {
 이게 브라우저에 그려지면 이런 태그가 된다.
 
 ```html
-<meta property="og:title" content="프론트엔드는 이미 온톨로지를 쓰고 있다" />
-<meta property="og:type" content="article" />
+<meta property="og:title" content="프론트엔드는 이미…" />
+<meta property="og:type"  content="article" />
 ```
 
 카카오톡이나 슬랙에 링크를 붙이면 제목과 썸네일이 뜨는데, 그걸 만드는 게 이 태그다. 정식 이름은 **Open Graph**다.
@@ -60,7 +60,7 @@ export function generateMetadata({ params }: PostPageProps): Metadata {
 그런데 이 Open Graph라는 규격은 **RDF에서 나왔다.** [앞 글](/posts/knowledge-graph-rdf-jsonld)에서 본 세 조각으로 옮겨 보면 정확히 맞아떨어진다.
 
 ```
-이 페이지   og:title   "프론트엔드는 이미 온톨로지를 쓰고 있다"
+이 페이지   og:title   "프론트엔드는 이미…"
 이 페이지   og:type    "article"
 ```
 
@@ -104,10 +104,8 @@ export function generateMetadata({ params }: PostPageProps): Metadata {
 
 브라우저는 이 규칙들을 적용해 화면을 **접근성 트리(accessibility tree)**라는 별도의 구조로 다시 정리한다. 스크린 리더가 읽는 건 우리가 짠 HTML이 아니라 **이 정리된 결과물**이다.
 
-```
-<button>  ─규칙─▶  button 역할  ─종류─▶  명령
-                        │
-                        └─▶ "버튼입니다" + 클릭 가능 + 포커스 가능
+```diagram
+a11y-inference
 ```
 
 `role="checkbox"`만 줬는데 스크린 리더가 "선택 안 됨"까지 말해 주는 것도 같은 이유다. **체크박스에는 체크 상태가 있다는 사실이 표준에 이미 적혀 있기 때문**이다.

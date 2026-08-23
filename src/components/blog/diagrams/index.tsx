@@ -25,6 +25,9 @@ const registry: Record<string, React.LazyExoticComponent<() => React.ReactElemen
   "structure-three-lenses": lazy(() => import("./structure-three-lenses").then((m) => ({ default: m.StructureThreeLensesDiagram }))),
   "network-shapes":        lazy(() => import("./network-shapes").then((m) => ({ default: m.NetworkShapesDiagram }))),
   "tree-to-graph":         lazy(() => import("./tree-to-graph").then((m) => ({ default: m.TreeToGraphDiagram }))),
+  "triple-chain":          lazy(() => import("./triple-chain").then((m) => ({ default: m.TripleChainDiagram }))),
+  "a11y-inference":        lazy(() => import("./a11y-inference").then((m) => ({ default: m.A11yInferenceDiagram }))),
+  "blog-ia-layers":        lazy(() => import("./blog-ia-layers").then((m) => ({ default: m.BlogIaLayersDiagram }))),
 };
 
 export function DiagramBlock({ name }: { name: string }) {
