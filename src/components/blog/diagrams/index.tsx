@@ -22,6 +22,9 @@ const registry: Record<string, React.LazyExoticComponent<() => React.ReactElemen
   "alarm-read-markers":    lazy(() => import("./alarm-read-markers").then((m) => ({ default: m.AlarmReadMarkersDiagram }))),
   "sharedworker-scope":    lazy(() => import("./sharedworker-scope").then((m) => ({ default: m.SharedworkerScopeDiagram }))),
   "sparql-blanks":         lazy(() => import("./sparql-blanks").then((m) => ({ default: m.SparqlBlanksDiagram }))),
+  "structure-three-lenses": lazy(() => import("./structure-three-lenses").then((m) => ({ default: m.StructureThreeLensesDiagram }))),
+  "network-shapes":        lazy(() => import("./network-shapes").then((m) => ({ default: m.NetworkShapesDiagram }))),
+  "tree-to-graph":         lazy(() => import("./tree-to-graph").then((m) => ({ default: m.TreeToGraphDiagram }))),
 };
 
 export function DiagramBlock({ name }: { name: string }) {
