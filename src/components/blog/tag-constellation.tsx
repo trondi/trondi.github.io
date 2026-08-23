@@ -271,8 +271,10 @@ export function TagConstellationWindow({
       {/* ── 뷰포트 ───────────────────────────────────────────────────── */}
       <div
         className={cn(
-          "tc-view relative bg-white/15 px-4 py-2 dark:bg-white/[0.02]",
-          full ? "min-h-[674px]" : "min-h-[510px]",
+          // 높이를 폭에 맞춰 잡는다 — 고정 높이면 좁은 화면에서 그림 위아래가 비어버린다
+          "tc-view relative aspect-[560/430] min-h-[240px] bg-white/15 px-4 py-2 dark:bg-white/[0.02]",
+          // 상한은 py-2(16px)를 더한 값 — 그래야 넓은 화면에서 그림이 의도한 높이로 찬다
+          full ? "max-h-[676px]" : "max-h-[512px]",
         )}
         data-phase={phase}
       >
@@ -281,8 +283,7 @@ export function TagConstellationWindow({
             key={`${level}-${hub?.name ?? "root"}`}
             viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
             className={cn(
-              "block w-full overflow-visible",
-              full ? "h-[660px]" : "h-[496px]",
+              "block h-full w-full overflow-visible",
               level === 2 && "cursor-zoom-out",
             )}
             onClick={() => level === 2 && goBack()}
