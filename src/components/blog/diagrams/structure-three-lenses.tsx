@@ -5,20 +5,23 @@ import { useState } from "react";
 const LENSES = [
   {
     key: "taxonomy",
-    tab: "옷장 서랍",
-    name: "택소노미",
+    tab: "택소노미",
+    en: "Taxonomy",
+    analogy: "옷장 서랍처럼",
     take: "위아래로 나눈다. 한 항목은 한 곳에만 들어간다.",
   },
   {
     key: "topology",
-    tab: "지하철 노선도",
-    name: "토폴로지",
+    tab: "토폴로지",
+    en: "Topology",
+    analogy: "지하철 노선도처럼",
     take: "이어졌다는 것만 안다. 무슨 사이인지는 모른다.",
   },
   {
     key: "ontology",
-    tab: "가족관계도",
-    name: "온톨로지",
+    tab: "온톨로지",
+    en: "Ontology",
+    analogy: "가족관계도처럼",
     take: "선마다 이름표가 붙는다. 그래서 추론까지 된다.",
   },
 ] as const;
@@ -73,6 +76,8 @@ export function StructureThreeLensesDiagram() {
       </div>
 
       <div className="px-4 py-5">
+        <p className="mb-3 text-[11px] text-muted-foreground">{current.analogy}</p>
+
         {lens === "taxonomy" && (
           <div className="space-y-1.5 text-sm">
             <Node>옷</Node>
@@ -117,7 +122,10 @@ export function StructureThreeLensesDiagram() {
 
       <div className="border-t border-border px-4 py-3">
         <p className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">{current.name}</span> — {current.take}
+          <span className="font-medium text-foreground">
+            {current.tab}({current.en})
+          </span>{" "}
+          — {current.take}
         </p>
       </div>
     </div>

@@ -15,7 +15,7 @@ draft: true
 
 # 지식 그래프와 RDF
 
-> **구조 용어 시리즈 · 4편 / 전 5편** — 난이도: 중급 (1편을 먼저 읽으면 훨씬 쉽다)
+> **구조 용어 시리즈 · 4편 / 전 6편** — 난이도: 중급 (1편을 먼저 읽으면 훨씬 쉽다)
 > 이전 → [블로그 정보 구조](/posts/ontology-taxonomy-and-blog-ia) · 다음 → [프론트엔드는 이미 온톨로지를 쓰고 있다](/posts/frontend-already-uses-ontology)
 
 [앞 글](/posts/ontology-taxonomy-and-blog-ia)에서 "관계에 이름표를 붙이면 온톨로지"라고 했다. 개념은 알겠는데 한 가지가 남는다.
@@ -58,7 +58,7 @@ draft: true
 triple-chain
 ```
 
-이 세 조각짜리 한 줄을 **트리플(triple, 세 쌍)**이라고 부른다. 왼쪽부터 **주어 · 술어 · 목적어**이고, 영어로는 **subject · predicate · object**다. 문법 용어 그대로다.
+이 세 조각짜리 한 줄을 **트리플(triple, 세 쌍)**이라고 부른다. 왼쪽부터 **주어(subject) · 술어(predicate) · 목적어(object)**다. 문법 용어 그대로다.
 
 이런 줄을 잔뜩 모으면 자연스럽게 그물이 된다. 위 그림에서 **이어 붙이기**를 눌러 보면, 앞 줄의 목적어가 다음 줄의 주어가 되면서 저절로 이어지는 게 보인다.
 
@@ -161,11 +161,11 @@ SELECT ?관계 ?값 WHERE {
 
 이 규칙을 적는 언어에 이름이 붙어 있는데, 이름까지 외울 필요는 없고 **층이 나뉘어 있다는 것만** 알면 충분하다.
 
-| 이름 | 풀어 쓰면 | 하는 일 |
-|---|---|---|
-| RDF | Resource Description Framework | 사실을 세 조각으로 적는다 |
-| RDFS | RDF Schema | "무엇은 무엇의 한 종류다" 같은 기본 규칙을 정한다 |
-| OWL | Web Ontology Language | 더 정교한 규칙(같음, 반대 관계 등)을 정한다 |
+| 이름 | 하는 일 |
+|---|---|
+| RDF(Resource Description Framework) | 사실을 세 조각으로 적는다 |
+| RDFS(RDF Schema) | "무엇은 무엇의 한 종류다" 같은 기본 규칙을 정한다 |
+| OWL(Web Ontology Language) | 더 정교한 규칙(같음, 반대 관계 등)을 정한다 |
 
 > **한 줄 요약:** RDF는 사실을 적고, RDFS와 OWL은 **적지 않은 사실까지 끌어낸다.**
 
@@ -223,7 +223,7 @@ SELECT ?관계 ?값 WHERE {
 
 ## 정리
 
-- **RDF** (Resource Description Framework) — 모든 사실을 `주어 - 술어 - 목적어` 세 조각으로 적는다. 구조를 미리 정할 필요가 없다.
+- **RDF**(Resource Description Framework) — 모든 사실을 `주어 - 술어 - 목적어` 세 조각으로 적는다. 구조를 미리 정할 필요가 없다.
 - **SPARQL** — 빈칸이 있는 모양을 그려서 질문하면, 컴퓨터가 채워 준다.
 - **규칙(RDFS·OWL)** — 적어 두면 적지 않은 사실까지 컴퓨터가 끌어낸다. 이게 온톨로지의 값어치다.
 - **JSON-LD** — 이 모든 것의 가장 실용적인 얼굴. 웹페이지가 검색 엔진에 자기를 설명하는 방법이다.

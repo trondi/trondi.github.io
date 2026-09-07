@@ -15,8 +15,8 @@ draft: true
 
 # 프론트엔드는 이미 온톨로지를 쓰고 있다
 
-> **구조 용어 시리즈 · 5편 / 전 5편** — 난이도: 중급 (React·상태 관리 경험이 조금 필요하다)
-> 이전 → [지식 그래프와 RDF](/posts/knowledge-graph-rdf-jsonld)
+> **구조 용어 시리즈 · 5편 / 전 6편** — 난이도: 중급 (React·상태 관리 경험이 조금 필요하다)
+> 이전 → [지식 그래프와 RDF](/posts/knowledge-graph-rdf-jsonld) · 다음 → [온톨로지는 실제로 어디에 쓰이나](/posts/ontology-in-the-wild)
 
 [지식 그래프와 RDF](/posts/knowledge-graph-rdf-jsonld)까지 쓰고 나서 솔직히 든 생각은 이거였다.
 
@@ -66,12 +66,12 @@ export function generateMetadata({ params }: PostPageProps): Metadata {
 
 속성 이름이 `property`인 것부터가 힌트다. **술어**라는 뜻이다.
 
-| HTML에서 | 앞 글에서 부르던 이름 | 영어 |
-|---|---|---|
-| 페이지 자신 | 주어 | subject |
-| `property="og:title"` | 술어 | predicate |
-| `content="..."` | 목적어 | object |
-| `og:` 라는 접두사 | 어떤 단어 사전을 쓸지 선언 | vocabulary |
+| HTML에서 | 앞 글에서 부르던 이름 |
+|---|---|
+| 페이지 자신 | 주어(subject) |
+| `property="og:title"` | 술어(predicate) |
+| `content="..."` | 목적어(object) |
+| `og:` 라는 접두사 | 단어 사전 선언(vocabulary) |
 
 > 링크를 붙였을 때 미리보기가 뜨는 건, **내가 페이지에 적어 둔 사실을 카카오가 읽어 간 것**이다.
 
@@ -230,8 +230,10 @@ export function PostJsonLd({ post }: { post: Post }) {
 - **메타태그** — 페이지에 대한 사실을 기계가 읽는 형식으로 적은 것. 이미 RDF를 쓰고 있다.
 - **접근성** — 역할 분류는 택소노미이고, 브라우저는 그 위에서 **안 적은 것까지 추론한다.**
 - **정규화** — 트리를 그래프로 바꾸는 일. 여러 대 여러 관계를 담으려면 필연이다.
-- **GraphQL** — 같은 그래프 질의지만 **닫힌 세계(closed-world)**를 택했다는 점이 SPARQL과 다르다.
+- **GraphQL** — 같은 그래프 질의지만 **닫힌 세계(closed-world assumption)**를 택했다는 점이 SPARQL과 다르다.
 
 시리즈를 시작할 때는 온톨로지가 프론트엔드와 먼 이야기인 줄 알았다. 다 쓰고 나니 반대였다. **이 개념들은 이미 웹 플랫폼에 깔려 있었고, 이름을 알고 나니 따로 알던 것들이 한 줄로 꿰였다.**
 
 시맨틱 태그를 쓰는 이유, 상태를 정규화하는 이유, 메타태그를 넣는 이유가 전부 같은 뿌리였다. **"기계가 알아들을 수 있게 의미를 적어 둔다."** 그게 전부다.
+
+다만 여기까지는 온톨로지의 얕은 쪽이다. 이걸 **목숨이 걸린 수준으로 진지하게 쓰는 분야**가 따로 있다. [마지막 글](/posts/ontology-in-the-wild)에서 위키데이터에 직접 질의해 보고, 병원과 군에서 어떻게 쓰이는지 본다.
