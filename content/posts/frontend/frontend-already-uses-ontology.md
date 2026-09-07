@@ -10,7 +10,7 @@ tags:
   - SEO
   - GraphQL
 featured: false
-draft: true
+draft: false
 ---
 
 # 프론트엔드는 이미 온톨로지를 쓰고 있다

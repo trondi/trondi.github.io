@@ -10,7 +10,7 @@ tags:
   - Wikidata
   - Healthcare
 featured: false
-draft: true
+draft: false
 ---
 
 # 온톨로지는 실제로 어디에 쓰이나

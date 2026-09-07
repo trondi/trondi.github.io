@@ -10,7 +10,7 @@ tags:
   - JSON-LD
   - SEO
 featured: false
-draft: true
+draft: false
 ---
 
 # 지식 그래프와 RDF
