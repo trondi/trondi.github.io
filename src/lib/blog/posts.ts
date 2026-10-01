@@ -243,6 +243,16 @@ export function getCategories(): TaxonomyItem[] {
   return [...ordered, ...remaining];
 }
 
+// 정적 내보내기에서 한글 슬러그는 퍼센트 인코딩된 상태로 params에 들어온다.
+// 이미 디코딩된 값이나 잘못된 인코딩이 와도 안전하게 원본을 돌려준다.
+export function decodeSlug(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 export function getTags(): TaxonomyItem[] {
   const counts = countBy(getAllPosts().flatMap((post) => post.tags));
 
@@ -253,12 +263,14 @@ export function getTags(): TaxonomyItem[] {
 }
 
 export function getPostsByCategorySlug(categorySlug: string) {
-  return getAllPosts().filter((post) => slugify(post.category) === categorySlug);
+  const slug = decodeSlug(categorySlug);
+  return getAllPosts().filter((post) => slugify(post.category) === slug);
 }
 
 export function getPostsByTagSlug(tagSlug: string) {
+  const slug = decodeSlug(tagSlug);
   return getAllPosts().filter((post) =>
-    post.tags.some((tag) => slugify(tag) === tagSlug),
+    post.tags.some((tag) => slugify(tag) === slug),
   );
 }
 

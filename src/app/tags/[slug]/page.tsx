@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { PostListItem } from "@/components/blog/post-list-item";
-import { getPostsByTagSlug, getTags } from "@/lib/blog/posts";
+import { decodeSlug, getPostsByTagSlug, getTags } from "@/lib/blog/posts";
 
 type TagPageProps = {
   params: {
@@ -14,8 +14,9 @@ export function generateStaticParams() {
 }
 
 export default function TagPage({ params }: TagPageProps) {
-  const posts = getPostsByTagSlug(params.slug);
-  const tag = getTags().find((item) => item.slug === params.slug);
+  const slug = decodeSlug(params.slug);
+  const posts = getPostsByTagSlug(slug);
+  const tag = getTags().find((item) => item.slug === slug);
 
   if (!tag) {
     notFound();

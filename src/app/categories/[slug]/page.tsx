@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { CategoryTagFilter } from "@/components/blog/category-tag-filter";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
-import { getAllPosts, getCategories, getPostsByCategorySlug } from "@/lib/blog/posts";
+import { decodeSlug, getAllPosts, getCategories, getPostsByCategorySlug } from "@/lib/blog/posts";
 
 // ─── Per-category accent palette ─────────────────────────────────────────────
 // Each category gets one hue; light/dark opacity controlled in CSS.
@@ -28,13 +28,14 @@ export function generateStaticParams() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function CategoryPage({ params }: CategoryPageProps) {
-  const posts    = getPostsByCategorySlug(params.slug);
-  const category = getCategories().find((c) => c.slug === params.slug);
+  const slug     = decodeSlug(params.slug);
+  const posts    = getPostsByCategorySlug(slug);
+  const category = getCategories().find((c) => c.slug === slug);
   const allPosts = getAllPosts();
 
   if (!category) notFound();
 
-  const accent = CATEGORY_ACCENT[params.slug] ?? DEFAULT_ACCENT;
+  const accent = CATEGORY_ACCENT[slug] ?? DEFAULT_ACCENT;
 
   return (
     <>

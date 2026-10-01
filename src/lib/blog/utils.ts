@@ -2,7 +2,8 @@ export function slugify(value: string) {
   return value
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s/-]/g, "")
+    // 한글(음절·자모)을 보존한다. \w는 ASCII만 포함해서 한글이 전부 지워진다.
+    .replace(/[^\w\s/\-가-힣ㄱ-ㅎㅏ-ㅣ]/g, "")
     .replace(/\//g, " ")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
