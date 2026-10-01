@@ -15,6 +15,7 @@ export const siteConfig = {
   primaryNav: [
     { label: "Home", href: "/" },
     { label: "Posts", href: "/posts" },
+    { label: "Tags", href: "/tags" },
     { label: "Guestbook", href: "/guestbook" },
     { label: "About", href: "/about" },
   ],

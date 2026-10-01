@@ -52,7 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="relative z-[1] min-h-screen">
                 <SeasonalOverlay />
                 <SiteHeader />
-                <main className="mx-auto max-w-6xl px-6 pb-16 pt-4">{children}</main>
+                <main className="mx-auto max-w-[1600px] px-6 pb-16 pt-4">{children}</main>
                 <SiteFooter />
               </div>
             </ViewTransitionProvider>

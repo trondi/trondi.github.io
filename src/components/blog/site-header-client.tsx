@@ -78,7 +78,7 @@ export function SiteHeaderClient({
     >
       {/* Reading progress (post 상세 페이지에서만 노출) */}
       <ReadingProgress />
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-[1600px] px-6">
         <div className={cn("flex flex-col transition-[gap,padding] duration-300", scrolled ? "gap-0 py-2.5" : "gap-3 py-4")}>
 
           {/* ── Top row ──────────────────────────────────────────────────── */}
@@ -106,8 +106,8 @@ export function SiteHeaderClient({
               {/* Search */}
               <HeaderSearch entries={searchEntries} />
 
-              {/* Nav links — always visible */}
-              <nav className="flex items-center gap-1">
+              {/* Nav links — 좁은 화면에서는 설정 메뉴 안으로 들어간다 */}
+              <nav className="hidden items-center gap-1 md:flex">
                 {primaryNav.map((item) => (
                   <Link
                     key={item.href}
@@ -144,6 +144,24 @@ export function SiteHeaderClient({
                     : "pointer-events-none -translate-y-1.5 scale-[0.97] opacity-0",
                 )}>
                   <div className="p-2 space-y-1">
+                    {/* 메뉴 — 상단 nav가 숨겨지는 좁은 화면에서만 */}
+                    <div className="md:hidden">
+                      <p className="px-2 pb-1 pt-0.5 font-mono text-[9px] tracking-[0.12em] text-muted-foreground/50 uppercase">
+                        메뉴
+                      </p>
+                      {primaryNav.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setMenuOpen(false)}
+                          className="block rounded-md px-2 py-1.5 font-mono text-[11px] tracking-wide text-muted-foreground transition-colors hover:bg-[hsl(var(--ring)/0.10)] hover:text-[hsl(var(--ring))]"
+                        >
+                          {item.label.toLowerCase()}
+                        </Link>
+                      ))}
+                      <div className="my-1 border-t border-border" />
+                    </div>
+
                     {/* 계절 */}
                     <p className="px-2 pb-1 pt-0.5 font-mono text-[9px] tracking-[0.12em] text-muted-foreground/50 uppercase">
                       계절 효과
@@ -172,12 +190,13 @@ export function SiteHeaderClient({
             "overflow-hidden border-t border-border transition-[max-height,opacity,padding] duration-300",
             scrolled ? "max-h-0 pt-0 opacity-0" : "max-h-24 pt-2.5 opacity-100",
           )}>
-            <nav className="flex flex-wrap gap-x-1 gap-y-1 rounded-lg bg-secondary/30 px-3 py-2">
+            {/* 좁은 화면에서는 줄바꿈 대신 가로 스크롤 — 줄이 쌓이면 max-h에 잘린다 */}
+            <nav className="flex flex-nowrap gap-x-1 gap-y-1 overflow-x-auto rounded-lg bg-secondary/30 px-3 py-2 md:flex-wrap md:overflow-visible">
               {categories.map((category) => (
                 <Link
                   key={category.slug}
                   href={category.href}
-                  className="rounded-md px-2.5 py-1 font-mono text-[11px] tracking-wide text-muted-foreground transition-colors hover:bg-[hsl(var(--ring)/0.10)] hover:text-[hsl(var(--ring))]"
+                  className="shrink-0 rounded-md px-2.5 py-1 font-mono text-[11px] tracking-wide text-muted-foreground transition-colors hover:bg-[hsl(var(--ring)/0.10)] hover:text-[hsl(var(--ring))]"
                 >
                   {category.name}
                   <span className="ml-1.5 text-[10px] tabular-nums opacity-40">{category.count}</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { HubTag, SubTag, TagConstellation } from "@/lib/blog/tag-graph";
@@ -53,11 +54,26 @@ function subPositions(subs: SubTag[]) {
   });
 }
 
-export function TagConstellationWindow({ data }: { data: TagConstellation }) {
+type WindowSize = "compact" | "full";
+
+export function TagConstellationWindow({
+  data,
+  size = "compact",
+  controls = true,
+}: {
+  data: TagConstellation;
+  /** compact = 홈 히어로, full = /tags 페이지 */
+  size?: WindowSize;
+  /** 최소화·닫기 버튼 활성화 여부 */
+  controls?: boolean;
+}) {
+  const full = size === "full";
   const [level, setLevel] = useState<Level>(1);
   const [hub, setHub] = useState<HubTag | null>(null);
   const [sub, setSub] = useState<SubTag | null>(null);
   const [phase, setPhase] = useState<"in" | "out">("in");
+  const [minimized, setMinimized] = useState(false);
+  const [closed, setClosed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /** 현재 화면을 먼저 페이드아웃한 뒤 단계를 바꾼다 */
@@ -105,13 +121,13 @@ export function TagConstellationWindow({ data }: { data: TagConstellation }) {
 
   // ESC로 한 단계 뒤로
   useEffect(() => {
-    if (level === 1) return;
+    if (level === 1 || minimized || closed) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") goBack();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [level, goBack]);
+  }, [level, minimized, closed, goBack]);
 
   const subLayout = useMemo(() => (hub ? subPositions(hub.subs) : []), [hub]);
   const subMax = useMemo(
@@ -119,26 +135,73 @@ export function TagConstellationWindow({ data }: { data: TagConstellation }) {
     [hub],
   );
 
+  const windowTitle = level === 1 ? "tag constellation" : level === 2 ? hub?.name : sub?.name;
+
+  // 닫힘 — 창 대신 복원 칩만 남긴다
+  if (closed) {
+    return (
+      <div className="flex min-h-[180px] items-center justify-center">
+        <button
+          type="button"
+          onClick={() => setClosed(false)}
+          className="glass-pill-surface tc-rise inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-mono text-[12px] text-[hsl(var(--ring))] transition-colors hover:bg-white/85 hover:text-foreground dark:hover:bg-white/10"
+        >
+          <span className="text-[hsl(var(--tc-pink))]">◎</span>
+          태그 성좌 열기
+        </button>
+      </div>
+    );
+  }
+
+  // 성좌는 고정 비율이라 창이 너무 넓으면 양옆이 비므로 full에서는 폭을 잡는다
   return (
-    <div className="glass-window overflow-hidden rounded-2xl">
+    <div className={cn("glass-window overflow-hidden rounded-2xl", full && "mx-auto max-w-[980px]")}>
       {/* ── 타이틀바 ─────────────────────────────────────────────────── */}
       <div className="flex items-end gap-2.5 border-b border-[hsl(var(--ring)/0.12)] bg-white/35 px-3.5 pt-2.5 dark:bg-white/[0.04]">
-        <span className="flex gap-1.5 pb-2.5" aria-hidden>
-          <i className="block h-[11px] w-[11px] rounded-full bg-[#F4A9A3]" />
-          <i className="block h-[11px] w-[11px] rounded-full bg-[#F4D9A3]" />
-          <i className="block h-[11px] w-[11px] rounded-full bg-[#A9D9B4]" />
+        <span className="tc-lights flex gap-1.5 pb-2.5">
+          <button
+            type="button"
+            onClick={() => controls && setClosed(true)}
+            disabled={!controls}
+            aria-label="창 닫기"
+            title="닫기"
+            className="tc-light block h-[11px] w-[11px] rounded-full bg-[#F4A9A3] disabled:cursor-default"
+          >
+            <span aria-hidden>×</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => controls && setMinimized((v) => !v)}
+            disabled={!controls}
+            aria-label={minimized ? "창 펼치기" : "창 최소화"}
+            aria-expanded={!minimized}
+            title={minimized ? "펼치기" : "최소화"}
+            className="tc-light block h-[11px] w-[11px] rounded-full bg-[#F4D9A3] disabled:cursor-default"
+          >
+            <span aria-hidden>{minimized ? "+" : "−"}</span>
+          </button>
+          <button
+            type="button"
+            disabled
+            aria-label="최대화 (사용 불가)"
+            className="tc-light block h-[11px] w-[11px] cursor-default rounded-full bg-[#A9D9B4] opacity-70"
+          />
         </span>
         <span className="flex max-w-[260px] items-center gap-[7px] rounded-t-[9px] border border-b-0 border-[hsl(var(--ring)/0.14)] bg-white/70 px-3 py-[7px] font-mono text-[10.5px] text-foreground dark:bg-white/[0.07]">
           <span className="text-[10px] text-[hsl(var(--tc-pink))]">◎</span>
-          <span className="truncate">
-            {level === 1 ? "tag constellation" : level === 2 ? hub?.name : sub?.name}
-          </span>
-          <span className="ml-0.5 text-xs text-muted-foreground">×</span>
+          <span className="truncate">{windowTitle}</span>
         </span>
         <span className="pb-2 text-sm text-muted-foreground" aria-hidden>
           +
         </span>
       </div>
+
+      {/* 최소화 — 타이틀바만 남기고 접는다 */}
+      <div
+        className={cn("tc-collapse", minimized && "is-collapsed")}
+        style={{ "--tc-body-max": full ? "860px" : "800px" } as CSSProperties}
+      >
+        <div>
 
       {/* ── 툴바 — 주소창이 브레드크럼 ──────────────────────────────── */}
       <div className="flex items-center gap-2 border-b border-[hsl(var(--ring)/0.1)] bg-white/45 px-3.5 py-2.5 dark:bg-white/[0.03]">
@@ -207,14 +270,22 @@ export function TagConstellationWindow({ data }: { data: TagConstellation }) {
 
       {/* ── 뷰포트 ───────────────────────────────────────────────────── */}
       <div
-        className="tc-view relative min-h-[432px] bg-white/15 px-4 py-2 dark:bg-white/[0.02]"
+        className={cn(
+          // 높이를 폭에 맞춰 잡는다 — 고정 높이면 좁은 화면에서 그림 위아래가 비어버린다
+          "tc-view relative aspect-[560/430] min-h-[240px] bg-white/15 px-4 py-2 dark:bg-white/[0.02]",
+          // 상한은 py-2(16px)를 더한 값 — 그래야 넓은 화면에서 그림이 의도한 높이로 찬다
+          full ? "max-h-[676px]" : "max-h-[620px]",
+        )}
         data-phase={phase}
       >
         {level < 3 ? (
           <svg
             key={`${level}-${hub?.name ?? "root"}`}
             viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-            className={cn("block h-[418px] w-full overflow-visible", level === 2 && "cursor-zoom-out")}
+            className={cn(
+              "block h-full w-full overflow-visible",
+              level === 2 && "cursor-zoom-out",
+            )}
             onClick={() => level === 2 && goBack()}
             role="img"
             aria-label={level === 1 ? "태그 성좌" : `${hub?.name} 상세 태그`}
@@ -412,11 +483,34 @@ export function TagConstellationWindow({ data }: { data: TagConstellation }) {
             {level === 2 ? "상세 태그를 클릭하면 글 목록" : "글을 클릭하면 이동"}
           </span>
         )}
-        {level > 1 && (
-          <span className="rounded-full border border-[hsl(var(--ring)/0.22)] px-2.5 py-0.5 font-mono text-[9px] text-muted-foreground/70">
-            ESC / 배경 클릭으로 뒤로
-          </span>
-        )}
+        <span className="flex items-center gap-2">
+          {/* /tags 페이지에서는 이미 목적지에 있으므로 숨긴다 */}
+          {level === 1 && !full && (
+            <Link
+              href="/tags"
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-full border border-[hsl(var(--ring)/0.3)] px-2.5 py-0.5 font-mono text-[9px] text-[hsl(var(--ring))] transition-colors hover:bg-[hsl(var(--ring)/0.1)]"
+            >
+              전체 태그 보기 →
+            </Link>
+          )}
+          {level === 2 && hub && (
+            <Link
+              href={`/tags/${hub.slug}`}
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-full border border-[hsl(var(--ring)/0.3)] px-2.5 py-0.5 font-mono text-[9px] text-[hsl(var(--ring))] transition-colors hover:bg-[hsl(var(--ring)/0.1)]"
+            >
+              이 태그의 모든 글 보기 →
+            </Link>
+          )}
+          {level > 1 && (
+            <span className="rounded-full border border-[hsl(var(--ring)/0.22)] px-2.5 py-0.5 font-mono text-[9px] text-muted-foreground/70">
+              ESC / 배경 클릭으로 뒤로
+            </span>
+          )}
+        </span>
+          </div>
+        </div>
       </div>
     </div>
   );
