@@ -1,9 +1,11 @@
 import Link from "next/link";
 
+import { JsonLd } from "@/components/blog/json-ld";
 import { PostListItem } from "@/components/blog/post-list-item";
 import { RecentlyViewedPosts } from "@/components/blog/recently-viewed-posts";
 import { TagConstellationWindow } from "@/components/blog/tag-constellation";
 import { getAllPosts, getFeaturedPosts, getLatestPosts } from "@/lib/blog/posts";
+import { websiteSchema } from "@/lib/blog/structured-data";
 import { getTagConstellation } from "@/lib/blog/tag-graph";
 
 const HERO_CATS = ["Frontend", "React / Next.js", "CSS / UI", "TypeScript", "TIL"] as const;
@@ -16,6 +18,7 @@ export default function HomePage() {
 
   return (
     <>
+      <JsonLd data={websiteSchema()} />
       <RecentlyViewedPosts posts={allPosts} variant="home" />
       <div className="space-y-24">
 

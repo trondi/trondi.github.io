@@ -1,5 +1,8 @@
+import { JsonLd } from "@/components/blog/json-ld";
 import { PostsExplorer } from "@/components/blog/posts-explorer";
+import { siteConfig } from "@/lib/blog/config";
 import { getAllPosts, getCategories, getTags } from "@/lib/blog/posts";
+import { itemListSchema } from "@/lib/blog/structured-data";
 
 export const metadata = {
   title: "Posts",
@@ -9,6 +12,7 @@ export const metadata = {
 export default function PostsPage() {
   return (
     <div className="space-y-10">
+      <JsonLd data={itemListSchema(getAllPosts(), `${siteConfig.siteUrl}/posts`, "전체 글 목록")} />
       <section className="max-w-3xl">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Archive</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">전체 글 목록</h1>
