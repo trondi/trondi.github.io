@@ -137,17 +137,23 @@ export function TagConstellationWindow({
 
   const windowTitle = level === 1 ? "tag constellation" : level === 2 ? hub?.name : sub?.name;
 
-  // 닫힘 — 창 대신 복원 칩만 남긴다
+  // 닫힘 — 바탕화면 앱 아이콘처럼 오른쪽 위에 남는다
   if (closed) {
     return (
-      <div className="flex min-h-[180px] items-center justify-center">
+      <div className="flex min-h-[220px] items-start justify-end">
         <button
           type="button"
           onClick={() => setClosed(false)}
-          className="glass-pill-surface tc-rise inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-mono text-[12px] text-[hsl(var(--ring))] transition-colors hover:bg-white/85 hover:text-foreground dark:hover:bg-white/10"
+          aria-label="태그 성좌 창 열기"
+          title="열기"
+          className="tc-appicon tc-rise group flex w-[84px] flex-col items-center gap-1.5 rounded-lg p-2"
         >
-          <span className="text-[hsl(var(--tc-pink))]">◎</span>
-          태그 성좌 열기
+          <span className="glass-pill-surface flex h-14 w-14 items-center justify-center rounded-2xl text-[22px] leading-none text-[hsl(var(--tc-pink))] transition-transform duration-200 group-hover:-translate-y-0.5 group-active:translate-y-0">
+            ◎
+          </span>
+          <span className="rounded px-1.5 py-0.5 font-mono text-[10px] leading-tight text-muted-foreground transition-colors group-hover:bg-[hsl(var(--ring)/0.14)] group-hover:text-foreground">
+            태그 성좌
+          </span>
         </button>
       </div>
     );

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Comments } from "@/components/blog/comments";
+import { JsonLd } from "@/components/blog/json-ld";
 import { MarkdownRenderer } from "@/components/blog/markdown-renderer";
 import { Reactions } from "@/components/blog/reactions";
 import { PostListItem } from "@/components/blog/post-list-item";
@@ -20,6 +21,7 @@ import {
   getRelatedPosts,
   getSeriesForSlug,
 } from "@/lib/blog/posts";
+import { blogPostingSchema, breadcrumbSchema } from "@/lib/blog/structured-data";
 import { formatDate, slugify } from "@/lib/blog/utils";
 
 type PostPageProps = {
@@ -65,6 +67,8 @@ export default function PostPage({ params }: PostPageProps) {
 
   return (
     <div className="grid gap-12 xl:grid-cols-[minmax(0,1fr)_240px]">
+      <JsonLd data={blogPostingSchema(post)} />
+      <JsonLd data={breadcrumbSchema(post)} />
       <PostViewTracker slug={post.slug} />
       <article className="min-w-0">
         <div className="border-b border-border pb-8">

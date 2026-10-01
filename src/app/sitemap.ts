@@ -4,7 +4,7 @@ import { siteConfig } from "@/lib/blog/config";
 import { getCategories, getTags, getVisiblePostSlugs } from "@/lib/blog/posts";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const staticPages = ["", "/posts", "/about"].map((route) => ({
+  const staticPages = ["", "/posts", "/tags", "/about"].map((route) => ({
     url: `${siteConfig.siteUrl}${route}`,
     lastModified: new Date(),
   }));
