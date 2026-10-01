@@ -1,5 +1,5 @@
 import { siteConfig } from "@/lib/blog/config";
-import type { Post, PostSummary } from "@/lib/blog/types";
+import type { Post, PostSummary, SeriesEntry } from "@/lib/blog/types";
 import { slugify } from "@/lib/blog/utils";
 
 /**
@@ -31,8 +31,26 @@ export function websiteSchema() {
 }
 
 /** 글 상세에 넣는 글 정보 */
-export function blogPostingSchema(post: Post) {
+export function blogPostingSchema(
+  post: Post,
+  series?: { name: string; entries: SeriesEntry[] } | null,
+) {
   const url = `${siteConfig.siteUrl}/posts/${post.slug}`;
+
+  // 시리즈에 속한 글이면 블로그 소속에 더해 시리즈 묶음도 함께 알린다.
+  const partOf: object[] = [{ "@id": `${siteConfig.siteUrl}/#blog` }];
+  if (series) {
+    partOf.push({
+      "@type": "CreativeWorkSeries",
+      name: series.name,
+      hasPart: series.entries.map((entry) => ({
+        "@type": "BlogPosting",
+        position: entry.order,
+        name: entry.title,
+        url: `${siteConfig.siteUrl}/posts/${entry.slug}`,
+      })),
+    });
+  }
 
   return {
     "@context": "https://schema.org",
@@ -47,7 +65,7 @@ export function blogPostingSchema(post: Post) {
     inLanguage: "ko-KR",
     author: PERSON,
     publisher: PERSON,
-    isPartOf: { "@id": `${siteConfig.siteUrl}/#blog` },
+    isPartOf: partOf.length === 1 ? partOf[0] : partOf,
     articleSection: post.category,
     keywords: post.tags.join(", "),
     wordCount: countWords(post.content),

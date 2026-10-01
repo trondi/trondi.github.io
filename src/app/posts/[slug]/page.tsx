@@ -67,7 +67,7 @@ export default function PostPage({ params }: PostPageProps) {
 
   return (
     <div className="grid gap-12 xl:grid-cols-[minmax(0,1fr)_240px]">
-      <JsonLd data={blogPostingSchema(post)} />
+      <JsonLd data={blogPostingSchema(post, series)} />
       <JsonLd data={breadcrumbSchema(post)} />
       <PostViewTracker slug={post.slug} />
       <article className="min-w-0">
