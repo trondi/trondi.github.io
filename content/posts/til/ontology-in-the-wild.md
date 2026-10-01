@@ -12,12 +12,13 @@ tags:
   - Healthcare
 featured: false
 draft: false
+series: "구조 용어 시리즈"
+seriesOrder: 6
 ---
 
 # 온톨로지는 실제로 어디에 쓰이나
 
-> **구조 용어 시리즈 · 6편 / 전 6편** — 난이도: 입문 (4편을 읽었다면 더 쉽다)
-> 이전 → [프론트엔드는 이미 온톨로지를 쓰고 있다](/posts/frontend-already-uses-ontology)
+> **난이도** — 입문 (4편을 읽었다면 더 쉽다)
 
 [4편](/posts/knowledge-graph-rdf-jsonld)에서 RDF와 추론을 다루고, [5편](/posts/frontend-already-uses-ontology)에서 프론트엔드 코드에 이미 깔려 있다는 이야기를 했다. 그런데 한 가지가 계속 허전했다.
 

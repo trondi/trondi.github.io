@@ -12,12 +12,13 @@ tags:
   - SEO
 featured: false
 draft: false
+series: "구조 용어 시리즈"
+seriesOrder: 4
 ---
 
 # 지식 그래프와 RDF
 
-> **구조 용어 시리즈 · 4편 / 전 6편** — 난이도: 중급 (1편을 먼저 읽으면 훨씬 쉽다)
-> 이전 → [블로그 정보 구조](/posts/ontology-taxonomy-and-blog-ia) · 다음 → [프론트엔드는 이미 온톨로지를 쓰고 있다](/posts/frontend-already-uses-ontology)
+> **난이도** — 중급 (1편을 먼저 읽으면 훨씬 쉽다)
 
 [앞 글](/posts/ontology-taxonomy-and-blog-ia)에서 "관계에 이름표를 붙이면 온톨로지"라고 했다. 개념은 알겠는데 한 가지가 남는다.
 

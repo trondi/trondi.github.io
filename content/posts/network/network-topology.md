@@ -11,12 +11,13 @@ tags:
   - Kubernetes
 featured: false
 draft: false
+series: "구조 용어 시리즈"
+seriesOrder: 2
 ---
 
 # 네트워크 토폴로지
 
-> **구조 용어 시리즈 · 2편 / 전 6편** — 난이도: 입문
-> 이전 → [온톨로지·토폴로지·택소노미](/posts/structure-terms-ontology-topology-taxonomy) · 다음 → [블로그 정보 구조](/posts/ontology-taxonomy-and-blog-ia)
+> **난이도** — 입문
 
 [앞 글](/posts/structure-terms-ontology-topology-taxonomy)에서 토폴로지를 **지하철 노선도**에 비유했다. 실제 거리나 모양은 버리고 "무엇이 무엇과 이어졌나"만 보는 관점이다.
 

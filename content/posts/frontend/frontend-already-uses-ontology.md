@@ -12,12 +12,13 @@ tags:
   - GraphQL
 featured: false
 draft: false
+series: "구조 용어 시리즈"
+seriesOrder: 5
 ---
 
 # 프론트엔드는 이미 온톨로지를 쓰고 있다
 
-> **구조 용어 시리즈 · 5편 / 전 6편** — 난이도: 중급 (React·상태 관리 경험이 조금 필요하다)
-> 이전 → [지식 그래프와 RDF](/posts/knowledge-graph-rdf-jsonld) · 다음 → [온톨로지는 실제로 어디에 쓰이나](/posts/ontology-in-the-wild)
+> **난이도** — 중급 (React·상태 관리 경험이 조금 필요하다)
 
 [지식 그래프와 RDF](/posts/knowledge-graph-rdf-jsonld)까지 쓰고 나서 솔직히 든 생각은 이거였다.
 

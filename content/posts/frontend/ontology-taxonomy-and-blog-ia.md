@@ -12,12 +12,13 @@ tags:
   - UX
 featured: false
 draft: false
+series: "구조 용어 시리즈"
+seriesOrder: 3
 ---
 
 # 택소노미에서 온톨로지로
 
-> **구조 용어 시리즈 · 3편 / 전 6편** — 난이도: 입문
-> 이전 → [네트워크 토폴로지](/posts/network-topology) · 다음 → [지식 그래프와 RDF](/posts/knowledge-graph-rdf-jsonld)
+> **난이도** — 입문
 
 블로그를 만들 때 가장 먼저 고민한 건 디자인이 아니라 **"나중에 글이 100개가 되면 어떻게 찾지?"**였다. 글이 열 개일 땐 아무 문제가 없다. 문제는 항상 나중에 온다.
 
