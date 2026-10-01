@@ -4,6 +4,7 @@ date: "2026-06-16"
 summary: "별 모양, 줄 모양, 고리 모양, 그물 모양. 네트워크를 잇는 대표적인 방식들을 집 공유기 같은 익숙한 예로 풀고, 도커·쿠버네티스의 가상 네트워크까지 연결한다."
 category: "Network"
 tags:
+  - 구조 용어 시리즈
   - Network
   - Topology
   - Infra

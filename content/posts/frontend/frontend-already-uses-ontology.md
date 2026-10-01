@@ -4,6 +4,7 @@ date: "2026-08-20"
 summary: "메타태그, 접근성, 상태 관리, GraphQL. 프론트엔드가 매일 쓰는 것들을 온톨로지 관점에서 다시 읽으면 '왜 이렇게 생겼는지'가 설명된다. 이 블로그의 실제 코드로 확인했다."
 category: "Frontend"
 tags:
+  - 구조 용어 시리즈
   - Frontend
   - Ontology
   - A11y
