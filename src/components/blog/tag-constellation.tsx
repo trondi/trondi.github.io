@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { HubTag, SubTag, TagConstellation } from "@/lib/blog/tag-graph";
@@ -31,6 +31,16 @@ const STAGGER_MS = 22;
 
 function twinkleClass(index: number) {
   return `tc-tw${(index % 3) + 1}`;
+}
+
+/** SVG <g>에는 기본 키보드 동작이 없어서 Enter/Space를 직접 받는다 */
+function activateOnKey(run: () => void) {
+  return (e: ReactKeyboardEvent<SVGGElement>) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    e.stopPropagation();
+    run();
+  };
 }
 
 /** 상세 태그를 중심 둘레의 두 겹 링에 배치 */
@@ -293,7 +303,8 @@ export function TagConstellationWindow({
               level === 2 && "cursor-zoom-out",
             )}
             onClick={() => level === 2 && goBack()}
-            role="img"
+            // 안에 버튼이 들어가므로 role="img"면 보조기술이 내부를 통째로 가린다
+            role="group"
             aria-label={level === 1 ? "태그 성좌" : `${hub?.name} 상세 태그`}
           >
             {level === 1 &&
@@ -321,17 +332,23 @@ export function TagConstellationWindow({
               data.tags.map((tag, i) => {
                 const r = R_MIN + (tag.count / maxCount) * R_RANGE;
                 const labelX = tag.side === "start" ? tag.x + r + 7 : tag.x - r - 7;
+                const openHub = () =>
+                  navigate(() => {
+                    setHub(tag);
+                    setLevel(2);
+                  });
                 return (
                   <g
                     key={tag.name}
                     className="tc-star tc-pop cursor-pointer"
                     style={{ animationDelay: `${i * STAGGER_MS}ms` }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${tag.name}, 글 ${tag.count}편. 상세 태그 보기`}
+                    onKeyDown={activateOnKey(openHub)}
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(() => {
-                        setHub(tag);
-                        setLevel(2);
-                      });
+                      openHub();
                     }}
                   >
                     <circle
@@ -390,17 +407,23 @@ export function TagConstellationWindow({
                 {subLayout.map(({ sub: s, x, y }, i) => {
                   const r = 3.2 + (s.count / subMax) * 4.2;
                   const right = x >= 280;
+                  const openSub = () =>
+                    navigate(() => {
+                      setSub(s);
+                      setLevel(3);
+                    });
                   return (
                     <g
                       key={s.name}
                       className="tc-star tc-pop cursor-pointer"
                       style={{ animationDelay: `${80 + i * STAGGER_MS}ms` }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`${s.name}, 글 ${s.count}편. 글 목록 보기`}
+                      onKeyDown={activateOnKey(openSub)}
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(() => {
-                          setSub(s);
-                          setLevel(3);
-                        });
+                        openSub();
                       }}
                     >
                       <circle cx={x} cy={y} r={r} className={cn(twinkleClass(i), "fill-[hsl(var(--ring))]")} />
