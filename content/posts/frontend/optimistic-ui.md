@@ -111,7 +111,11 @@ function LikeButton({ postId, initialLikes }: { postId: string; initialLikes: nu
 
 ## React Query로 — onMutate · onError · onSettled
 
-React Query(TanStack Query)는 서버에서 받은 데이터를 캐시해 두고 쓰는 라이브러리다. `useMutation`의 생명주기 콜백이 위의 세 단계에 그대로 대응한다.
+React Query(TanStack Query)는 서버에서 받은 데이터를 캐시해 두고 쓰는 라이브러리다.
+
+React Query가 낙관적 업데이트를 위해 만들어진 건 아니다. 핵심은 서버 상태를 하나의 캐시로 관리하고, 낡으면 다시 받아오는 것이다. 그런데 바로 그 두 가지(중앙 캐시, 무효화)가 낙관적 업데이트의 "먼저 그리기"와 "서버 값과 다시 맞추기"를 거의 공짜로 만들어 준다. 좋아요 수가 `['post', id]` 한 곳에 있으니 `setQueryData` 한 번이면 그 값을 쓰는 모든 화면이 바뀌고, 서버 값과 다시 맞추는 건 원래 있던 `invalidateQueries`를 그대로 쓰면 된다.
+
+`useMutation`의 생명주기 콜백이 위의 세 단계에 그대로 대응한다.
 
 | 콜백 | 실행 시점 | 낙관적 업데이트에서의 역할 |
 |---|---|---|
