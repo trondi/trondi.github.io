@@ -5,6 +5,7 @@ import { Settings2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { HeaderSearch } from "@/components/blog/header-search";
+import { MobileNavDrawer } from "@/components/blog/mobile-nav-drawer";
 import { ReadingProgress } from "@/components/blog/reading-progress";
 import { SeasonSelector } from "@/components/blog/season-selector";
 import { ThemeToggle } from "@/components/blog/theme-toggle";
@@ -106,7 +107,7 @@ export function SiteHeaderClient({
               {/* Search */}
               <HeaderSearch entries={searchEntries} />
 
-              {/* Nav links — 좁은 화면에서는 설정 메뉴 안으로 들어간다 */}
+              {/* Nav links — 좁은 화면에서는 서랍 메뉴(MobileNavDrawer) 안으로 들어간다 */}
               <nav className="hidden items-center gap-1 md:flex">
                 {primaryNav.map((item) => (
                   <Link
@@ -119,8 +120,11 @@ export function SiteHeaderClient({
                 ))}
               </nav>
 
-              {/* Context menu — season + theme */}
-              <div ref={menuRef} className="relative">
+              {/* 좁은 화면 — nav · 카테고리 · 설정을 서랍 메뉴 하나로 */}
+              <MobileNavDrawer primaryNav={primaryNav} categories={categories} />
+
+              {/* Context menu — season + theme (md 이상) */}
+              <div ref={menuRef} className="relative hidden md:block">
                 <button
                   type="button"
                   aria-label="설정 메뉴"
@@ -144,24 +148,6 @@ export function SiteHeaderClient({
                     : "pointer-events-none -translate-y-1.5 scale-[0.97] opacity-0",
                 )}>
                   <div className="p-2 space-y-1">
-                    {/* 메뉴 — 상단 nav가 숨겨지는 좁은 화면에서만 */}
-                    <div className="md:hidden">
-                      <p className="px-2 pb-1 pt-0.5 font-mono text-[9px] tracking-[0.12em] text-muted-foreground/50 uppercase">
-                        메뉴
-                      </p>
-                      {primaryNav.map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setMenuOpen(false)}
-                          className="block rounded-md px-2 py-1.5 font-mono text-[11px] tracking-wide text-muted-foreground transition-colors hover:bg-[hsl(var(--ring)/0.10)] hover:text-[hsl(var(--ring))]"
-                        >
-                          {item.label.toLowerCase()}
-                        </Link>
-                      ))}
-                      <div className="my-1 border-t border-border" />
-                    </div>
-
                     {/* 계절 */}
                     <p className="px-2 pb-1 pt-0.5 font-mono text-[9px] tracking-[0.12em] text-muted-foreground/50 uppercase">
                       계절 효과
@@ -188,10 +174,11 @@ export function SiteHeaderClient({
           {/* ── Category bar ─────────────────────────────────────────────── */}
           <div className={cn(
             "overflow-hidden border-t border-border transition-[max-height,opacity,padding] duration-300",
+            "hidden md:block",
             scrolled ? "max-h-0 pt-0 opacity-0" : "max-h-24 pt-2.5 opacity-100",
           )}>
-            {/* 좁은 화면에서는 줄바꿈 대신 가로 스크롤 — 줄이 쌓이면 max-h에 잘린다 */}
-            <nav className="flex flex-nowrap gap-x-1 gap-y-1 overflow-x-auto rounded-lg bg-secondary/30 px-3 py-2 md:flex-wrap md:overflow-visible">
+            {/* 좁은 화면에서는 서랍 메뉴로 옮겨지므로 md 이상에서만 노출 */}
+            <nav className="flex flex-wrap gap-x-1 gap-y-1 rounded-lg bg-secondary/30 px-3 py-2">
               {categories.map((category) => (
                 <Link
                   key={category.slug}
