@@ -294,6 +294,19 @@
     border-radius: 99px;
   }
 
+  /* 헤더 카테고리 바 — 모바일 가로 스크롤: 스크롤바 숨기고 넘치는 쪽 가장자리만 페이드 */
+  .category-scroll {
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    --fade-l: 0px;
+    --fade-r: 0px;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
+  }
+  .category-scroll::-webkit-scrollbar { display: none; }
+  .category-scroll[data-fade-left]  { --fade-l: 28px; }
+  .category-scroll[data-fade-right] { --fade-r: 28px; }
+
   .glass-pill {
     background: hsl(var(--secondary));
     border: 1px solid hsl(var(--border));

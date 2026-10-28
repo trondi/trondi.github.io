@@ -29,6 +29,8 @@ export function SiteHeaderClient({
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const categoryNavRef = useRef<HTMLElement | null>(null);
+  const [fade, setFade] = useState({ left: false, right: false });
 
   // ── Scroll hysteresis ──────────────────────────────────────────────────
   useEffect(() => {
@@ -52,6 +54,28 @@ export function SiteHeaderClient({
     return () => {
       window.removeEventListener("scroll", onScroll);
       if (raf !== null) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  // ── Category bar 가장자리 페이드 (가로 스크롤로 넘칠 때만) ─────────────
+  useEffect(() => {
+    const nav = categoryNavRef.current;
+    if (!nav) return;
+
+    const sync = () => {
+      const max = nav.scrollWidth - nav.clientWidth;
+      const left  = nav.scrollLeft > 1;
+      const right = nav.scrollLeft < max - 1;
+      setFade((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
+    };
+
+    sync();
+    nav.addEventListener("scroll", sync, { passive: true });
+    const ro = new ResizeObserver(sync);
+    ro.observe(nav);
+    return () => {
+      nav.removeEventListener("scroll", sync);
+      ro.disconnect();
     };
   }, []);
 
@@ -191,7 +215,12 @@ export function SiteHeaderClient({
             scrolled ? "max-h-0 pt-0 opacity-0" : "max-h-24 pt-2.5 opacity-100",
           )}>
             {/* 좁은 화면에서는 줄바꿈 대신 가로 스크롤 — 줄이 쌓이면 max-h에 잘린다 */}
-            <nav className="flex flex-nowrap gap-x-1 gap-y-1 overflow-x-auto rounded-lg bg-secondary/30 px-3 py-2 md:flex-wrap md:overflow-visible">
+            <nav
+              ref={categoryNavRef}
+              data-fade-left={fade.left || undefined}
+              data-fade-right={fade.right || undefined}
+              className="category-scroll flex flex-nowrap gap-x-1 gap-y-1 overflow-x-auto rounded-lg bg-secondary/30 px-3 py-2 md:flex-wrap md:overflow-visible"
+            >
               {categories.map((category) => (
                 <Link
                   key={category.slug}
