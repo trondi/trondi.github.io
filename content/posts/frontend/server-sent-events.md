@@ -1,5 +1,5 @@
 ---
-title: "Server-Sent Events — HTTP 위의 단방향 스트림"
+title: "Server-Sent Events(HTTP 위의 단방향 스트림)"
 date: "2026-05-16"
 summary: "polling의 한계를 넘어 서버가 클라이언트에 이벤트를 흘려보내는 가장 단순한 방법인 SSE를, 포맷·EventSource API·자동 재연결·HTTP/2와의 궁합·한계 관점에서 정리했다."
 category: "Frontend"
@@ -10,13 +10,15 @@ tags:
   - EventSource
   - HTTP
 featured: false
+series: "실시간 웹 통신과 브라우저 런타임"
+seriesOrder: 2
 ---
 
-# Server-Sent Events — HTTP 위의 단방향 스트림
+# Server-Sent Events(HTTP 위의 단방향 스트림)
 
-지난 글에서 polling의 한계를 정리하면서, 그 다음 단계로 가는 핵심 아이디어를 짚었다. **연결 하나를 유지하고 그 위로 이벤트를 흘려보내자**. 이걸 HTTP 위에서 가장 단순하게 구현한 게 `Server-Sent Events`, 줄여서 SSE다.
+[지난 글](/posts/http-polling-and-long-polling)에서 polling의 한계를 정리하면서 그 다음 단계로 가는 핵심 아이디어를 짚었다. **연결 하나를 유지하고 그 위로 이벤트를 흘려보내자**. 이걸 HTTP 위에서 가장 단순하게 구현한 게 `Server-Sent Events`, 줄여서 SSE다.
 
-SSE는 별도 프로토콜을 새로 만들지 않는다. 그냥 HTTP GET 응답을 끊지 않고 길게 유지하면서, 그 응답 본문 안에 이벤트들을 텍스트로 흘려보낸다. 명세는 [WHATWG HTML Living Standard의 Server-sent events 절](https://html.spec.whatwg.org/multipage/server-sent-events.html)에 있다. 한때 W3C의 별도 표준이었지만 지금은 HTML 표준에 통합되어 있다.
+SSE는 별도 프로토콜을 새로 만들지 않는다. 그냥 HTTP GET 응답을 끊지 않고 길게 유지하면서 그 응답 본문 안에 이벤트들을 텍스트로 흘려보낸다. 명세는 [WHATWG HTML Living Standard의 Server-sent events 절](https://html.spec.whatwg.org/multipage/server-sent-events.html)에 있다. 한때 W3C의 별도 표준이었지만 지금은 HTML 표준에 통합되어 있다.
 
 ---
 
@@ -30,13 +32,13 @@ SSE는 별도 프로토콜을 새로 만들지 않는다. 그냥 HTTP GET 응답
 | 바이너리 데이터 | 부적합 (텍스트 전용) |
 | 매우 낮은 지연이 필요한 미디어 | 부적합 (WebRTC) |
 
-SSE의 강점은 단순함이다. HTTP 그대로라 기존 인프라가 거의 그대로 동작하고, 자동 재연결과 이벤트 ID 같은 기능이 표준에 포함되어 있어 직접 구현할 게 적다.
+SSE의 강점은 단순함이다. HTTP 그대로라 기존 인프라가 거의 그대로 동작하고 자동 재연결과 이벤트 ID 같은 기능이 표준에 포함되어 있어 직접 구현할 게 적다.
 
 ---
 
-## 핵심 아이디어 — 응답을 안 끊는 GET
+## 핵심 아이디어: 응답을 안 끊는 GET
 
-일반 HTTP 요청-응답은 다음과 같다.
+일반 HTTP 요청-응답부터 보자.
 
 ```text
 GET /api/data
@@ -69,19 +71,19 @@ data: world
 data: { "type": "tick", "value": 42 }
 ```
 
-핵심 차이는 다음과 같다.
+핵심 차이는 세 가지다.
 
 - `Content-Type`이 `text/event-stream`이다.
 - `Content-Length`가 없다. 응답이 언제 끝날지 모른다.
 - 본문에 메시지들이 줄단위 텍스트로 계속 흘러온다.
 
-브라우저는 `text/event-stream`을 보면 "이건 끊지 말고 계속 읽는 스트림이다"로 이해하고, 도착하는 줄을 파싱해서 이벤트로 변환한다.
+브라우저는 `text/event-stream`을 보면 "이건 끊지 말고 계속 읽는 스트림이다"로 이해하고 도착하는 줄을 파싱해서 이벤트로 변환한다.
 
 ---
 
 ## text/event-stream 포맷
 
-명세가 정의한 포맷은 의외로 단순하다. 메시지는 **빈 줄로 구분**되고, 한 메시지 안에서는 `필드: 값` 형태의 줄들이 모인다.
+명세가 정의한 포맷은 의외로 단순하다. 메시지는 **빈 줄로 구분**되고 한 메시지 안에서는 `필드: 값` 형태의 줄들이 모인다.
 
 지원되는 필드는 다음 네 가지가 전부다.
 
@@ -121,7 +123,7 @@ data: 셋째 줄
 
 ## 브라우저 EventSource API
 
-브라우저는 이 포맷을 직접 파싱할 필요가 없다. `EventSource` 객체가 모두 처리한다.
+개발자가 이 포맷을 직접 파싱할 필요는 없다. 브라우저의 `EventSource` 객체가 모두 처리한다.
 
 ```js
 const es = new EventSource("/events");
@@ -161,7 +163,7 @@ es.onerror = () => {
 
 ---
 
-## 자동 재연결 — SSE가 polling보다 우월한 핵심 이유
+## 자동 재연결: SSE가 polling보다 우월한 핵심 이유
 
 SSE에서 가장 강력한 기능은 **연결이 끊기면 브라우저가 자동으로 다시 연결한다는 점**이다. 별도 코드를 짤 필요가 없다.
 
@@ -170,7 +172,7 @@ SSE에서 가장 강력한 기능은 **연결이 끊기면 브라우저가 자�
 ```text
 1. 서버가 응답을 보내는 중에 네트워크가 끊김
 2. 브라우저는 readyState를 CONNECTING으로 바꾸고 onerror 호출
-3. retry로 지정된 시간(기본 보통 3초) 후 같은 URL로 재요청
+3. retry로 지정된 시간(기본 3초) 후 같은 URL로 재요청
 4. 마지막으로 받은 id가 있으면 Last-Event-ID 헤더에 담아 보냄
 5. 서버는 그 ID 이후 이벤트부터 다시 보내면 됨
 ```
@@ -189,7 +191,7 @@ Last-Event-ID: 100
 
 ## 헤더 오버헤드가 사라진다
 
-polling은 메시지 하나마다 새 HTTP 요청을 보냈고, 매번 HTTP 헤더가 따라갔다. SSE는 처음 한 번만 헤더를 보내고, 그 다음에는 본문만 흘려보낸다.
+polling은 메시지 하나마다 새 HTTP 요청을 보냈고 매번 HTTP 헤더가 따라갔다. SSE는 처음 한 번만 헤더를 보내고 그 다음에는 본문만 흘려보낸다.
 
 ```text
 Polling (메시지 5개)
@@ -203,7 +205,7 @@ SSE (메시지 5개)
 
 ---
 
-## 한계 1 — 단방향이다
+## 한계 1: 단방향이다
 
 SSE는 서버 → 클라이언트 한 방향만 지원한다. 클라이언트가 서버로 보낼 메시지가 있으면 평범한 POST 요청을 따로 띄워야 한다.
 
@@ -232,7 +234,7 @@ async function sendCommand(cmd) {
 
 ---
 
-## 한계 2 — 텍스트 전용
+## 한계 2: 텍스트 전용
 
 `text/event-stream`이라는 이름이 말해주듯, SSE는 **UTF-8 텍스트만** 전송한다. 바이너리(이미지, 오디오 청크, 압축된 페이로드 등)는 직접 보낼 수 없다.
 
@@ -240,14 +242,14 @@ async function sendCommand(cmd) {
 
 ---
 
-## 한계 3 — HTTP/1.1에서의 동시 연결 한도
+## 한계 3: HTTP/1.1의 동시 연결 한도
 
 브라우저는 같은 도메인에 동시 HTTP 연결을 6개까지만 허용한다(HTTP/1.1 기준). SSE는 그중 하나를 계속 점유한다. 사용자가 같은 사이트를 **탭 6개** 열고 모두 SSE 연결을 띄우면, 7번째 탭부터는 일반 HTTP 요청도 막힌다.
 
 이 문제는 두 가지 방향으로 해결된다.
 
 1. **HTTP/2로 가기**: HTTP/2는 한 TCP 연결 위에서 여러 스트림을 다중화한다. 같은 도메인 동시 연결 한도가 사실상 사라진다.
-2. **여러 탭이 SSE 연결을 공유하기**: SharedWorker 안에 SSE 하나만 두고, 받은 이벤트를 BroadcastChannel이나 postMessage로 모든 탭에 뿌리는 패턴. 이 시리즈 마지막 글에서 본격적으로 다룬다.
+2. **여러 탭이 SSE 연결을 공유하기**: SharedWorker 안에 SSE 하나만 두고 받은 이벤트를 BroadcastChannel이나 postMessage로 모든 탭에 뿌리는 패턴. 이 시리즈 [마지막 글](/posts/cross-tab-shared-connection)에서 본격적으로 다룬다.
 
 ---
 
@@ -261,13 +263,13 @@ SSE도 CORS 정책을 따른다. 다른 origin의 SSE 엔드포인트에 붙으�
 const es = new EventSource("/events", { withCredentials: true });
 ```
 
-그리고 헤더 한 가지 주의 사항이 있다. **EventSource는 커스텀 헤더를 지정할 수 없다.** `new EventSource(url, headers)` 같은 옵션이 없다. JWT 토큰을 헤더에 넣어 인증하는 패턴이라면, 쿠키 기반 인증으로 바꾸거나 URL 쿼리에 토큰을 담아야 한다. 후자는 로그에 토큰이 남는 보안 이슈가 생긴다.
+그리고 헤더에도 주의할 점이 하나 있다. **EventSource는 커스텀 헤더를 지정할 수 없다.** `new EventSource(url, headers)` 같은 옵션이 없다. JWT 토큰을 헤더에 넣어 인증하는 패턴이라면, 쿠키 기반 인증으로 바꾸거나 URL 쿼리에 토큰을 담아야 한다. 후자는 로그에 토큰이 남는 보안 문제가 있다.
 
-이 한계 때문에 인증이 까다로운 환경에서는 EventSource 대신 `fetch`로 직접 `text/event-stream` 응답을 받아 처리하는 라이브러리도 많이 쓰인다(`@microsoft/fetch-event-source` 등). 그렇게 하면 헤더를 자유롭게 지정할 수 있지만, 자동 재연결을 비롯한 EventSource의 편의는 직접 구현해야 한다.
+이 한계 때문에 인증이 까다로운 환경에서는 EventSource 대신 `fetch`로 직접 `text/event-stream` 응답을 받아 처리하는 라이브러리도 많이 쓰인다(`@microsoft/fetch-event-source` 등). 그렇게 하면 헤더를 자유롭게 지정할 수 있지만 자동 재연결을 비롯한 EventSource의 편의는 직접 구현해야 한다.
 
 ---
 
-## HTTP/2와 SSE — 좋아진 점과 변하지 않은 점
+## HTTP/2와 SSE: 좋아진 점과 변하지 않은 점
 
 HTTP/2가 SSE의 약점 일부를 메워준다.
 
@@ -281,7 +283,7 @@ HTTP/2가 SSE의 약점 일부를 메워준다.
 
 ---
 
-## 서버 쪽 모양
+## 서버 쪽 구현
 
 참고로 Node.js로 가장 단순한 SSE 엔드포인트를 만들면 이렇게 생긴다.
 
@@ -306,7 +308,7 @@ http.createServer((req, res) => {
 }).listen(3000);
 ```
 
-핵심 포인트는 다음과 같다.
+핵심 포인트는 네 가지다.
 
 - `Content-Type: text/event-stream`을 명시한다.
 - `res.end()`를 호출하지 않는다. 응답을 끊지 않는 게 SSE의 본질이다.
@@ -315,22 +317,22 @@ http.createServer((req, res) => {
 
 ---
 
-## SSE의 자리
+## SSE를 쓸 자리
 
-polling보다 거의 모든 면에서 우월하지만, WebSocket보다는 제한적이다.
+polling보다 거의 모든 면에서 우월하지만 WebSocket보다는 제한적이다.
 
 - polling보다 우월한 점: 자동 재연결, 이벤트 ID, 헤더 오버헤드 없음, 단순한 텍스트 포맷
 - WebSocket보다 약한 점: 단방향, 텍스트 전용, 헤더 지정 제약
 
 그래서 SSE는 **서버에서 클라이언트로 흘려보내기만 하면 충분한 시나리오**의 기본 선택지로 자리 잡았다. 알림, 진행률, 라이브 피드, AI 응답 스트리밍 같은 자리가 대표적이다. 요즘 LLM API 응답 스트리밍에는 SSE가 거의 표준처럼 쓰인다.
 
-다음 글에서는 양방향 통신이 필요한 경우의 표준인 WebSocket으로 넘어간다. 출발점은 IETF 드래프트 `draft-abarth-websocket-handshake-01`과 그 최종 형태인 `RFC 6455`의 핸드셰이크 분석이다.
+[다음 글](/posts/websocket-handshake-rfc)에서는 양방향 통신이 필요한 경우의 표준인 WebSocket으로 넘어간다. 출발점은 IETF 드래프트 `draft-abarth-websocket-handshake-01`과 그 최종 형태인 `RFC 6455`의 핸드셰이크 분석이다.
 
 ---
 
 ## 참고
 
-- [실무에서 SSE + Shared Worker를 도입하며 마주친 것들](/posts/sse-shared-worker-in-practice) — 이 SSE를 실무에서 적용한 사례
-- [WHATWG HTML — Server-sent events](https://html.spec.whatwg.org/multipage/server-sent-events.html)
-- [MDN — Using server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)
-- [MDN — EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource)
+- [실무에서 SSE + Shared Worker를 도입하며 마주친 것들](/posts/sse-shared-worker-in-practice): SSE를 실무에 적용한 사례
+- [WHATWG HTML: Server-sent events](https://html.spec.whatwg.org/multipage/server-sent-events.html)
+- [MDN: Using server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)
+- [MDN: EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource)

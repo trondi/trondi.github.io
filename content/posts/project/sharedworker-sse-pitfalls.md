@@ -46,7 +46,7 @@ worker.port.postMessage({ type: 'REGISTER', pageType, baseURL });
 `onconnect`·fan-out 구현은 이미 다뤘으니 링크로 대신한다.
 
 - [실무에서 SSE + Shared Worker를 도입하며 마주친 것들](/posts/sse-shared-worker-in-practice) - 연결 수 비교 다이어그램과 pageType 필터링 코드
-- [Shared Worker - 여러 탭이 공유하는 워커](/posts/shared-worker) - `onconnect`/MessagePort 기본기와 Safari iOS 미지원 이슈
+- [Shared Worker - 여러 탭이 공유하는 워커](/posts/shared-worker) - `onconnect`/MessagePort 기본기와 Android Chrome 미지원 이슈
 
 이 글이 다루려는 건 그 구조가 아니라, 구조를 굴리면서 개발 루프에서 시간을 태운
 지점들이다. 상태 설계에서 하나만 미리 짚어두면, 안읽음 판정도 워커가 중앙에서

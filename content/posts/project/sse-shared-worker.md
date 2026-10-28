@@ -1,5 +1,5 @@
 ---
-title: "SSE와 Shared Worker — 실시간 통신의 두 가지 접근"
+title: "SSE와 Shared Worker(실시간 통신의 두 가지 접근)"
 date: "2026-04-19"
 summary: "Server-Sent Events로 서버 → 클라이언트 단방향 스트리밍을 구현하는 방법과, Shared Worker로 탭 간 상태를 공유하는 방법을 정리했다."
 category: "Project"
@@ -11,7 +11,7 @@ tags:
 featured: false
 ---
 
-# SSE와 Shared Worker — 실시간 통신의 두 가지 접근
+# SSE와 Shared Worker(실시간 통신의 두 가지 접근)
 
 ## 왜 이 둘을 같이 보는가
 
@@ -24,7 +24,7 @@ SSE로 서버 이벤트를 받고, Shared Worker로 그 이벤트를 여러 탭�
 
 ---
 
-## SSE — Server-Sent Events
+## SSE(Server-Sent Events)
 
 ### WebSocket과 비교
 
@@ -38,11 +38,11 @@ SSE로 서버 이벤트를 받고, Shared Worker로 그 이벤트를 여러 탭�
 
 데이터를 서버에서만 클라이언트로 보내는 경우(알림, 피드, 진행 상황)라면 SSE가 더 단순하다.
 
-### SSE 동작은 단순하다 — 자세한 건 레퍼런스로
+### SSE 동작은 단순하다: 자세한 건 레퍼런스로
 
 서버는 응답을 끊지 않고 `text/event-stream`으로 이벤트를 흘려보내고, 클라이언트는 `EventSource` 하나로 받는다. `data` / `event` / `id` / `retry` 네 필드, Last-Event-ID 기반 자동 재연결, `EventSource`의 헤더 지정 제약, HTTP/2와의 궁합 같은 SSE의 포맷·API 동작은 개념 레퍼런스에 따로 정리했다.
 
-→ [Server-Sent Events — HTTP 위의 단방향 스트림](/posts/server-sent-events)
+→ [Server-Sent Events(HTTP 위의 단방향 스트림)](/posts/server-sent-events)
 
 이 글은 그 SSE를 **여러 탭이 공유하도록** Shared Worker와 묶는 부분에 집중한다.
 
@@ -50,7 +50,7 @@ SSE로 서버 이벤트를 받고, Shared Worker로 그 이벤트를 여러 탭�
 
 ## Shared Worker
 
-라이프사이클(누가 살리고 죽이나), MessagePort, `onconnect`, Safari iOS 미지원, 디버깅 같은 Shared Worker 자체의 동작은 [Shared Worker — 여러 탭이 공유하는 워커](/posts/shared-worker)에 자세히 정리했다. 여기서는 SSE 연결을 공유하는 데 필요한 만큼만 본다.
+라이프사이클(누가 살리고 죽이나), MessagePort, `onconnect`, Android Chrome 미지원, 디버깅 같은 Shared Worker 자체의 동작은 [Shared Worker(여러 탭이 공유하는 워커)](/posts/shared-worker)에 자세히 정리했다. 여기서는 SSE 연결을 공유하는 데 필요한 만큼만 본다.
 
 ### Worker 종류 비교
 
@@ -232,6 +232,6 @@ self.onconnect = (e) => {
 | 역할 | 서버 → 클라이언트 스트리밍 | 탭 간 공유 백그라운드 스레드 |
 | 연결 대상 | 서버 | 브라우저 내부 |
 | 핵심 장점 | HTTP 기반, 자동 재연결, 단순 API | 연결 수 감소, 탭 간 상태 동기화 |
-| 주의 사항 | 단방향 (서버→클라이언트만) | Safari 지원 제한적, SharedWorker 미지원 환경 폴백 필요 |
+| 주의 사항 | 단방향 (서버→클라이언트만) | Android Chrome은 SharedWorker 미지원이라 폴백 필요 |
 
 실시간 알림, 라이브 피드처럼 서버 → 클라이언트 단방향 데이터 흐름에는 WebSocket 대신 **SSE**가 더 적합하다. 여러 탭이 동일한 연결을 공유해야 한다면 **Shared Worker**와 조합하면 서버 부하를 크게 줄일 수 있다.

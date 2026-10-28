@@ -38,7 +38,7 @@ featured: false
 
 short/long이 내부에서 어떻게 동작하는지 — 서버가 응답을 어떻게 "보류"하는지(`bus.emit`/`await`), idle timeout, short vs long 흐름 비교, Comet/hanging GET의 역사까지 — 는 개념 레퍼런스에 따로 정리했다.
 
-→ [HTTP polling과 long polling — 실시간을 흉내내는 가장 오래된 방법](/posts/http-polling-and-long-polling)
+→ [HTTP polling과 long polling(실시간 통신의 출발점)](/posts/http-polling-and-long-polling)
 
 이 글은 그 개념을 전제로, **padion에서 실제로 무엇을 골랐는지**에 집중한다.
 
@@ -248,7 +248,7 @@ Polling은 종종 "구식"으로 취급되지만 — 짧고 유한한 모니터�
 
 ## 참고
 
-- [HTTP polling과 long polling — 실시간을 흉내내는 가장 오래된 방법](/posts/http-polling-and-long-polling) — polling 동작 메커니즘 상세
+- [HTTP polling과 long polling(실시간 통신의 출발점)](/posts/http-polling-and-long-polling): polling 동작 메커니즘 상세
 - [SSE와 Shared Worker — 실시간 통신의 두 가지 접근](/posts/sse-shared-worker)
 - [실무에서 SSE + Shared Worker를 도입하며 마주친 것들](/posts/sse-shared-worker-in-practice)
 - [Next.js에서 SSE와 WebSocket은 Proxy로 처리해도 될까](/posts/nextjs-proxy-sse-websocket)
