@@ -69,6 +69,41 @@ function renderInline(text: string): ReactNode[] {
   });
 }
 
+/**
+ * 인용문 본문을 그린다. 파서가 문단은 "\n\n", 리스트 항목은 "\n"으로 나눠 둔다.
+ * `- ` 로 시작하는 줄이 이어지면 하나의 목록으로 묶는다.
+ */
+function renderQuote(text: string): ReactNode[] {
+  return text.split("\n\n").flatMap((paragraph, paragraphIndex) => {
+    const nodes: ReactNode[] = [];
+    let items: string[] = [];
+
+    const flushItems = () => {
+      if (items.length === 0) return;
+      nodes.push(
+        <ul key={`quote-${paragraphIndex}-list-${nodes.length}`} className="list-disc space-y-1 pl-5 marker:text-slate-400 dark:marker:text-slate-600">
+          {items.map((item, itemIndex) => (
+            <li key={itemIndex}>{renderInline(item)}</li>
+          ))}
+        </ul>,
+      );
+      items = [];
+    };
+
+    paragraph.split("\n").forEach((line) => {
+      if (/^-\s+/.test(line)) {
+        items.push(line.replace(/^-\s+/, ""));
+        return;
+      }
+      flushItems();
+      nodes.push(<p key={`quote-${paragraphIndex}-${nodes.length}`}>{renderInline(line)}</p>);
+    });
+    flushItems();
+
+    return nodes;
+  });
+}
+
 function parseTaskListItem(item: string) {
   const match = item.match(/^\[([ xX])\]\s+(.+)$/);
 
@@ -190,9 +225,9 @@ export function MarkdownRenderer({ blocks }: MarkdownRendererProps) {
           return (
             <blockquote
               key={`blockquote-${index}`}
-              className="border-l-2 border-slate-300 pl-5 text-[1.02rem] leading-8 text-slate-600 dark:border-slate-700 dark:text-slate-400/95"
+              className="space-y-2 border-l-2 border-slate-300 pl-5 text-[1.02rem] leading-8 text-slate-600 dark:border-slate-700 dark:text-slate-400/95"
             >
-              {renderInline(block.text)}
+              {renderQuote(block.text)}
             </blockquote>
           );
         }

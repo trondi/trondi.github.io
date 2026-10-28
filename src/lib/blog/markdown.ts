@@ -173,12 +173,30 @@ export function parseMarkdown(content: string): ParsedMarkdown {
     }
 
     if (/^>\s?/.test(trimmedLine)) {
-      const quoteLines: string[] = [];
+      // 인용문 안에서도 줄바꿈 규칙은 본문과 같다.
+      // - 빈 `>` 줄 → 문단 구분 ("\n\n")
+      // - `- ` 로 시작하는 줄 → 리스트 항목이라 줄을 바꾼다 ("\n")
+      // - 그 외 줄 → 앞 줄에 이어붙임 (한 문장을 여러 줄로 쓴 경우)
+      const paragraphs: string[][] = [[]];
       while (index < lines.length && /^>\s?/.test(lines[index].trim())) {
-        quoteLines.push(lines[index].trim().replace(/^>\s?/, ""));
+        const content = lines[index].trim().replace(/^>\s?/, "").trim();
+        const paragraph = paragraphs[paragraphs.length - 1];
+        const last = paragraph.length - 1;
+
+        if (!content) {
+          if (paragraph.length > 0) paragraphs.push([]);
+        } else if (UNORDERED_ITEM.test(content) || last < 0) {
+          paragraph.push(content);
+        } else {
+          paragraph[last] += ` ${content}`;
+        }
         index += 1;
       }
-      blocks.push({ type: "blockquote", text: quoteLines.join(" ") });
+      const text = paragraphs
+        .filter((paragraph) => paragraph.length > 0)
+        .map((paragraph) => paragraph.join("\n"))
+        .join("\n\n");
+      blocks.push({ type: "blockquote", text });
       continue;
     }
 
