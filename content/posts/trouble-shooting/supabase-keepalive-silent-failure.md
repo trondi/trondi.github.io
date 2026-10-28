@@ -48,7 +48,7 @@ env:
   NEXT_PUBLIC_COMMENTS_API_URL: ${{ secrets.NEXT_PUBLIC_COMMENTS_API_URL }}
 ```
 
-GitHub Actions에서 **존재하지 않는 시크릿은 에러가 아니라 빈 문자열**로 치환된다. 결국 실제로 실행된 명령은 `curl -sf "?slug=ping"`이었고, URL이 없으니 curl이 바로 실패했다. 5초 만에 끝나는 게 당연했다.
+GitHub Actions에서 **존재하지 않는 시크릿은 에러가 아니라 빈 문자열**로 치환된다. 결국 실제로 실행된 명령은 `curl -sf "?slug=ping"`이었고 URL이 없으니 curl이 바로 실패했다. 5초 만에 끝나는 게 당연했다.
 
 그래서 이름을 `NEXT_PUBLIC_COMMENTS_API_URL`로 맞췄다. 그런데도 계속 실패했다.
 
@@ -80,7 +80,7 @@ if (!COMMENTS_API) return null;
 
 ### 로컬 .env는 왜 상관없나
 
-로컬에서는 `.env`에 값이 있으니 모든 게 잘 동작했다. 하지만 `.env`는 `.gitignore`에 들어 있어서 GitHub에 올라가지 않는다. GitHub Actions 빌드 서버에는 이 파일이 없고, **저장소의 Secrets에 따로 등록**해야 `${{ secrets.이름 }}`으로 꺼내 쓸 수 있다.
+로컬에서는 `.env`에 값이 있으니 모든 게 잘 동작했다. 하지만 `.env`는 `.gitignore`에 들어 있어서 GitHub에 올라가지 않는다. GitHub Actions 빌드 서버에는 이 파일이 없고 **저장소의 Secrets에 따로 등록**해야 `${{ secrets.이름 }}`으로 꺼내 쓸 수 있다.
 
 | 환경 | 값을 가져오는 곳 |
 |------|------------------|
@@ -116,7 +116,7 @@ Keep-Alive가 한 번도 성공하지 못했고 댓글 기능도 꺼져 있었�
 | Re-run jobs | 원래 실행됐던 시점의 커밋 |
 | Run workflow | 지금 선택한 브랜치의 최신 커밋 |
 
-고친 내용을 확인하려면 **Run workflow**를 써야 한다. 이 버튼은 워크플로우에 `workflow_dispatch` 트리거가 있어야 생기고, "All workflows" 화면에는 안 보인다. 왼쪽 사이드바에서 **워크플로우를 하나 골라야** 오른쪽 위에 나타난다.
+고친 내용을 확인하려면 **Run workflow**를 써야 한다. 이 버튼은 워크플로우에 `workflow_dispatch` 트리거가 있어야 생기고 "All workflows" 화면에는 안 보인다. 왼쪽 사이드바에서 **워크플로우를 하나 골라야** 오른쪽 위에 나타난다.
 
 ---
 
@@ -124,7 +124,7 @@ Keep-Alive가 한 번도 성공하지 못했고 댓글 기능도 꺼져 있었�
 
 1. Supabase 대시보드에서 프로젝트 Resume
 2. GitHub 저장소 Secrets 탭에 `NEXT_PUBLIC_COMMENTS_API_URL` 등록
-3. 배포 워크플로우를 Run workflow로 재실행해서, URL이 번들에 들어간 상태로 다시 빌드
+3. 배포 워크플로우를 Run workflow로 재실행해서 URL이 번들에 들어간 상태로 다시 빌드
 4. Keep-Alive를 Run workflow로 실행해서 초록불 확인
 5. 배포된 번들에 Supabase 주소가 들어갔는지 직접 확인
 
@@ -138,7 +138,7 @@ Keep-Alive가 한 번도 성공하지 못했고 댓글 기능도 꺼져 있었�
 
 ### 배포 워크플로우
 
-빌드 전에 시크릿부터 확인한다. 의존성 설치보다 먼저 돌아서, 시크릿이 없으면 몇 초 만에 실패한다.
+빌드 전에 시크릿부터 확인한다. 의존성 설치보다 먼저 돌아서 시크릿이 없으면 몇 초 만에 실패한다.
 
 ```yaml
 # 시크릿이 비어도 빌드는 성공하고 댓글·반응·조회수만 조용히 사라지므로 여기서 막는다
@@ -179,7 +179,7 @@ Keep-Alive가 한 번도 성공하지 못했고 댓글 기능도 꺼져 있었�
 
 ## 남은 주의점 — 60일 규칙
 
-GitHub은 **공개 저장소에 60일 동안 활동이 없으면 예약(schedule) 워크플로우를 자동으로 비활성화**한다. 글을 한동안 안 쓰면 Keep-Alive가 멈추고, 방문자도 없으면 Supabase가 다시 정지될 수 있다.
+GitHub은 **공개 저장소에 60일 동안 활동이 없으면 예약(schedule) 워크플로우를 자동으로 비활성화**한다. 글을 한동안 안 쓰면 Keep-Alive가 멈추고 방문자도 없으면 Supabase가 다시 정지될 수 있다.
 
 꾸준히 커밋하면 신경 쓸 일이 없다. 오래 쉬게 되면 GitHub이 미리 알림 메일을 보내니, 메일에 있는 버튼으로 다시 켜면 된다.
 
