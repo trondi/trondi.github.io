@@ -28,6 +28,9 @@ const registry: Record<string, React.LazyExoticComponent<() => React.ReactElemen
   "triple-chain":          lazy(() => import("./triple-chain").then((m) => ({ default: m.TripleChainDiagram }))),
   "a11y-inference":        lazy(() => import("./a11y-inference").then((m) => ({ default: m.A11yInferenceDiagram }))),
   "blog-ia-layers":        lazy(() => import("./blog-ia-layers").then((m) => ({ default: m.BlogIaLayersDiagram }))),
+  "optimistic-vs-waiting": lazy(() => import("./optimistic-vs-waiting").then((m) => ({ default: m.OptimisticVsWaitingDiagram }))),
+  "optimistic-refetch-race": lazy(() => import("./optimistic-refetch-race").then((m) => ({ default: m.OptimisticRefetchRaceDiagram }))),
+  "optimistic-rapid-clicks": lazy(() => import("./optimistic-rapid-clicks").then((m) => ({ default: m.OptimisticRapidClicksDiagram }))),
 };
 
 export function DiagramBlock({ name }: { name: string }) {
