@@ -95,8 +95,6 @@ app
             └─ route.ts
 ```
 
-> 이 글은 2026년 5월 구현 기준이다. 이후 k8s 스코프가 추가되면서 SSE 엔드포인트가 `/alarm/connect`와 `/k8s/alarm/connect` 둘이 됐고, 같은 스트리밍 코드를 두 벌로 두지 않으려고 catch-all 라우트 `app/api/proxy/[...path]/route.ts` 하나로 합쳤다. Proxy의 통과 조건도 경로 하나 비교에서 배열 검사로 바뀌었다. 자세한 내용은 [SharedWorker는 이름이 인스턴스다](/posts/sharedworker-scope-partitioning)에 있다.
-
 SSE는 Node.js runtime에서 직접 stream을 반환하는 편이 안전하다.
 
 ```ts
@@ -127,6 +125,20 @@ export async function GET(request: NextRequest) {
         },
       },
       (res) => {
+        // 백엔드가 200이 아니면 SSE로 포장하지 않고 상태와 body를 그대로 돌려준다
+        if (res.statusCode !== 200) {
+          const chunks: Buffer[] = [];
+          res.on("data", (chunk) => chunks.push(chunk));
+          res.on("end", () => {
+            resolve(
+              new Response(Buffer.concat(chunks), {
+                status: res.statusCode ?? 502,
+              }),
+            );
+          });
+          return;
+        }
+
         const stream = new ReadableStream({
           start(controller) {
             res.on("data", (chunk) => {
@@ -171,13 +183,18 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-핵심은 세 가지다.
+핵심은 네 가지다.
 
 - `runtime = "nodejs"`를 명시한다.
+- 백엔드가 200이 아니면 상태코드를 그대로 돌려준다.
 - 백엔드 SSE 응답을 `ReadableStream`으로 그대로 전달한다.
 - 브라우저 연결이 끊기면 백엔드 요청도 종료한다.
 
+상태코드 분기는 처음 구현에는 없었다. 그래서 백엔드의 401이 200 SSE로 포장됐고, 브라우저는 "연결 성공 → 즉시 종료"로 받아들여 재연결을 끝없이 반복했다. 원인을 추적하고 고친 과정은 [프록시가 에러를 삼킬 때](/posts/proxy-swallows-errors)에 정리했다.
+
 `fetch`로도 스트림을 다룰 수 있는 경우가 있지만, 플랫폼이나 런타임의 timeout, buffering, abort 동작을 반드시 확인해야 한다. 장기 연결은 일반 JSON API보다 훨씬 민감하다.
+
+> 이 글은 2026년 5월 구현 기준이다. 이후 k8s 스코프가 추가되면서 SSE 엔드포인트가 `/alarm/connect`와 `/k8s/alarm/connect` 둘이 됐고, 같은 스트리밍 코드를 두 벌로 두지 않으려고 catch-all 라우트 `app/api/proxy/[...path]/route.ts` 하나로 합쳤다. Proxy의 통과 조건도 경로 하나 비교에서 배열 검사로 바뀌었다. 자세한 내용은 [SharedWorker는 이름이 인스턴스다](/posts/sharedworker-scope-partitioning)에 있다.
 
 ---
 
@@ -199,6 +216,8 @@ eventSource.onerror = () => {
   eventSource.close();
 };
 ```
+
+`onerror`에서 바로 `close()`하는 건 EventSource의 내장 재연결에 백오프도 횟수 상한도 없어서다. 내장 재연결을 끄고, 재연결은 지수 백오프를 둔 직접 로직 한 경로로만 태운다.
 
 브라우저 입장에서는 여전히 same-origin `/api/proxy/alarm/connect`를 호출한다. 하지만 서버 내부에서는 Proxy rewrite가 아니라 Route Handler가 스트림을 관리한다.
 
