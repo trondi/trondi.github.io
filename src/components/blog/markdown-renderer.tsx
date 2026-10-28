@@ -52,7 +52,7 @@ function renderInline(text: string): ReactNode[] {
     if (/^\*\*[^*]+\*\*$/.test(part)) {
       return (
         <strong key={`${part}-${index}`} className="font-semibold text-slate-950 dark:text-slate-100">
-          {part.slice(2, -2)}
+          {renderInline(part.slice(2, -2))}
         </strong>
       );
     }
@@ -60,7 +60,7 @@ function renderInline(text: string): ReactNode[] {
     if (/^\*[^*]+\*$/.test(part)) {
       return (
         <em key={`${part}-${index}`} className="italic">
-          {part.slice(1, -1)}
+          {renderInline(part.slice(1, -1))}
         </em>
       );
     }
