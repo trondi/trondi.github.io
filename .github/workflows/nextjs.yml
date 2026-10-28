@@ -22,6 +22,16 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # 시크릿이 비어도 빌드는 성공하고 댓글·반응·조회수만 조용히 사라지므로 여기서 막는다
+      - name: Check Required Secrets
+        env:
+          NEXT_PUBLIC_COMMENTS_API_URL: ${{ secrets.NEXT_PUBLIC_COMMENTS_API_URL }}
+        run: |
+          if [ -z "$NEXT_PUBLIC_COMMENTS_API_URL" ]; then
+            echo "::error::Missing GitHub Actions secret NEXT_PUBLIC_COMMENTS_API_URL."
+            exit 1
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -34,7 +44,7 @@ jobs:
       - name: Build Next.js
         run: NEXT_IGNORE_TS_ERRORS=true yarn next build # ✅ Next.js 설치 후 실행
         env:
-          # 댓글 Edge Function 엔드포인트 — 미설정이면 댓글 섹션이 렌더되지 않음
+          # 댓글 Edge Function 엔드포인트 — 미설정 시 위 Check Required Secrets 단계에서 실패
           NEXT_PUBLIC_COMMENTS_API_URL: ${{ secrets.NEXT_PUBLIC_COMMENTS_API_URL }}
 
       - name: Upload Artifact
