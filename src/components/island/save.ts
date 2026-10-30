@@ -4,7 +4,29 @@ export type ItemType = "apple" | "orange" | "seed";
 
 export type PlantedFlower = { id: string; x: number; z: number; color: number; at: number };
 export type GroundItem = { id: string; type: ItemType; x: number; z: number };
-export type Look = { body: "a" | "b"; skin: number };
+export type Hat = "none" | "straw" | "beanie" | "cap" | "bow";
+export type Look = {
+  body: "a" | "b";
+  skin: number;
+  /** 아래 팔레트의 색 번호 — 예전 저장에는 없을 수 있다 */
+  shirt?: number;
+  pants?: number;
+  hair?: number;
+  hat?: Hat;
+};
+
+export const SHIRT_COLORS = ["#4f4a8a", "#7d5bb0", "#e8707a", "#f0a24a", "#f5d26b", "#6faa4f", "#4f9fd0", "#ffffff", "#3a3a44", "#c96f5a"];
+export const PANTS_COLORS = ["#1f2a44", "#3b4a6b", "#5a4632", "#7a8796", "#2f2f35", "#d9c7a6", "#6f5aa8", "#4a6b4a"];
+export const HAIR_COLORS = ["#4a1f1a", "#2a1f1a", "#7a4a2a", "#c98f4a", "#e8d6a8", "#d66fa0", "#6f8fd0", "#9a9aa6"];
+export const HATS: { id: Hat; name: string }[] = [
+  { id: "none", name: "없음" },
+  { id: "straw", name: "밀짚모자" },
+  { id: "beanie", name: "비니" },
+  { id: "cap", name: "캡" },
+  { id: "bow", name: "리본" },
+];
+
+export type DexEntry = { count: number; best: number; first: number };
 
 export type IslandSave = {
   v: 1;
@@ -18,6 +40,10 @@ export type IslandSave = {
   ground: GroundItem[];
   /** 마지막으로 읽은 편지(글 slug) */
   mailRead: string | null;
+  /** 가방 속 물고기 (종류별 마리 수) */
+  fish: Record<string, number>;
+  /** 도감 — 한 번이라도 낚은 것 */
+  dex: Record<string, DexEntry>;
 };
 
 const KEY = "trond-island:v1";
@@ -32,6 +58,8 @@ export function emptySave(): IslandSave {
     harvested: {},
     ground: [],
     mailRead: null,
+    fish: {},
+    dex: {},
   };
 }
 

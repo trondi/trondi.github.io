@@ -3,11 +3,11 @@
 export type Walkable = (x: number, z: number) => boolean;
 export type Point = { x: number; z: number };
 
-const CELL = 0.25;
-const MIN_X = -14;
-const MIN_Z = -9;
-const COLS = 112;
-const ROWS = 84;
+const CELL = 0.3;
+const MIN_X = -26;
+const MIN_Z = -23;
+const COLS = Math.ceil(52 / CELL);
+const ROWS = Math.ceil(46 / CELL);
 
 export class NavGrid {
   private open: Uint8Array;
