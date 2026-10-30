@@ -456,10 +456,13 @@ function PanelBody({
     return (
       <>
         <Tag color="#7d5bb0">trond의 집</Tag>
-        <p>똑똑… 주인장은 지금 글 쓰는 중인가 봐요 ✍️</p>
+        <p>똑똑… 문에 쪽지가 붙어 있어요 📝</p>
+        <p className="mt-1 rounded-xl bg-[#f3e9d2] px-3 py-2 text-[13px]">
+          “놀러 와 줘서 고마워요! 지금은 글 쓰러 잠깐 나갔어요. 제가 궁금하면 소개 페이지에 들러 주세요. — trond”
+        </p>
         <div className="mt-3 flex justify-end gap-1.5">
           <Link href="/about" className={primary}>
-            주인장 소개 보기
+            trond 알아보기
           </Link>
           <button type="button" className={secondary} onClick={onClose}>
             닫기
