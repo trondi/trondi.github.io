@@ -1,0 +1,13 @@
+3D models in this folder are by Quaternius (https://quaternius.com) and are
+released under CC0 1.0 Universal (Public Domain Dedication):
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Packs used (converted to GLB, animations trimmed, meshopt-compressed):
+- Ultimate Nature Pack
+- Ultimate Crops Pack
+- Ultimate Animated Animals
+- Ultimate Animated Character Pack
+- Simple Buildings Pack (House.glb: roof color of the palette texture edited to purple)
+- Farm Buildings Pack
+
+Thank you, Quaternius! https://www.patreon.com/quaternius

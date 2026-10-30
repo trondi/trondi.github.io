@@ -17,6 +17,7 @@ export const siteConfig = {
     { label: "Posts", href: "/posts" },
     { label: "Tags", href: "/tags" },
     { label: "Guestbook", href: "/guestbook" },
+    { label: "Island", href: "/island" },
     { label: "About", href: "/about" },
   ],
   categories: [
