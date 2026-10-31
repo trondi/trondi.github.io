@@ -6,9 +6,9 @@ import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js
 
 import type { Season } from "@/lib/season";
 
-import { SPECIES_BY_ID, type Species, rollCatch, shadowScale } from "./fish";
+import { FISH_MODELS, SPECIES_BY_ID, type Species, rollCatch, shadowScale } from "./fish";
 import { type Chibi, type ChibiAnim, buildChibi } from "./chibi";
-import { type FishAssets, buildFishFromAsset, buildFishModel } from "./fish-model";
+import { buildFishFromAsset, buildFishModel } from "./fish-model";
 import { NavGrid, type Point } from "./pathfind";
 import {
   HAIR_COLORS, PANTS_COLORS, SHIRT_COLORS,
@@ -89,11 +89,11 @@ const SPAWN = { x: 0.6, z: 3.2 };
 const BENCH = { x: POND.x + 3.6, z: POND.z + 1.4 };
 const LAMPS: Point[] = [
   { x: -0.6, z: 0.2 }, { x: 2.0, z: 1.7 }, { x: 8.4, z: 1.6 }, { x: -1.6, z: -7.2 },
-  { x: DOCK.x + 1.4, z: 12.6 }, { x: POND.x + 2.4, z: POND.z - 2.6 }, { x: 8.6, z: 10.0 },
+  { x: DOCK.x + 1.4, z: DOCK.z0 - 1 }, { x: POND.x + 2.4, z: POND.z - 2.6 }, { x: 8.6, z: 10.0 },
 ];
 /** 나무를 심지 않는 빈터 */
 const CLEARINGS: { x: number; z: number; r: number }[] = [
-  { x: -2, z: 0, r: 6.8 }, { x: SPAWN.x, z: SPAWN.z, r: 2.5 }, { x: DOCK.x, z: 13, r: 2.6 },
+  { x: -2, z: 0, r: 6.8 }, { x: SPAWN.x, z: SPAWN.z, r: 2.5 }, { x: DOCK.x, z: DOCK.z0 - 0.4, r: 2.6 },
   { x: RAMP.x, z: cliffZ(RAMP.x) - 2.6, r: 2.2 }, { x: RAMP.x, z: cliffZ(RAMP.x) + 2.6, r: 2.2 },
   { x: BENCH.x, z: BENCH.z, r: 1.8 }, { x: 12, z: 0, r: 4.6 },
   ...BRIDGES.flatMap((b) => [
@@ -112,7 +112,7 @@ const MODELS = [
   "Apple_4", "Apple_Harvested", "Apple_Crop", "Orange_4", "Orange_Harvested", "Orange_Crop",
   "Flower_1", "Flower_2", "Flower_3", "Flower_4", "Flowers", "Bush_1", "Bush_Snow_1", "BushBerries_1",
   "Rock_1", "Rock_2", "Rock_Moss_1", "Rock_Moss_2", "Rock_Snow_1", "Rock_Snow_2", "Grass", "Grass_Short",
-  "Lilypad", "TreeStump_Moss", "WoodLog_Moss", "Mushroom_1", "Fish1", "Fish2", "Fish3", "Shark",
+  "Lilypad", "TreeStump_Moss", "WoodLog_Moss", "Mushroom_1", "FishingRod_Lvl1", "Dock_Long", "Boat",
 ] as const;
 type ModelName = (typeof MODELS)[number];
 
@@ -393,21 +393,31 @@ export async function createIsland(
     scene.add(curveAll(bridge));
   }
 
-  // 선착장
-  const dock = new THREE.Group();
-  for (let z = DOCK.z0; z < DOCK.z1; z += 0.42) {
-    const p = new THREE.Mesh(new THREE.BoxGeometry(DOCK.halfWidth * 2, 0.08, 0.36), cachedStd(Math.round(z * 10) % 2 ? "#9b6b45" : "#a87650"));
-    p.position.set(DOCK.x, DOCK.y, z + 0.18);
-    dock.add(p);
+  // 선착장 — Cute Fish 팩 나무 선착장 (원본 기준 갑판 윗면 높이 3.82)
+  {
+    const len = DOCK.z1 - DOCK.z0;
+    const dock = gltfs.get("Dock_Long")!.scene.clone(true);
+    const raw = new THREE.Box3().setFromObject(dock);
+    const k = len / (raw.max.z - raw.min.z);
+    dock.scale.setScalar(k);
+    dock.position.set(
+      DOCK.x - ((raw.min.x + raw.max.x) / 2) * k,
+      DOCK.y - 3.82 * k,
+      (DOCK.z0 + DOCK.z1) / 2 - ((raw.min.z + raw.max.z) / 2) * k,
+    );
+    scene.add(dock);
   }
-  for (let z = DOCK.z0 + 1; z <= DOCK.z1; z += 1.9) {
-    for (const side of [-1, 1]) {
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 1.4, 6), cachedStd("#6b4a32"));
-      post.position.set(DOCK.x + side * (DOCK.halfWidth + 0.02), DOCK.y - 0.4, z);
-      dock.add(post);
-    }
+  // 선착장 옆에 매어 둔 작은 배 — 물결 따라 살짝 흔들린다
+  const boat = gltfs.get("Boat")!.scene.clone(true);
+  {
+    const raw = new THREE.Box3().setFromObject(boat);
+    const k = 2.3 / (raw.max.z - raw.min.z);
+    boat.scale.setScalar(k);
+    boat.userData.baseY = WATER_Y - 0.1 - raw.min.y * k;
+    boat.position.set(DOCK.x + DOCK.halfWidth + 0.9, boat.userData.baseY, DOCK.z1 - 0.9);
+    boat.rotation.y = 0.12;
+    scene.add(boat);
   }
-  scene.add(curveAll(dock));
 
   // 집
   const house = place("House", HOUSE.x, HOUSE.z, HOUSE.scale, HOUSE.rot);
@@ -586,6 +596,8 @@ export async function createIsland(
         const z = (B() - 0.5) * 38 - 1.5;
         if (!terrainWalkable(x, z) || islandE(x, z) > 0.92) continue;
         if (Math.abs(x - riverX(z)) < 1.8 || Math.abs(cliffZ(x) - z) < 0.9) continue;
+        // 선착장 위·바로 옆은 비워 둔다
+        if (Math.abs(x - DOCK.x) < DOCK.halfWidth + 1.2 && z > DOCK.z0 - 1.5) continue;
         if (CLEARINGS.slice(0, 2).some((c) => (x - c.x) ** 2 + (z - c.z) ** 2 < (c.r * 0.7) ** 2)) continue;
         if (colliders.some((c) => (x - c.x) ** 2 + (z - c.z) ** 2 < (c.r + minTree) ** 2)) continue;
         if (extra && !extra(x, z)) continue;
@@ -964,6 +976,7 @@ export async function createIsland(
     mode = m;
     rod.visible = m === "fish";
     holdingRod = m === "fish";
+    if (m === "fish") loadFishAssets();
     cb.onModeChange(m);
   };
 
@@ -1000,22 +1013,40 @@ export async function createIsland(
 
   /* ───────────── 낚시 ───────────── */
   const rod = new THREE.Group();
+  // Cute Fish 팩 낚싯대 — 원본은 y축으로 서 있고 원점(손잡이)에서 끝까지 4.91
+  const ROD_SCALE = 0.27;
   {
-    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.24, 6), cachedStd("#3a2b2b"));
-    handle.position.y = 0.12;
-    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.02, 1.25, 6), cachedStd("#c9a25a"));
-    shaft.position.y = 0.24 + 0.625;
-    const reel = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 10), cachedStd("#7a8796"));
-    reel.rotation.z = Math.PI / 2;
-    reel.position.set(0.04, 0.2, 0);
-    rod.add(handle, shaft, reel);
-    curveAll(rod);
+    const m = gltfs.get("FishingRod_Lvl1")!.scene.clone(true);
+    m.scale.setScalar(ROD_SCALE);
+    rod.add(m);
   }
   rod.visible = false;
   scene.add(rod);
   const rodTip = new THREE.Object3D();
-  rodTip.position.y = 1.49;
+  rodTip.position.y = 4.91 * ROD_SCALE;
   rod.add(rodTip);
+
+  // 물고기 모델은 처음 낚싯대를 들 때 불러온다
+  const fishAssets = new Map<string, THREE.Object3D>();
+  let fishLoading = false;
+  let disposed = false;
+  const loadFishAssets = () => {
+    if (fishLoading) return;
+    fishLoading = true;
+    const fishLoader = new GLTFLoader();
+    fishLoader.setMeshoptDecoder(MeshoptDecoder);
+    for (const name of FISH_MODELS) {
+      fishLoader
+        .loadAsync(`/island/models/${name}.glb`)
+        .then((g) => {
+          if (disposed) return;
+          fishAssets.set(name, curveAll(g.scene));
+        })
+        .catch(() => {
+          // 못 불러오면 코드로 만든 물고기로 대신한다
+        });
+    }
+  };
 
   const bobber = new THREE.Group();
   {
@@ -1140,16 +1171,11 @@ export async function createIsland(
     fishShadow.visible = false;
     player.root.rotation.y = 0;
     play(player, "Victory", true);
-    const fishAssets: FishAssets = {
-      Fish1: gltfs.get("Fish1")!.scene,
-      Fish2: gltfs.get("Fish2")!.scene,
-      Fish3: gltfs.get("Fish3")!.scene,
-      Shark: gltfs.get("Shark")!.scene,
-    };
     const model = buildFishFromAsset(species, fishAssets, recolor) ?? buildFishModel(species, cachedStd);
     const s = species.junk ? 0.7 : THREE.MathUtils.clamp(size / 40, 0.6, 2.4) * 0.85;
     model.scale.multiplyScalar(s);
     curveAll(model);
+    if (fishing.held) scene.remove(fishing.held);
     scene.add(model);
     fishing.held = model;
     const prev = save.dex[species.id];
@@ -1602,7 +1628,7 @@ export async function createIsland(
       // 카메라
       const pr = player.root.position;
       const tx = closeUp ? pr.x : THREE.MathUtils.clamp(pr.x, -17, 17);
-      const tz = closeUp ? pr.z : THREE.MathUtils.clamp(pr.z - 1.5, -17, 15);
+      const tz = closeUp ? pr.z : THREE.MathUtils.clamp(pr.z - 1.5, -17, 17.5);
       // 옷장에서는 아래쪽 패널에 가리지 않게 캐릭터를 화면 위쪽에 둔다
       // (데스크톱은 오른쪽 패널을 피해 캐릭터를 왼쪽에)
       tmp.set(closeUp && !mobile ? tx + 1.0 : tx, closeUp ? pr.y - (mobile ? 0.5 : 0.0) : 0, closeUp ? tz + (mobile ? 0.8 : 0.2) : tz);
@@ -1704,6 +1730,8 @@ export async function createIsland(
       }
       pos.needsUpdate = true;
     }
+    boat.position.y = boat.userData.baseY + Math.sin(time * 1.3) * 0.03;
+    boat.rotation.z = Math.sin(time * 1.1) * 0.035;
     if (fireflies) {
       const m = fireflies.material as THREE.PointsMaterial;
       m.opacity = night * (0.6 + Math.sin(time * 3) * 0.3);
@@ -1765,6 +1793,10 @@ export async function createIsland(
         const v = new THREE.Vector3();
         rodTip.getWorldPosition(v);
         return { x: v.x, y: v.y, z: v.z, hand: !!playerHand };
+      },
+      fishReady: () => {
+        loadFishAssets();
+        return fishAssets.size === FISH_MODELS.length;
       },
       showCatch: (id: string, size: number) => {
         const species = SPECIES_BY_ID.get(id);
@@ -1836,6 +1868,7 @@ export async function createIsland(
       cb.onToast(`${SPECIES_BY_ID.get(id)?.emoji ?? "🐟"} 물로 돌려보냈어요`);
     },
     dispose: () => {
+      disposed = true;
       running = false;
       cancelAnimationFrame(raf);
       window.clearInterval(skyTimer);
