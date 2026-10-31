@@ -7,7 +7,7 @@ import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js
 import type { Season } from "@/lib/season";
 
 import { SPECIES_BY_ID, type Species, rollCatch, shadowScale } from "./fish";
-import { buildFishModel } from "./fish-model";
+import { type FishAssets, buildFishFromAsset, buildFishModel } from "./fish-model";
 import { NavGrid, type Point } from "./pathfind";
 import {
   HAIR_COLORS, PANTS_COLORS, SHIRT_COLORS,
@@ -111,7 +111,7 @@ const MODELS = [
   "Apple_4", "Apple_Harvested", "Apple_Crop", "Orange_4", "Orange_Harvested", "Orange_Crop",
   "Flower_1", "Flower_2", "Flower_3", "Flower_4", "Flowers", "Bush_1", "Bush_Snow_1", "BushBerries_1",
   "Rock_1", "Rock_2", "Rock_Moss_1", "Rock_Moss_2", "Rock_Snow_1", "Rock_Snow_2", "Grass", "Grass_Short",
-  "Lilypad", "TreeStump_Moss", "WoodLog_Moss", "Mushroom_1",
+  "Lilypad", "TreeStump_Moss", "WoodLog_Moss", "Mushroom_1", "Fish1", "Fish2", "Fish3", "Shark",
 ] as const;
 type ModelName = (typeof MODELS)[number];
 
@@ -1105,9 +1105,15 @@ export async function createIsland(
     fishShadow.visible = false;
     player.root.rotation.y = 0;
     play(player, "Victory", true);
-    const model = buildFishModel(species, cachedStd);
+    const fishAssets: FishAssets = {
+      Fish1: gltfs.get("Fish1")!.scene,
+      Fish2: gltfs.get("Fish2")!.scene,
+      Fish3: gltfs.get("Fish3")!.scene,
+      Shark: gltfs.get("Shark")!.scene,
+    };
+    const model = buildFishFromAsset(species, fishAssets, recolor) ?? buildFishModel(species, cachedStd);
     const s = species.junk ? 0.7 : THREE.MathUtils.clamp(size / 40, 0.6, 2.4) * 0.85;
-    model.scale.setScalar(s);
+    model.scale.multiplyScalar(s);
     curveAll(model);
     scene.add(model);
     fishing.held = model;
@@ -1724,6 +1730,12 @@ export async function createIsland(
       player: () => player && { x: player.root.position.x, z: player.root.position.z, anim: player.current },
       npc: () => ({ x: npc.root.position.x, z: npc.root.position.z }),
       fishing: () => fishing.phase,
+      showCatch: (id: string, size: number) => {
+        const species = SPECIES_BY_ID.get(id);
+        if (!species) return;
+        fishing.roll = { species, size };
+        catchFish();
+      },
       teleport: (x: number, z: number) => {
         if (!player) return;
         player.path = [];

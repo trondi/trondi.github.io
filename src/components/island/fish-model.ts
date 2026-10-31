@@ -84,3 +84,40 @@ export function buildFishModel(s: Species, material: (color: string) => THREE.Ma
   }
   return g;
 }
+
+/** Quaternius 물고기 모델을 종류에 맞게 고르고 색을 입힌다 — 없는 모양은 null (코드 모델 사용) */
+export type FishAssets = Record<"Fish1" | "Fish2" | "Fish3" | "Shark", THREE.Object3D>;
+
+export function buildFishFromAsset(
+  s: Species,
+  assets: FishAssets,
+  recolor: (o: THREE.Object3D, from: string, color: string) => void,
+) {
+  if (s.shape === "squid" || s.shape === "can" || s.shape === "boot") return null;
+  const pick: keyof FishAssets =
+    s.id === "tuna" ? "Shark" : s.id === "koi" || s.id === "seabream" ? "Fish3" : s.shape === "round" ? "Fish2" : "Fish1";
+  const model = assets[pick].clone(true);
+  const fin = new THREE.Color(s.color).multiplyScalar(0.75).getStyle();
+  for (const name of ["Top", "Body"]) recolor(model, name, s.color);
+  for (const name of ["Bottom", "Front", "Stripes"]) recolor(model, name, s.belly);
+  recolor(model, "Fins", fin);
+
+  // 가장 긴 축을 x로 눕히고 길이 1로 맞춘다 (코드 모델과 같은 기준)
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  model.position.sub(center);
+  const wrap = new THREE.Group();
+  wrap.add(model);
+  if (size.z > size.x) wrap.rotation.y = Math.PI / 2;
+  const len = Math.max(size.x, size.z) || 1;
+  const outer = new THREE.Group();
+  outer.add(wrap);
+  outer.scale.setScalar(1.1 / len);
+  if (s.shape === "long") outer.scale.x *= 1.25;
+  if (s.shape === "flat") {
+    outer.scale.y *= 0.45;
+    outer.scale.z *= 1.6;
+  }
+  return outer;
+}
