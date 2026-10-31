@@ -12,7 +12,7 @@ import { buildFishFromAsset, buildFishModel } from "./fish-model";
 import { NavGrid, type Point } from "./pathfind";
 import {
   HAIR_COLORS, PANTS_COLORS, SHIRT_COLORS,
-  type Hat, type IslandSave, type ItemType, type Look, flowerStage, today,
+  type Glasses, type Hat, type IslandSave, type ItemType, type Look, flowerStage, today,
 } from "./save";
 import { skyAt, skyTexture } from "./sky";
 import {
@@ -256,6 +256,9 @@ export async function createIsland(
       gltfs.set(name, { scene: g.scene, animations: g.animations });
     }),
   );
+  // 나중에 필요할 때 불러오는 모델 (낚시 물고기, 모자·안경) — 처음 로딩 진행률과는 따로
+  const lazyLoader = new GLTFLoader();
+  lazyLoader.setMeshoptDecoder(MeshoptDecoder);
   // 집은 32×32 색상표 텍스처 — 번지지 않게 가장 가까운 픽셀로
   gltfs.get("House")!.scene.traverse((c) => {
     const map = ((c as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined)?.map;
@@ -728,20 +731,67 @@ export async function createIsland(
   let playerHead: THREE.Object3D | null = null;
   let playerHand: THREE.Object3D | null = null;
   let hat: THREE.Object3D | null = null;
+  let glasses: THREE.Object3D | null = null;
+  let wearToken = 0;
   let holdingRod = false;
 
+  /*
+   * 모델로 된 모자·안경 (OpenGameArt CC0) — 고를 때 불러온다.
+   * w: 머리에 얹었을 때 가로 폭, y: 모자 밑면(안경은 가운데) 높이, 머리 중심 기준.
+   */
+  type WearFit = { file: string; w: number; y: number; z?: number; rx?: number; ry?: number; rz?: number; anchor?: "bottom" | "center"; colors: Record<string, string> };
+  const WEAR: Partial<Record<Hat | Glasses, WearFit>> & Record<string, WearFit | undefined> = {
+    straw: { file: "Wear_Straw", w: 1.0, y: 0.2, colors: { straw: "#e8c77a", cloth: "#d9534f" } },
+    cloche: { file: "Wear_Cloche", w: 0.96, y: 0.14, colors: { cloth: "#e88fa8", ribbon: "#8a3f5f", flower: "#ffffff" } },
+    beret: { file: "Wear_Beret", w: 0.78, y: 0.22, rz: -0.18, colors: { __DEFAULT: "#d9534f" } },
+    hardhat: { file: "Wear_HardHat", w: 0.9, y: 0.12, colors: { "Material.004": "#f5c542" } },
+    crown: { file: "Wear_Crown", w: 0.42, y: 0.3, colors: { __DEFAULT: "#f2c94c" } },
+    elf: { file: "Wear_Elf", w: 0.8, y: 0.1, colors: { "hat felt": "#4f9f5a" } },
+    grad: { file: "Wear_Grad", w: 0.8, y: 0.16, colors: { "Material.001": "#2a2a35" } },
+    tophat: { file: "Wear_TopHat", w: 0.72, y: 0.27, colors: { __DEFAULT: "#2f2f35" } },
+    antler: { file: "Wear_Antler", w: 0.95, y: 0.1, colors: { Material: "#8a5a3a" } },
+    headphones: { file: "Wear_Headphones", w: 0.82, y: -0.14, ry: Math.PI / 2, colors: { __DEFAULT: "#4f9fd0" } },
+    round: { file: "Wear_GlassesRound", w: 0.6, y: 0.0, z: 0.31, anchor: "center", colors: { __DEFAULT: "#2a2a30" } },
+    visor: { file: "Wear_GlassesVisor", w: 0.62, y: 0.0, z: 0.31, anchor: "center", colors: { __DEFAULT: "#2a2a30" } },
+    pixel: { file: "Wear_GlassesPixel", w: 0.62, y: 0.0, z: 0.31, anchor: "center", colors: { __DEFAULT: "#1a1a1a" } },
+  };
+  const wearCache = new Map<string, Promise<THREE.Object3D | null>>();
+  const loadWear = (fit: WearFit) => {
+    let p = wearCache.get(fit.file);
+    if (!p) {
+      p = lazyLoader
+        .loadAsync(`/island/models/${fit.file}.glb`)
+        .then((g) => curveAll(g.scene))
+        .catch(() => null);
+      wearCache.set(fit.file, p);
+    }
+    return p.then((src) => {
+      if (!src) return null;
+      const model = src.clone(true);
+      for (const [name, color] of Object.entries(fit.colors)) recolor(model, name, color);
+      // 방향을 먼저 돌린 뒤 크기를 재서, 가운데 맞추고 밑면(또는 가운데)을 원점에 둔다
+      const turn = new THREE.Group();
+      turn.rotation.set(fit.rx ?? 0, fit.ry ?? 0, 0);
+      turn.add(model);
+      const box = new THREE.Box3().setFromObject(turn);
+      const size = box.getSize(new THREE.Vector3());
+      const k = fit.w / (size.x || 1);
+      const c = box.getCenter(new THREE.Vector3());
+      turn.position.set(-c.x, fit.anchor === "center" ? -c.y : -box.min.y, fit.anchor === "center" ? -box.max.z : -c.z);
+      const g = new THREE.Group();
+      g.add(turn);
+      g.scale.setScalar(k);
+      g.position.set(0, fit.y, fit.z ?? 0);
+      g.rotation.z = fit.rz ?? 0;
+      g.traverse((o) => (o.castShadow = false));
+      return g;
+    });
+  };
+
   const buildHat = (kind: Hat): THREE.Object3D | null => {
-    if (kind === "none") return null;
+    if (kind === "none" || WEAR[kind]) return null;
     const g = new THREE.Group();
-    if (kind === "straw") {
-      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.03, 24), cachedStd("#e8c77a"));
-      const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 0.2, 18), cachedStd("#e8c77a"));
-      crown.position.y = 0.11;
-      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.302, 0.302, 0.05, 18), cachedStd("#d9534f"));
-      band.position.y = 0.04;
-      g.add(brim, crown, band);
-      g.position.y = 0.3;
-    } else if (kind === "beanie") {
+    if (kind === "beanie") {
       const dome = new THREE.Mesh(new THREE.SphereGeometry(0.36, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), cachedStd("#d9534f"));
       dome.scale.set(1.2, 1.0, 1.12);
       const rim = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.05, 10, 28), cachedStd("#f2f2f2"));
@@ -803,8 +853,28 @@ export async function createIsland(
     });
     chibi.setHair(look.body);
     hat?.removeFromParent();
+    glasses?.removeFromParent();
     hat = buildHat(look.hat ?? "none");
+    glasses = null;
     if (hat) chibi.head.add(hat);
+    // 모델 모자·안경은 불러온 뒤에 씌운다 (그 사이 다른 걸 고르면 버린다)
+    const token = ++wearToken;
+    const hatFit = WEAR[look.hat ?? "none"];
+    const glassesFit = WEAR[look.glasses ?? "none"];
+    if (hatFit)
+      loadWear(hatFit).then((o) => {
+        if (o && token === wearToken && chibi) {
+          hat = o;
+          chibi.head.add(o);
+        }
+      });
+    if (glassesFit)
+      loadWear(glassesFit).then((o) => {
+        if (o && token === wearToken && chibi) {
+          glasses = o;
+          chibi.head.add(o);
+        }
+      });
   };
   if (save.look) applyLook(save.look);
 
@@ -1033,10 +1103,8 @@ export async function createIsland(
   const loadFishAssets = () => {
     if (fishLoading) return;
     fishLoading = true;
-    const fishLoader = new GLTFLoader();
-    fishLoader.setMeshoptDecoder(MeshoptDecoder);
     for (const name of FISH_MODELS) {
-      fishLoader
+      lazyLoader
         .loadAsync(`/island/models/${name}.glb`)
         .then((g) => {
           if (disposed) return;
