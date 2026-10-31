@@ -8,6 +8,6 @@ Packs used (converted to GLB, animations trimmed, meshopt-compressed):
 - Ultimate Animated Animals
 - Simple Buildings Pack (House.glb: roof color of the palette texture edited to purple)
 - Farm Buildings Pack
-- Animated Fish Pack (Fish1-3, Shark; from https://opengameart.org/content/animated-fish)
+- Cute Fish Pack (fish, FishingRod_Lvl1, Dock_Long, Boat)
 
 Thank you, Quaternius! https://www.patreon.com/quaternius

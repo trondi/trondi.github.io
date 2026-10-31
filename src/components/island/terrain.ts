@@ -26,7 +26,7 @@ export const BRIDGES = [
   { z: -13.5, tier: true },
 ].map((b) => ({ ...b, halfWidth: 0.55, halfLength: 1.9 }));
 /** 남쪽 바닷가 선착장 */
-export const DOCK = { x: -6, z0: 13.6, z1: 19.4, halfWidth: 0.8, y: 0.32 };
+export const DOCK = { x: -6, z0: 14.8, z1: 21, halfWidth: 0.8, y: 0.32 };
 
 const smooth = THREE.MathUtils.smoothstep;
 
