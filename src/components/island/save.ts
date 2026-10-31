@@ -4,7 +4,10 @@ export type ItemType = "apple" | "orange" | "seed";
 
 export type PlantedFlower = { id: string; x: number; z: number; color: number; at: number };
 export type GroundItem = { id: string; type: ItemType; x: number; z: number };
-export type Hat = "none" | "straw" | "beanie" | "cap" | "bow";
+export type Hat =
+  | "none" | "straw" | "beanie" | "cap" | "bow"
+  | "cloche" | "beret" | "hardhat" | "crown" | "elf" | "grad" | "tophat" | "antler" | "headphones";
+export type Glasses = "none" | "round" | "pixel" | "visor";
 export type Look = {
   body: "a" | "b";
   skin: number;
@@ -13,6 +16,7 @@ export type Look = {
   pants?: number;
   hair?: number;
   hat?: Hat;
+  glasses?: Glasses;
 };
 
 export const SHIRT_COLORS = ["#4f4a8a", "#7d5bb0", "#e8707a", "#f0a24a", "#f5d26b", "#6faa4f", "#4f9fd0", "#ffffff", "#3a3a44", "#c96f5a"];
@@ -24,6 +28,21 @@ export const HATS: { id: Hat; name: string }[] = [
   { id: "beanie", name: "비니" },
   { id: "cap", name: "캡" },
   { id: "bow", name: "리본" },
+  { id: "cloche", name: "클로슈" },
+  { id: "beret", name: "베레모" },
+  { id: "tophat", name: "실크햇" },
+  { id: "grad", name: "학사모" },
+  { id: "hardhat", name: "안전모" },
+  { id: "elf", name: "요정 모자" },
+  { id: "crown", name: "왕관" },
+  { id: "antler", name: "사슴뿔" },
+  { id: "headphones", name: "헤드폰" },
+];
+export const GLASSES: { id: Glasses; name: string }[] = [
+  { id: "none", name: "없음" },
+  { id: "round", name: "동그란 선글라스" },
+  { id: "visor", name: "고글 선글라스" },
+  { id: "pixel", name: "도트 선글라스" },
 ];
 
 export type DexEntry = { count: number; best: number; first: number };

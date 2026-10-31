@@ -1,4 +1,4 @@
-3D models in this folder are by Quaternius (https://quaternius.com) and are
+Most 3D models in this folder are by Quaternius (https://quaternius.com) and are
 released under CC0 1.0 Universal (Public Domain Dedication):
 https://creativecommons.org/publicdomain/zero/1.0/
 
@@ -11,3 +11,13 @@ Packs used (converted to GLB, animations trimmed, meshopt-compressed):
 - Cute Fish Pack (fish, FishingRod_Lvl1, Dock_Long, Boat)
 
 Thank you, Quaternius! https://www.patreon.com/quaternius
+
+Wear_*.glb (hats and glasses) are CC0 models from OpenGameArt.org, converted
+from FBX to GLB with textures dropped and recolored in code:
+- Wear_Straw, Wear_Cloche, Wear_Beret, Wear_HardHat, Wear_Elf, Wear_Grad,
+  Wear_TopHat, Wear_Antler, Wear_Headphones: "Hats, Clothing, & Props" by Teh_Bucket
+  https://opengameart.org/content/hats-clothing-props
+- Wear_Crown: "Low Poly Crown" by BullHornGames
+  https://opengameart.org/content/low-poly-crown
+- Wear_GlassesRound, Wear_GlassesVisor, Wear_GlassesPixel: "Lowpoly Glasses Pack" by iPoly3D
+  https://opengameart.org/content/lowpoly-glasses-pack

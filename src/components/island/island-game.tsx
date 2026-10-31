@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import type { CatchEvent, FishingPhase, InteractEvent, IslandHandle, Mode } from "./engine";
 import { SPECIES, SPECIES_BY_ID } from "./fish";
 import {
-  FLOWER_STAGE_LABEL, HAIR_COLORS, HATS, PANTS_COLORS, SHIRT_COLORS,
+  FLOWER_STAGE_LABEL, GLASSES, HAIR_COLORS, HATS, PANTS_COLORS, SHIRT_COLORS,
   type IslandSave, type Look, loadSave, writeSave,
 } from "./save";
 
@@ -29,7 +29,7 @@ type Panel =
 const NPC_NAME = "모카";
 const SEASON_EMOJI = { spring: "🌸", summer: "🌿", autumn: "🍂", winter: "❄️" } as const;
 const SKIN_SWATCH = ["#f6d7bd", "#e2b08b", "#a8714a"];
-const DEFAULT_OUTFIT = { shirt: 0, pants: 0, hair: 0, hat: "none" } as const;
+const DEFAULT_OUTFIT = { shirt: 0, pants: 0, hair: 0, hat: "none", glasses: "none" } as const;
 
 const TIPS = [
   "나무를 흔들면 가끔 꽃씨가 떨어져. 나무마다 하루에 한 번이야!",
@@ -718,6 +718,21 @@ function PanelBody({
                 className={cn("rounded-full border-2 px-3 py-1 text-[12px] font-bold", (d.hat ?? "none") === h.id ? "border-[#7d5bb0] bg-[#7d5bb0]/10" : "border-[#e8dcc4]")}
               >
                 {h.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className={row}>
+          <span className={label}>안경</span>
+          <div className="flex flex-wrap gap-1.5">
+            {GLASSES.map((g) => (
+              <button
+                key={g.id}
+                type="button"
+                onClick={() => update({ glasses: g.id })}
+                className={cn("rounded-full border-2 px-3 py-1 text-[12px] font-bold", (d.glasses ?? "none") === g.id ? "border-[#7d5bb0] bg-[#7d5bb0]/10" : "border-[#e8dcc4]")}
+              >
+                {g.name}
               </button>
             ))}
           </div>
