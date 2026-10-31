@@ -7,6 +7,7 @@ import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js
 import type { Season } from "@/lib/season";
 
 import { SPECIES_BY_ID, type Species, rollCatch, shadowScale } from "./fish";
+import { type Chibi, type ChibiAnim, buildChibi } from "./chibi";
 import { type FishAssets, buildFishFromAsset, buildFishModel } from "./fish-model";
 import { NavGrid, type Point } from "./pathfind";
 import {
@@ -104,7 +105,7 @@ const SKINS = ["#f6d7bd", "#e2b08b", "#a8714a"];
 const PETALS = [0xf2a7c3, 0xffffff, 0xf5d26b, 0xd66fa0];
 
 const MODELS = [
-  "Casual2_Female", "Casual2_Male", "ShibaInu", "House", "Well", "Fence",
+  "ShibaInu", "House", "Well", "Fence",
   "CommonTree_1", "CommonTree_2", "CommonTree_3", "CommonTree_Autumn_1", "CommonTree_Autumn_2", "CommonTree_Autumn_3",
   "CommonTree_Snow_1", "CommonTree_Snow_2", "CommonTree_Snow_3", "PineTree_1", "PineTree_2", "PineTree_Autumn_1",
   "PineTree_Autumn_2", "PineTree_Snow_1", "PineTree_Snow_2", "BirchTree_1", "BirchTree_Autumn_1", "BirchTree_Snow_1",
@@ -494,6 +495,8 @@ export async function createIsland(
   // 가로등 — 밤에 켜진다
   const lampMat = std("#fff1b8", { emissive: 0xffc56b, emissiveIntensity: 0 });
   const lampGlows: THREE.Sprite[] = [];
+  /** 옷장 클로즈업 때 카메라를 가리면 숨길 소품 (나무는 따로) */
+  const props: THREE.Object3D[] = [mailbox, board, bench];
   for (const l of LAMPS) {
     const g = new THREE.Group();
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 1.5, 6), cachedStd("#4a3a46"));
@@ -506,6 +509,7 @@ export async function createIsland(
     g.add(pole, head, cap);
     g.position.set(l.x, groundHeight(l.x, l.z), l.z);
     scene.add(curveAll(g));
+    props.push(g);
     const glow = glowSprite(0xffc56b, 2.6);
     glow.position.set(l.x, groundHeight(l.x, l.z) + 1.6, l.z);
     scene.add(glow);
@@ -666,15 +670,15 @@ export async function createIsland(
   };
 
   /* ───────────── 캐릭터 ───────────── */
-  type Actor = {
-    root: THREE.Object3D;
-    mixer: THREE.AnimationMixer;
-    actions: Map<string, THREE.AnimationAction>;
-    current: string;
-    path: Point[];
-    speed: number;
-    onArrive: (() => void) | null;
+  /** 애니메이션 재생기 — 모델 애니메이션(주민)과 코드 동작(플레이어)을 같은 방식으로 다룬다 */
+  type Animator = {
+    play: (name: string, once?: boolean) => void;
+    current: () => string;
+    busy: () => boolean;
+    update: (dt: number) => void;
   };
+  type Actor = { root: THREE.Object3D; anim: Animator; path: Point[]; speed: number; onArrive: (() => void) | null };
+
   const makeActor = (name: ModelName, scale: number): Actor => {
     const src = gltfs.get(name)!;
     const root = cloneSkinned(src.scene);
@@ -684,82 +688,111 @@ export async function createIsland(
     const actions = new Map(src.animations.map((clip) => [clip.name, mixer.clipAction(clip)]));
     actions.get("Idle")?.play();
     scene.add(root);
-    return { root, mixer, actions, current: "Idle", path: [], speed: 0, onArrive: null };
+    let current = "Idle";
+    const anim: Animator = {
+      play: (next, once = false) => {
+        if (current === next && !once) return;
+        const action = actions.get(next);
+        if (!action) return;
+        const prev = actions.get(current);
+        action.reset();
+        action.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
+        action.clampWhenFinished = once;
+        action.play();
+        if (prev && prev !== action) action.crossFadeFrom(prev, 0.2, false);
+        current = next;
+      },
+      current: () => current,
+      busy: () => false,
+      update: (dt) => mixer.update(dt),
+    };
+    return { root, anim, path: [], speed: 0, onArrive: null };
   };
-  const play = (a: Actor, name: string, once = false) => {
-    if (a.current === name && !once) return;
-    const next = a.actions.get(name);
-    if (!next) return;
-    const prev = a.actions.get(a.current);
-    next.reset();
-    next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
-    next.clampWhenFinished = once;
-    next.play();
-    if (prev && prev !== next) next.crossFadeFrom(prev, 0.2, false);
-    a.current = name;
-  };
+  const play = (a: Actor, name: string, once = false) => a.anim.play(name, once);
 
+  /* 플레이어 — 둥근 캐릭터(chibi.ts). 옷 색·머리 모양·모자는 옷장 설정을 따른다 */
   let player: Actor | null = null;
+  let chibi: Chibi | null = null;
   let playerHead: THREE.Object3D | null = null;
   let playerHand: THREE.Object3D | null = null;
   let hat: THREE.Object3D | null = null;
-  let currentBody: Look["body"] | null = null;
+  let holdingRod = false;
 
   const buildHat = (kind: Hat): THREE.Object3D | null => {
     if (kind === "none") return null;
     const g = new THREE.Group();
     if (kind === "straw") {
-      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.025, 18), cachedStd("#e8c77a"));
-      const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.21, 0.17, 14), cachedStd("#e8c77a"));
-      crown.position.y = 0.09;
-      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.212, 0.212, 0.04, 14), cachedStd("#d9534f"));
-      band.position.y = 0.03;
+      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.03, 24), cachedStd("#e8c77a"));
+      const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 0.2, 18), cachedStd("#e8c77a"));
+      crown.position.y = 0.11;
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.302, 0.302, 0.05, 18), cachedStd("#d9534f"));
+      band.position.y = 0.04;
       g.add(brim, crown, band);
+      g.position.y = 0.3;
     } else if (kind === "beanie") {
-      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.25, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), cachedStd("#d9534f"));
-      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.255, 0.255, 0.07, 14), cachedStd("#f2f2f2"));
-      const pom = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), cachedStd("#f2f2f2"));
-      pom.position.y = 0.26;
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.36, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), cachedStd("#d9534f"));
+      dome.scale.set(1.2, 1.0, 1.12);
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.05, 10, 28), cachedStd("#f2f2f2"));
+      rim.rotation.x = Math.PI / 2;
+      rim.scale.set(1.2, 1.12, 1);
+      const pom = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 10), cachedStd("#f2f2f2"));
+      pom.position.y = 0.36;
       g.add(dome, rim, pom);
+      g.position.set(0, 0.1, -0.02);
     } else if (kind === "cap") {
-      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), cachedStd("#4f9fd0"));
-      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.025, 0.22), cachedStd("#3a7fb0"));
-      visor.position.set(0, 0.01, 0.26);
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.35, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), cachedStd("#4f9fd0"));
+      dome.scale.set(1.2, 0.95, 1.12);
+      const visor = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 18, 1, false, -Math.PI / 2, Math.PI), cachedStd("#3a7fb0"));
+      visor.position.set(0, 0, 0.34);
+      visor.scale.set(1.2, 1, 1);
       g.add(dome, visor);
+      g.position.set(0, 0.14, -0.02);
     } else {
-      const knot = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), cachedStd("#f28bb3"));
+      const knot = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), cachedStd("#f28bb3"));
       for (const s of [-1, 1]) {
-        const wing = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.2, 4), cachedStd("#f28bb3"));
-        wing.rotation.z = s * Math.PI / 2;
+        const wing = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 10), cachedStd("#f28bb3"));
+        wing.scale.set(1.2, 0.8, 0.5);
         wing.position.x = s * 0.12;
         g.add(wing);
       }
       g.add(knot);
-      g.position.x = 0.12;
+      g.position.set(0.18, 0.32, 0.05);
+      g.rotation.z = -0.3;
     }
     return curveAll(g);
   };
 
   const applyLook = (look: Look) => {
-    if (!player || currentBody !== look.body) {
-      const pos = player ? player.root.position.clone() : new THREE.Vector3(SPAWN.x, walkHeight(SPAWN.x, SPAWN.z), SPAWN.z);
-      const rot = player?.root.rotation.y ?? 0;
-      if (player) scene.remove(player.root);
-      player = makeActor(look.body === "a" ? "Casual2_Female" : "Casual2_Male", 0.43);
-      player.root.position.copy(pos);
-      player.root.rotation.y = rot;
-      playerHead = player.root.getObjectByName("Head") ?? null;
-      // GLTFLoader가 노드 이름의 '.'을 지운다 (Fist.R → FistR)
-      playerHand = player.root.getObjectByName("FistR") ?? player.root.getObjectByName("Fist.R") ?? null;
-      currentBody = look.body;
+    if (!chibi) {
+      const c = buildChibi(curve);
+      c.root.position.set(SPAWN.x, walkHeight(SPAWN.x, SPAWN.z), SPAWN.z);
+      scene.add(c.root);
+      chibi = c;
+      playerHead = c.head;
+      playerHand = c.hand;
+      player = {
+        root: c.root,
+        path: [],
+        speed: 0,
+        onArrive: null,
+        anim: {
+          play: (name) => c.play(name as ChibiAnim),
+          current: () => c.current(),
+          busy: () => c.busy(),
+          update: (dt) => c.update(dt, holdingRod),
+        },
+      };
     }
-    recolor(player.root, "Skin", SKINS[look.skin] ?? SKINS[0]);
-    if (look.shirt !== undefined) recolor(player.root, "Shirt", SHIRT_COLORS[look.shirt]);
-    if (look.pants !== undefined) recolor(player.root, "Pants", PANTS_COLORS[look.pants]);
-    if (look.hair !== undefined) recolor(player.root, "Hair", HAIR_COLORS[look.hair]);
-    if (hat) scene.remove(hat);
+    chibi.setColors({
+      skin: SKINS[look.skin] ?? SKINS[0],
+      shirt: SHIRT_COLORS[look.shirt ?? 0],
+      pants: PANTS_COLORS[look.pants ?? 0],
+      hair: HAIR_COLORS[look.hair ?? 0],
+    });
+    chibi.setHair(look.body);
+    hat?.removeFromParent();
     hat = buildHat(look.hat ?? "none");
-    if (hat) scene.add(hat);
+    if (hat) chibi.head.add(hat);
   };
   if (save.look) applyLook(save.look);
 
@@ -930,6 +963,7 @@ export async function createIsland(
     if (mode === "fish" && m !== "fish") reelIn();
     mode = m;
     rod.visible = m === "fish";
+    holdingRod = m === "fish";
     cb.onModeChange(m);
   };
 
@@ -1262,7 +1296,7 @@ export async function createIsland(
       case "catch": {
         if (fishing.held && playerHead) {
           playerHead.getWorldPosition(fishing.held.position);
-          fishing.held.position.y += 0.75 + Math.min(f.t, 0.3);
+          fishing.held.position.y += 0.6 + Math.min(f.t, 0.3);
           fishing.held.rotation.set(0, time * 1.5, Math.sin(time * 6) * 0.15);
         }
         if (f.t > 2.4) {
@@ -1552,23 +1586,17 @@ export async function createIsland(
           cbArrive?.();
         }
       }
-      const oneShot = (player.current === "PickUp" || player.current === "Victory") && (player.actions.get(player.current)?.isRunning() ?? false);
+      const oneShot = player.anim.busy();
       if (moving) play(player, !(kx || kz) && player.speed > 3 ? "Run" : "Walk");
-      if (!moving && !oneShot && player.current !== "Idle") play(player, "Idle");
+      if (!moving && !oneShot && player.anim.current() !== "Idle") play(player, "Idle");
 
       // 지나가며 줍기
       for (const [id, o] of itemObjs) {
         if (o.userData.fall) continue;
         if ((o.position.x - player.root.position.x) ** 2 + (o.position.z - player.root.position.z) ** 2 < 0.2) pickUp(id);
       }
-      player.mixer.update(dt);
+      player.anim.update(dt);
 
-      // 모자는 머리 뼈를 따라간다
-      if (hat && playerHead) {
-        playerHead.getWorldPosition(hat.position);
-        hat.position.y += 0.3;
-        hat.rotation.y = player.root.rotation.y;
-      }
       updateFishing(dt, time);
 
       // 카메라
@@ -1577,7 +1605,7 @@ export async function createIsland(
       const tz = closeUp ? pr.z : THREE.MathUtils.clamp(pr.z - 1.5, -17, 15);
       // 옷장에서는 아래쪽 패널에 가리지 않게 캐릭터를 화면 위쪽에 둔다
       // (데스크톱은 오른쪽 패널을 피해 캐릭터를 왼쪽에)
-      tmp.set(closeUp && !mobile ? tx + 1.0 : tx, closeUp ? pr.y - (mobile ? 0.7 : 0.1) : 0, closeUp ? tz + (mobile ? 0.9 : 0.2) : tz);
+      tmp.set(closeUp && !mobile ? tx + 1.0 : tx, closeUp ? pr.y - (mobile ? 0.5 : 0.0) : 0, closeUp ? tz + (mobile ? 0.8 : 0.2) : tz);
       if (opts.reducedMotion) camTarget.copy(tmp);
       else camTarget.lerp(tmp, Math.min(1, dt * 3));
       const goalOffset = closeUp ? nearOffset : farOffset;
@@ -1590,11 +1618,11 @@ export async function createIsland(
     if (player) {
       const px = player.root.position.x;
       const pz = player.root.position.z;
-      for (const t of trees) {
+      for (const obj of [...trees.map((t) => t.obj), ...props]) {
         let hide = false;
         if (closeUp) {
-          const ox = t.obj.position.x - px;
-          const oz = t.obj.position.z - pz;
+          const ox = obj.position.x - px;
+          const oz = obj.position.z - pz;
           const cx = camera.position.x - px;
           const cz = camera.position.z - pz;
           const len = Math.hypot(cx, cz) || 1;
@@ -1602,7 +1630,7 @@ export async function createIsland(
           const side = Math.abs(ox * cz - oz * cx) / len;
           hide = along > -0.3 && along < len + 1 && side < 1.6;
         }
-        t.obj.visible = !hide;
+        obj.visible = !hide;
       }
     }
     const dir = (sun.userData.dir as THREE.Vector3) ?? new THREE.Vector3(-6, 10, 5);
@@ -1623,12 +1651,12 @@ export async function createIsland(
           npc.path = nav.find({ x: npc.root.position.x, z: npc.root.position.z }, goal) ?? [];
           npcWait = 3 + Math.random() * 5;
           if (!npc.path.length) play(npc, Math.random() < 0.4 ? "Eating" : "Idle_2");
-        } else if (npc.current === "Walk") {
+        } else if (npc.anim.current() === "Walk") {
           play(npc, Math.random() < 0.3 ? "Eating" : "Idle");
         }
       }
     }
-    npc.mixer.update(dt);
+    npc.anim.update(dt);
 
     // 나무 흔들림
     for (const t of trees) {
@@ -1730,7 +1758,7 @@ export async function createIsland(
   // 개발 모드 전용 — 브라우저 자동 테스트에서 월드 좌표를 화면 좌표로 바꿔 탭하기 위해
   if (process.env.NODE_ENV === "development") {
     (window as unknown as { __island?: unknown }).__island = {
-      player: () => player && { x: player.root.position.x, z: player.root.position.z, anim: player.current },
+      player: () => player && { x: player.root.position.x, z: player.root.position.z, anim: player.anim.current() },
       npc: () => ({ x: npc.root.position.x, z: npc.root.position.z }),
       fishing: () => fishing.phase,
       rodTip: () => {
