@@ -234,6 +234,9 @@ export async function createIsland(
   /* 조명 */
   const hemi = new THREE.HemisphereLight(0xffffff, 0x6b8f5a, 1.1);
   scene.add(hemi);
+  // 밤에 캐릭터가 어둠에 묻히지 않도록 — 캐릭터 앞쪽 위에서 따라다니는 따뜻한 빛
+  const glow = new THREE.PointLight(0xffe0b0, 0, 6, 1.6);
+  scene.add(glow);
   const sun = new THREE.DirectionalLight(0xffffff, 2.4);
   sun.castShadow = true;
   sun.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);
@@ -1504,6 +1507,7 @@ export async function createIsland(
   /* ───────────── 하늘·빛 ───────────── */
   let skyTex: THREE.CanvasTexture | undefined;
   let night = 0;
+  const GLOW_I = 7;
   const stars = (() => {
     const S = rng(9);
     const pts: number[] = [];
@@ -1528,6 +1532,7 @@ export async function createIsland(
     night = s.night;
     (stars.material as THREE.PointsMaterial).opacity = night;
     lampMat.emissiveIntensity = night * 1.6;
+    glow.intensity = night * GLOW_I;
     for (const g of lampGlows) (g.material as THREE.SpriteMaterial).opacity = night * 0.55;
     (houseGlow.material as THREE.SpriteMaterial).opacity = night * 0.6;
     waterMat.color.set(night > 0.5 ? 0x3d6f9e : 0x6fd0de);
@@ -1692,6 +1697,7 @@ export async function createIsland(
       player.anim.update(dt);
 
       updateFishing(dt, time);
+      glow.position.set(player.root.position.x, player.root.position.y + 2.1, player.root.position.z + 1.3);
 
       // 카메라
       const pr = player.root.position;
