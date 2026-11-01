@@ -742,11 +742,11 @@ export async function createIsland(
    * 모델로 된 모자·안경 (OpenGameArt CC0) — 고를 때 불러온다.
    * w: 머리에 얹었을 때 가로 폭, y: 모자 밑면(안경은 가운데) 높이, 머리 중심 기준.
    */
-  type WearFit = { file: string; w: number; y: number; z?: number; rx?: number; ry?: number; rz?: number; anchor?: "bottom" | "center"; colors: Record<string, string> };
+  type WearFit = { file: string; w: number; y: number; z?: number; sy?: number; rx?: number; ry?: number; rz?: number; anchor?: "bottom" | "center"; colors: Record<string, string> };
   const WEAR: Partial<Record<Hat | Glasses, WearFit>> & Record<string, WearFit | undefined> = {
     straw: { file: "Wear_Straw", w: 1.0, y: 0.2, colors: { straw: "#e8c77a", cloth: "#d9534f" } },
     cloche: { file: "Wear_Cloche", w: 0.86, y: 0.1, rx: -0.22, colors: { cloth: "#e88fa8", ribbon: "#8a3f5f", flower: "#ffffff" } },
-    beret: { file: "Wear_Beret", w: 0.78, y: 0.16, z: -0.04, rx: -0.12, rz: -0.16, colors: { __DEFAULT: "#d9534f" } },
+    beret: { file: "Wear_Beret", w: 0.82, y: 0.08, z: -0.05, sy: 0.75, rx: -0.25, rz: -0.22, colors: { __DEFAULT: "#d9534f" } },
     hardhat: { file: "Wear_HardHat", w: 0.9, y: 0.14, colors: { "Material.004": "#f5c542" } },
     crown: { file: "Wear_Crown", w: 0.42, y: 0.3, colors: { __DEFAULT: "#f2c94c" } },
     elf: { file: "Wear_Elf", w: 0.8, y: 0.13, colors: { "hat felt": "#4f9f5a" } },
@@ -760,7 +760,7 @@ export async function createIsland(
   };
   /** 모자 앞쪽 테두리 높이 — 앞머리를 이 아래로 눌러 모자를 뚫지 않게 한다 (왕관·사슴뿔·헤드폰·리본은 그대로) */
   const HAT_LINE: Partial<Record<Hat, number>> = {
-    beanie: 0.18, cap: 0.18, straw: 0.21, cloche: 0.19, beret: 0.19, hardhat: 0.15, elf: 0.15, grad: 0.17, tophat: 0.27,
+    beanie: 0.18, cap: 0.18, straw: 0.21, cloche: 0.19, beret: 0.15, hardhat: 0.15, elf: 0.15, grad: 0.17, tophat: 0.27,
   };
   const wearCache = new Map<string, Promise<THREE.Object3D | null>>();
   const loadWear = (fit: WearFit) => {
@@ -787,7 +787,7 @@ export async function createIsland(
       turn.position.set(-c.x, fit.anchor === "center" ? -c.y : -box.min.y, fit.anchor === "center" ? -box.max.z : -c.z);
       const g = new THREE.Group();
       g.add(turn);
-      g.scale.setScalar(k);
+      g.scale.set(k, k * (fit.sy ?? 1), k);
       g.position.set(0, fit.y, fit.z ?? 0);
       g.rotation.z = fit.rz ?? 0;
       g.traverse((o) => (o.castShadow = false));
@@ -1881,6 +1881,11 @@ export async function createIsland(
         const v = new THREE.Vector3();
         rodTip.getWorldPosition(v);
         return { x: v.x, y: v.y, z: v.z, hand: !!playerHand };
+      },
+      tuneWear: (id: string, patch: Partial<WearFit>, line: number | null, look: Look) => {
+        Object.assign(WEAR[id]!, patch);
+        if (line !== null) HAT_LINE[id as Hat] = line;
+        applyLook(look);
       },
       fishReady: () => {
         loadFishAssets();
