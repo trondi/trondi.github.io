@@ -23,9 +23,12 @@ export type Chibi = {
   update: (dt: number, holdingRod: boolean) => void;
 };
 
+const SKIN_GLOW = 0.32;
+
 export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material = (m) => m): Chibi {
   const mats = {
-    skin: new THREE.MeshStandardMaterial({ color: "#f6d7bd", roughness: 0.85 }),
+    // 정면 얼굴은 해를 덜 받고 초록 땅 반사광이 섞여 칙칙해지므로, 피부는 스스로 조금 빛나게 해 원래 색을 지킨다
+    skin: new THREE.MeshStandardMaterial({ color: "#f6d7bd", roughness: 0.85, emissive: "#f6d7bd", emissiveIntensity: SKIN_GLOW }),
     shirt: new THREE.MeshStandardMaterial({ color: "#4f4a8a", roughness: 0.9 }),
     pants: new THREE.MeshStandardMaterial({ color: "#1f2a44", roughness: 0.9 }),
     hair: new THREE.MeshStandardMaterial({ color: "#4a1f1a", roughness: 0.75 }),
@@ -173,6 +176,11 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
   }
   hairGroup.add(longHair);
 
+  // 얼굴은 모자·머리카락 그림자를 받지 않는다 — 위에서 비추는 해 때문에 얼굴이 통째로 어두워지지 않게
+  head.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh) o.receiveShadow = false;
+  });
+
   let anim: ChibiAnim = "Idle";
   let t = 0;
   let oneShotEnd = 0;
@@ -183,6 +191,7 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
     hand,
     setColors: (c) => {
       mats.skin.color.set(c.skin);
+      mats.skin.emissive.set(c.skin);
       mats.shirt.color.set(c.shirt);
       mats.pants.color.set(c.pants);
       mats.hair.color.set(c.hair);
