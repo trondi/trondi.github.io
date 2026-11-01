@@ -15,6 +15,8 @@ export type Chibi = {
   hand: THREE.Object3D;
   setColors: (c: ChibiColors) => void;
   setHair: (style: "a" | "b") => void;
+  /** 모자 밑면 높이(머리 중심 기준) — 앞머리를 그 아래로 눌러 모자를 뚫지 않게 한다. null이면 원래대로 */
+  setHatLine: (y: number | null) => void;
   play: (anim: ChibiAnim) => void;
   current: () => ChibiAnim;
   busy: () => boolean;
@@ -145,11 +147,13 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
   const fringe: [number, number, number, number][] = [
     [-0.2, 0.17, 0.2, 0.35], [-0.07, 0.2, 0.25, 0.1], [0.07, 0.2, 0.25, -0.1], [0.2, 0.17, 0.2, -0.35],
   ];
+  const fringeLocks: THREE.Mesh[] = [];
   for (const [x, y, z, rz] of fringe) {
     const lock = ball(0.11, mats.hair, 1.15, 0.8, 0.75);
     lock.position.set(x, y, z);
     lock.rotation.z = rz;
     hairGroup.add(lock);
+    fringeLocks.push(lock);
   }
   for (const side of [-1, 1]) {
     const sideLock = ball(0.09, mats.hair, 0.7, 1.4, 0.85);
@@ -185,6 +189,21 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
     },
     setHair: (style) => {
       longHair.visible = style === "a";
+    },
+    setHatLine: (line) => {
+      // 정수리 머리는 모자 안에 들어가게 살짝 줄이고, 앞머리는 아래쪽 끝은 그대로 둔 채 위를 눌러 테두리 밑에 맞춘다
+      crown.scale.set(line === null ? 1.1 : 1.07, line === null ? 0.95 : 0.93, line === null ? 1.0 : 0.99);
+      crown.position.y = line === null ? 0.06 : 0.05;
+      fringe.forEach(([x, y, z, rz], i) => {
+        const lock = fringeLocks[i];
+        const half = 0.11 * 0.8;
+        const top = line === null ? y + half : Math.min(y + half, line - 0.012);
+        const bottom = Math.min(y - half, top - 0.05);
+        const k = (top - bottom) / (2 * half);
+        lock.position.set(x, (top + bottom) / 2, line === null ? z : z + 0.02);
+        lock.scale.set(1.15, 0.8 * k, 0.75);
+        lock.rotation.z = line === null ? rz : rz * 0.6;
+      });
     },
     play: (next) => {
       if (next === anim && next !== "PickUp" && next !== "Victory") return;
