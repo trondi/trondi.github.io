@@ -745,7 +745,7 @@ export async function createIsland(
   type WearFit = { file: string; w: number; y: number; z?: number; rx?: number; ry?: number; rz?: number; anchor?: "bottom" | "center"; colors: Record<string, string> };
   const WEAR: Partial<Record<Hat | Glasses, WearFit>> & Record<string, WearFit | undefined> = {
     straw: { file: "Wear_Straw", w: 1.0, y: 0.2, colors: { straw: "#e8c77a", cloth: "#d9534f" } },
-    cloche: { file: "Wear_Cloche", w: 0.96, y: 0.14, colors: { cloth: "#e88fa8", ribbon: "#8a3f5f", flower: "#ffffff" } },
+    cloche: { file: "Wear_Cloche", w: 0.86, y: 0.1, rx: -0.35, colors: { cloth: "#e88fa8", ribbon: "#8a3f5f", flower: "#ffffff" } },
     beret: { file: "Wear_Beret", w: 0.78, y: 0.22, rz: -0.18, colors: { __DEFAULT: "#d9534f" } },
     hardhat: { file: "Wear_HardHat", w: 0.9, y: 0.12, colors: { "Material.004": "#f5c542" } },
     crown: { file: "Wear_Crown", w: 0.42, y: 0.3, colors: { __DEFAULT: "#f2c94c" } },
@@ -794,24 +794,33 @@ export async function createIsland(
   const buildHat = (kind: Hat): THREE.Object3D | null => {
     if (kind === "none" || WEAR[kind]) return null;
     const g = new THREE.Group();
+    // 머리카락 덩어리(반지름 0.33, 중심 y 0.06)를 살짝 덮는 크기 — 테두리는 눈썹 위에 온다
+    const R = 0.345;
+    const OPEN = Math.PI * 0.42;
+    const rimY = 0.1 + R * 0.95 * Math.cos(OPEN);
+    const rimR = R * Math.sin(OPEN);
+    const dome = (color: string) => {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(R, 24, 12, 0, Math.PI * 2, 0, OPEN), cachedStd(color));
+      m.scale.set(1.1, 0.95, 1.06);
+      m.position.set(0, 0.1, -0.03);
+      return m;
+    };
     if (kind === "beanie") {
-      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.36, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), cachedStd("#d9534f"));
-      dome.scale.set(1.2, 1.0, 1.12);
-      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.05, 10, 28), cachedStd("#f2f2f2"));
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(rimR, 0.036, 10, 28), cachedStd("#f2f2f2"));
       rim.rotation.x = Math.PI / 2;
-      rim.scale.set(1.2, 1.12, 1);
-      const pom = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 10), cachedStd("#f2f2f2"));
-      pom.position.y = 0.36;
-      g.add(dome, rim, pom);
-      g.position.set(0, 0.1, -0.02);
+      rim.scale.set(1.06, 1.02, 1);
+      rim.position.set(0, rimY, -0.03);
+      const pom = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 10), cachedStd("#f2f2f2"));
+      pom.position.y = 0.1 + R * 0.95 + 0.04;
+      g.add(dome("#d9534f"), rim, pom);
     } else if (kind === "cap") {
-      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.35, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), cachedStd("#4f9fd0"));
-      dome.scale.set(1.2, 0.95, 1.12);
-      const visor = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 18, 1, false, -Math.PI / 2, Math.PI), cachedStd("#3a7fb0"));
-      visor.position.set(0, 0, 0.34);
-      visor.scale.set(1.2, 1, 1);
-      g.add(dome, visor);
-      g.position.set(0, 0.14, -0.02);
+      const visor = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.03, 18, 1, false, -Math.PI / 2, Math.PI), cachedStd("#3a7fb0"));
+      visor.scale.set(1.15, 1, 1);
+      visor.position.set(0, rimY + 0.01, -0.03 + rimR * 1.06 - 0.02);
+      visor.rotation.x = 0.12;
+      const button = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), cachedStd("#3a7fb0"));
+      button.position.y = 0.1 + R * 0.95;
+      g.add(dome("#4f9fd0"), visor, button);
     } else {
       const knot = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), cachedStd("#f28bb3"));
       for (const s of [-1, 1]) {
