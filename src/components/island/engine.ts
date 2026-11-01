@@ -746,7 +746,7 @@ export async function createIsland(
   const WEAR: Partial<Record<Hat | Glasses, WearFit>> & Record<string, WearFit | undefined> = {
     straw: { file: "Wear_Straw", w: 1.0, y: 0.2, colors: { straw: "#e8c77a", cloth: "#d9534f" } },
     cloche: { file: "Wear_Cloche", w: 0.86, y: 0.1, rx: -0.22, colors: { cloth: "#e88fa8", ribbon: "#8a3f5f", flower: "#ffffff" } },
-    beret: { file: "Wear_Beret", w: 0.78, y: 0.22, rz: -0.18, colors: { __DEFAULT: "#d9534f" } },
+    beret: { file: "Wear_Beret", w: 0.78, y: 0.16, z: -0.04, rx: -0.12, rz: -0.16, colors: { __DEFAULT: "#d9534f" } },
     hardhat: { file: "Wear_HardHat", w: 0.9, y: 0.14, colors: { "Material.004": "#f5c542" } },
     crown: { file: "Wear_Crown", w: 0.42, y: 0.3, colors: { __DEFAULT: "#f2c94c" } },
     elf: { file: "Wear_Elf", w: 0.8, y: 0.13, colors: { "hat felt": "#4f9f5a" } },
@@ -760,7 +760,7 @@ export async function createIsland(
   };
   /** 모자 앞쪽 테두리 높이 — 앞머리를 이 아래로 눌러 모자를 뚫지 않게 한다 (왕관·사슴뿔·헤드폰·리본은 그대로) */
   const HAT_LINE: Partial<Record<Hat, number>> = {
-    beanie: 0.18, cap: 0.18, straw: 0.21, cloche: 0.19, beret: 0.21, hardhat: 0.15, elf: 0.15, grad: 0.17, tophat: 0.27,
+    beanie: 0.18, cap: 0.18, straw: 0.21, cloche: 0.19, beret: 0.19, hardhat: 0.15, elf: 0.15, grad: 0.17, tophat: 0.27,
   };
   const wearCache = new Map<string, Promise<THREE.Object3D | null>>();
   const loadWear = (fit: WearFit) => {
