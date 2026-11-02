@@ -10,6 +10,10 @@ Packs used (converted to GLB, animations trimmed, meshopt-compressed):
   walls cream, widened 1.3x)
 - Farm Buildings Pack
 - Cute Fish Pack (fish, FishingRod_Lvl1, Dock_Long, Boat)
+- Stylized Nature MegaKit, Standard (free) version (MegaKit_Plants.glb — grass, clover,
+  ferns, leafy plants, flowers, flowering bush, flower heads and a mushroom merged into
+  one file so they share textures; textures resized to 512px and converted to WebP)
+  https://opengameart.org/content/stylized-nature-megakit
 - Animal Pack Vol.2 (Cat.glb — converted from FBX; recolored with vertex colors after
   a real silver tabby cat and widened to look chubby)
   https://opengameart.org/content/animated-animales-low-poly
