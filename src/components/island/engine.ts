@@ -10,6 +10,7 @@ import { CHATTER as CHATTER_LIST, type Chatter, pickChatter } from "./chatter";
 import { FISH_MODELS, SPECIES_BY_ID, type Species, rollCatch, shadowScale } from "./fish";
 import { type Chibi, type ChibiAnim, buildChibi } from "./chibi";
 import { buildFishFromAsset, buildFishModel } from "./fish-model";
+import { buildHouseXmas } from "./house-xmas";
 import { NavGrid, type Point } from "./pathfind";
 import { type TreeKind, type TreeOpts, buildTree } from "./tree-model";
 import {
@@ -476,6 +477,13 @@ export async function createIsland(
   houseGlow.position.set(glowAt.x, 1.0, glowAt.z);
   scene.add(houseGlow);
   addTarget({ obj: house, pos: { x: HOUSE.x, z: HOUSE.z }, reach: 2.6, act: () => cb.onInteract({ kind: "house" }) }, 2.0, 3.4);
+  // 12월에는 집도 크리스마스 장식 — 지붕선·포치 전구, 포치 갈란드, 현관 리스
+  const houseXmas = new Date().getMonth() === 11 ? buildHouseXmas(cachedStd) : null;
+  if (houseXmas) {
+    house.add(curveAll(houseXmas.group));
+    // 작은 장식이라 그림자는 드리우지 않는다
+    houseXmas.group.traverse((c) => (c.castShadow = false));
+  }
 
   // 우편함 (직접 만든 모델)
   const mailbox = new THREE.Group();
@@ -2001,6 +2009,7 @@ export async function createIsland(
     timer.update();
     const dt = Math.min(timer.getDelta(), 0.05) * timeScale;
     const time = timer.getElapsed();
+    houseXmas?.update(time, night);
 
     if (player) {
       // 키보드 이동
