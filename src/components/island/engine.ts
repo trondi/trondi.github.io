@@ -131,14 +131,24 @@ const CLEARINGS: { x: number; z: number; r: number }[] = [
   ]),
 ];
 const SKINS = ["#f6d7bd", "#e2b08b", "#a8714a"];
-const PETALS = [0xf2a7c3, 0xffffff, 0xf5d26b, 0xd66fa0];
+/** 심은 꽃의 꽃송이 — 저장된 색 번호 순서 (0 분홍, 1 연살구, 2 노랑, 3 보라, 4 빨강) */
+const PETAL_HEADS = ["Petal_5", "Petal_2", "Petal_4", "Petal_1", "Petal_3"] as const;
+
+/** Quaternius Stylized Nature MegaKit의 풀·꽃·버섯 — 텍스처를 함께 쓰도록 한 파일(MegaKit_Plants.glb)에 묶었다 */
+const PLANTS = [
+  "Grass_Common_Short", "Grass_Common_Tall", "Grass_Wispy_Short", "Grass_Wispy_Tall",
+  "Clover_1", "Clover_2", "Fern_1", "Plant_1", "Plant_1_Big", "Plant_7", "Plant_7_Big",
+  "Flower_3_Single", "Flower_3_Group", "Flower_4_Single", "Flower_4_Group", "Bush_Common_Flowers",
+  ...PETAL_HEADS, "Mushroom_Common",
+] as const;
+type PlantName = (typeof PLANTS)[number];
 
 const MODELS = [
   "ShibaInu", "House", "Well", "Fence",
   "Apple_Crop", "Orange_Crop",
-  "Flower_1", "Flower_2", "Flower_3", "Flower_4", "Flowers", "Bush_1", "Bush_Snow_1", "BushBerries_1",
-  "Rock_1", "Rock_2", "Rock_Moss_1", "Rock_Moss_2", "Rock_Snow_1", "Rock_Snow_2", "Grass", "Grass_Short",
-  "Lilypad", "TreeStump_Moss", "WoodLog_Moss", "Mushroom_1", "FishingRod_Lvl1", "Dock_Long", "Boat", "Fox", "Alpaca", "Husky", "Deer", "Cat",
+  "Bush_1", "Bush_Snow_1", "BushBerries_1",
+  "Rock_1", "Rock_2", "Rock_Moss_1", "Rock_Moss_2", "Rock_Snow_1", "Rock_Snow_2",
+  "Lilypad", "TreeStump_Moss", "WoodLog_Moss", "FishingRod_Lvl1", "Dock_Long", "Boat", "Fox", "Alpaca", "Husky", "Deer", "Cat",
 ] as const;
 type ModelName = (typeof MODELS)[number];
 
@@ -286,15 +296,27 @@ export async function createIsland(
   const loader = new GLTFLoader(manager);
   loader.setMeshoptDecoder(MeshoptDecoder);
   const gltfs = new Map<ModelName, { scene: THREE.Group; animations: THREE.AnimationClip[] }>();
-  await Promise.all(
-    MODELS.map(async (name) => {
+  const plants = new Map<PlantName, THREE.Group>();
+  await Promise.all([
+    ...MODELS.map(async (name) => {
       const g = await loader.loadAsync(`/island/models/${name}.glb`);
       curveAll(g.scene);
       // 작은 장식은 그림자를 드리우지 않는다 (그림자 계산 절약)
-      if (/^(Grass|Flowers|Lilypad|Mushroom|Flower_)/.test(name)) g.scene.traverse((c) => (c.castShadow = false));
+      if (name === "Lilypad") g.scene.traverse((c) => (c.castShadow = false));
       gltfs.set(name, { scene: g.scene, animations: g.animations });
     }),
-  );
+    // 풀·꽃은 한 파일에 모델별 노드로 들어 있다 — 노드를 하나씩 떼어 쓴다
+    loader.loadAsync("/island/models/MegaKit_Plants.glb").then((g) => {
+      curveAll(g.scene);
+      for (const node of [...g.scene.children]) {
+        node.traverse((c) => (c.castShadow = false));
+        node.position.set(0, 0, 0);
+        const holder = new THREE.Group();
+        holder.add(node);
+        plants.set(node.name as PlantName, holder);
+      }
+    }),
+  ]);
   // 나중에 필요할 때 불러오는 모델 (낚시 물고기, 모자·안경) — 처음 로딩 진행률과는 따로
   const lazyLoader = new GLTFLoader();
   lazyLoader.setMeshoptDecoder(MeshoptDecoder);
@@ -303,6 +325,18 @@ export async function createIsland(
     const o = gltfs.get(name)!.scene.clone(true);
     o.position.set(x, y ?? groundHeight(x, z), z);
     o.scale.setScalar(scale);
+    o.rotation.y = rot;
+    return o;
+  };
+  /** 풀·꽃 놓기 — 크기는 모델 원래 크기 기준 (풀 한 포기 원본은 키가 1.3m쯤) */
+  const plantModel = (name: PlantName, scale: number) => {
+    const o = plants.get(name)!.clone(true);
+    o.scale.setScalar(scale);
+    return o;
+  };
+  const placePlant = (name: PlantName, x: number, z: number, scale: number, rot = 0) => {
+    const o = plantModel(name, scale);
+    o.position.set(x, groundHeight(x, z), z);
     o.rotation.y = rot;
     return o;
   };
@@ -716,23 +750,44 @@ export async function createIsland(
     }
     if (!snow) {
       const G = rng(5);
-      for (let i = 0; i < 290; i++) {
+      for (let i = 0; i < 360; i++) {
         const x = (G() - 0.5) * ISLAND.rx * 1.9;
         const z = (G() - 0.5) * ISLAND.rz * 1.9 + ISLAND.cz;
         // 집·바위 등 막힌 자리에는 풀을 두지 않는다 (포치 바닥을 뚫고 나오지 않게)
         if (!terrainWalkable(x, z) || blocked(x, z) || islandE(x, z) > 0.9 || Math.abs(cliffZ(x) - z) < 0.8) continue;
-        seasonal.add(place(G() < 0.6 ? "Grass_Short" : "Grass", x, z, 0.5 + G() * 0.3, G() * 6));
+        // 짧은 풀이 대부분, 사이사이 키 큰 풀·하늘하늘한 풀·클로버·보라 잎
+        const r = G();
+        const [name, size]: [PlantName, number] =
+          r < 0.34 ? ["Grass_Common_Short", 0.4]
+          : r < 0.54 ? ["Grass_Wispy_Short", 0.42]
+          : r < 0.66 ? ["Grass_Common_Tall", 0.3]
+          : r < 0.74 ? ["Grass_Wispy_Tall", 0.3]
+          : r < 0.92 ? [G() < 0.5 ? "Clover_1" : "Clover_2", 0.4]
+          : ["Plant_7", 0.6];
+        seasonal.add(placePlant(name, x, z, size * (0.85 + G() * 0.35), G() * 6));
       }
-      for (const t of TREE_SPOTS.filter((_, i) => i % 7 === 0)) {
-        seasonal.add(place("Mushroom_1", t.x + 0.6, t.z + 0.4, 1.6, t.x));
-      }
-      for (let i = 0; i < 40; i++) {
+      // 숲 바닥 — 나무 밑동 옆에 버섯·고사리·잎 식물
+      TREE_SPOTS.forEach((t, i) => {
+        if (i % 7 === 0) seasonal.add(placePlant("Mushroom_Common", t.x + 0.6, t.z + 0.4, 0.7, t.x));
+        else if (i % 4 === 1) seasonal.add(placePlant("Fern_1", t.x - 0.6, t.z + 0.55, 0.42, t.z));
+        else if (i % 6 === 2) seasonal.add(placePlant("Plant_1", t.x + 0.55, t.z - 0.5, 0.4, t.x));
+      });
+      const WILD: [PlantName, number][] = [
+        ["Flower_3_Group", 0.32], ["Flower_4_Group", 0.28], ["Flower_3_Single", 0.32], ["Flower_4_Single", 0.28], ["Plant_7_Big", 0.55],
+      ];
+      for (let i = 0; i < 44; i++) {
         // 남서쪽 꽃밭에 몰아서
-        const p = i < 12 ? freeSpot(0.3, (x, z) => x < -6 && z > 3 && islandE(x, z) < 0.85) : freeSpot(0.3);
+        const p = i < 14 ? freeSpot(0.3, (x, z) => x < -6 && z > 3 && islandE(x, z) < 0.85) : freeSpot(0.3);
         if (!p) continue;
-        const f = place("Flowers", p.x, p.z, 0.75, p.x);
-        recolor(f, "Cyan", PETALS[i % PETALS.length]);
-        seasonal.add(f);
+        const [name, size] = WILD[i % WILD.length];
+        seasonal.add(placePlant(name, p.x, p.z, size * (0.9 + B() * 0.3), p.x));
+      }
+      // 꽃 핀 덤불 — 지나갈 수 없다
+      for (let i = 0; i < 8; i++) {
+        const p = freeSpot(0.7);
+        if (!p) continue;
+        seasonal.add(placePlant("Bush_Common_Flowers", p.x, p.z, 0.4, p.x));
+        addCollider({ x: p.x, z: p.z, r: 0.4 });
       }
       for (const z of [-3.4, 4.6, 7.4, 13.2]) seasonal.add(place("Lilypad", riverX(z) + (z % 2 ? 0.45 : -0.45), z, 0.45, z, WATER_Y + 0.01));
       for (let i = 0; i < 5; i++) {
@@ -1164,12 +1219,37 @@ export async function createIsland(
   save.ground.forEach((g) => spawnItem(g.id, g.type, g.x, g.z));
 
   const flowerObjs = new Map<string, { obj: THREE.Object3D; stage: number }>();
+  /**
+   * 심은 꽃 — 새싹(작은 클로버) → 줄기(잎 식물) → 꽃봉오리 → 활짝 핀 꽃.
+   * 꽃봉오리·꽃은 초록 줄기 끝에 심을 때 정한 색의 꽃송이를 얹는다 (봉오리는 오므린 모양)
+   */
+  const stemMat = cachedStd("#5f9a3e");
   const flowerModelFor = (stage: number, color: number) => {
-    const name = (["Flower_1", "Flower_2", "Flower_3", "Flower_4"] as const)[stage];
-    const o = gltfs.get(name)!.scene.clone(true);
-    o.scale.setScalar(0.65);
-    if (stage >= 2) recolor(o, "Cyan", PETALS[color % PETALS.length]);
-    return o;
+    const g = new THREE.Group();
+    if (stage === 0) {
+      g.add(plantModel("Clover_2", 0.13));
+      return g;
+    }
+    if (stage === 1) {
+      g.add(plantModel("Plant_1", 0.2));
+      return g;
+    }
+    const h = stage === 2 ? 0.34 : 0.42;
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.016, h, 5), stemMat);
+    stem.position.y = h / 2;
+    const leaves = plantModel("Plant_1", 0.13);
+    const head = plantModel(PETAL_HEADS[color % PETAL_HEADS.length], 1);
+    const holder = new THREE.Group();
+    holder.add(head);
+    holder.position.y = h - 0.02;
+    if (stage === 2) holder.scale.set(0.16, 0.42, 0.16);
+    else {
+      holder.scale.setScalar(0.42);
+      // 위에서 비추는 카메라 쪽으로 살짝 고개를 든다
+      holder.rotation.x = 0.35;
+    }
+    g.add(curveAll(stem), leaves, holder);
+    return g;
   };
   const syncFlowers = () => {
     for (const f of save.flowers) {
@@ -1419,7 +1499,7 @@ export async function createIsland(
       facePoint(player, p);
       play(player, "PickUp", true);
       save.bag.seed -= 1;
-      save.flowers.push({ id: `f-${Date.now().toString(36)}`, x: p.x, z: p.z, color: Math.floor(Math.random() * PETALS.length), at: Date.now() });
+      save.flowers.push({ id: `f-${Date.now().toString(36)}`, x: p.x, z: p.z, color: Math.floor(Math.random() * PETAL_HEADS.length), at: Date.now() });
       syncFlowers();
       cb.onToast("🌱 꽃씨를 심었어요 · 시간이 지나면 자라요");
       persist();
