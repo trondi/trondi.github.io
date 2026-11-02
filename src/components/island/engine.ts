@@ -744,23 +744,23 @@ export async function createIsland(
    */
   type WearFit = { file: string; w: number; y: number; z?: number; sy?: number; rx?: number; ry?: number; rz?: number; anchor?: "bottom" | "center"; colors: Record<string, string> };
   const WEAR: Partial<Record<Hat | Glasses, WearFit>> & Record<string, WearFit | undefined> = {
-    straw: { file: "Wear_Straw", w: 1.0, y: 0.2, colors: { straw: "#e8c77a", cloth: "#d9534f" } },
+    straw: { file: "Wear_Straw", w: 1.0, y: 0.15, rx: -0.15, colors: { straw: "#e8c77a", cloth: "#d9534f" } },
     cloche: { file: "Wear_Cloche", w: 0.86, y: 0.1, rx: -0.22, colors: { cloth: "#e88fa8", ribbon: "#8a3f5f", flower: "#ffffff" } },
     beret: { file: "Wear_Beret", w: 0.82, y: 0.08, z: -0.05, sy: 0.75, rx: -0.25, rz: -0.22, colors: { __DEFAULT: "#d9534f" } },
     hardhat: { file: "Wear_HardHat", w: 0.9, y: 0.14, colors: { "Material.004": "#f5c542" } },
     crown: { file: "Wear_Crown", w: 0.42, y: 0.3, colors: { __DEFAULT: "#f2c94c" } },
-    elf: { file: "Wear_Elf", w: 0.8, y: 0.13, colors: { "hat felt": "#4f9f5a" } },
+    elf: { file: "Wear_Elf", w: 0.97, y: 0.1, rx: -0.1, colors: { "hat felt": "#4f9f5a" } },
     grad: { file: "Wear_Grad", w: 0.8, y: 0.16, colors: { "Material.001": "#2a2a35" } },
     tophat: { file: "Wear_TopHat", w: 0.72, y: 0.27, colors: { __DEFAULT: "#2f2f35" } },
     antler: { file: "Wear_Antler", w: 0.95, y: 0.1, colors: { Material: "#8a5a3a" } },
-    headphones: { file: "Wear_Headphones", w: 0.82, y: -0.14, ry: Math.PI / 2, colors: { __DEFAULT: "#4f9fd0" } },
+    headphones: { file: "Wear_Headphones", w: 0.8, y: -0.2, sy: 0.85, ry: Math.PI / 2, colors: { __DEFAULT: "#4f9fd0" } },
     round: { file: "Wear_GlassesRound", w: 0.6, y: 0.0, z: 0.31, anchor: "center", colors: { __DEFAULT: "#2a2a30" } },
     visor: { file: "Wear_GlassesVisor", w: 0.62, y: 0.0, z: 0.31, anchor: "center", colors: { __DEFAULT: "#2a2a30" } },
     pixel: { file: "Wear_GlassesPixel", w: 0.62, y: 0.0, z: 0.31, anchor: "center", colors: { __DEFAULT: "#1a1a1a" } },
   };
   /** 모자 앞쪽 테두리 높이 — 앞머리를 이 아래로 눌러 모자를 뚫지 않게 한다 (왕관·사슴뿔·헤드폰·리본은 그대로) */
   const HAT_LINE: Partial<Record<Hat, number>> = {
-    beanie: 0.18, cap: 0.18, straw: 0.21, cloche: 0.19, beret: 0.15, hardhat: 0.15, elf: 0.15, grad: 0.17, tophat: 0.27,
+    beanie: 0.18, cap: 0.18, straw: 0.17, cloche: 0.19, beret: 0.15, hardhat: 0.15, elf: 0.14, grad: 0.17, tophat: 0.27,
   };
   const wearCache = new Map<string, Promise<THREE.Object3D | null>>();
   const loadWear = (fit: WearFit) => {
@@ -834,8 +834,9 @@ export async function createIsland(
         g.add(wing);
       }
       g.add(knot);
-      g.position.set(0.18, 0.32, 0.05);
-      g.rotation.z = -0.3;
+      // 옆머리에 꽂은 머리핀처럼 — 정수리 옆면에 살짝 묻히게
+      g.position.set(0.25, 0.26, 0.08);
+      g.rotation.set(0, 0.35, -0.6);
     }
     return curveAll(g);
   };
