@@ -46,6 +46,8 @@ export const GLASSES: { id: Glasses; name: string }[] = [
 ];
 
 export type DexEntry = { count: number; best: number; first: number };
+/** 모카와의 사이 — 수다 횟수, 하트(선물로 오른다), 마지막 수다·선물 날짜 */
+export type NpcState = { talks: number; hearts: number; lastTalk: string | null; lastGift: string | null };
 
 export type IslandSave = {
   v: 1;
@@ -63,6 +65,7 @@ export type IslandSave = {
   fish: Record<string, number>;
   /** 도감 — 한 번이라도 낚은 것 */
   dex: Record<string, DexEntry>;
+  npc?: NpcState;
 };
 
 const KEY = "trond-island:v1";

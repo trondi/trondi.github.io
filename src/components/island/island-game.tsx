@@ -4,11 +4,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useSeasonalContext } from "@/components/blog/seasonal-context";
-import { getSeason } from "@/lib/season";
+import { type Season, getSeason } from "@/lib/season";
 import { cn } from "@/lib/utils";
 
 import type { CatchEvent, FishingPhase, InteractEvent, IslandHandle, Mode } from "./engine";
 import { SPECIES, SPECIES_BY_ID } from "./fish";
+import {
+  type GiftItem, type GiftResult, MAX_HEARTS, NPC_NAME, QUESTIONS, TIPS, chatLines, giveGift, greet, npcState, recordTalk, shuffled,
+} from "./mocha";
 import {
   FLOWER_STAGE_LABEL, GLASSES, HAIR_COLORS, HATS, PANTS_COLORS, SHIRT_COLORS,
   type IslandSave, type Look, loadSave, writeSave,
@@ -17,7 +20,21 @@ import {
 export type IslandPost = { slug: string; title: string; summary: string };
 
 type Panel =
-  | { kind: "npc"; step: number; pick: number }
+  | {
+      kind: "npc";
+      view: "menu" | "chat" | "tip" | "gift" | "rec";
+      seed: number;
+      /** 처음 열었을 때의 인사 — 메뉴로 돌아오면 비운다 */
+      greet: string[];
+      chat: number;
+      tip: number;
+      rec: number;
+      /** 지금 보여 주는 수다 (질문이면 q, 고른 대답이면 answer) */
+      line?: string;
+      q?: number;
+      answer?: string;
+      gift?: GiftResult;
+    }
   | { kind: "mail" }
   | { kind: "board" }
   | { kind: "house" }
@@ -26,28 +43,9 @@ type Panel =
   | { kind: "dex" }
   | { kind: "wardrobe"; draft: Look };
 
-const NPC_NAME = "모카";
 const SEASON_EMOJI = { spring: "🌸", summer: "🌿", autumn: "🍂", winter: "❄️" } as const;
 const SKIN_SWATCH = ["#f6d7bd", "#e2b08b", "#a8714a"];
 const DEFAULT_OUTFIT = { shirt: 0, pants: 0, hair: 0, hat: "none", glasses: "none" } as const;
-
-const TIPS = [
-  "나무를 흔들면 가끔 꽃씨가 떨어져. 나무마다 하루에 한 번이야!",
-  "과일나무는 열매를 따도 다음 날이면 다시 열려. 강 건너에 과수원도 있어!",
-  "우편함 위에 빨간 느낌표가 보이면 새 글 편지가 온 거야.",
-  "꽃씨는 가방에서 꺼내 심을 수 있어. 시간이 지나면 조금씩 자라!",
-  "가방에서 낚싯대를 꺼내 물을 탭해 봐. 찌가 쑥 들어갈 때 바로 탭해야 해!",
-  "강, 위쪽 숲의 연못, 남쪽 바다에서 사는 물고기가 달라. 밤에만 나오는 애들도 있대.",
-  "뒤쪽 언덕은 경사로로 올라갈 수 있어. 연못가 벤치가 내 비밀 장소야.",
-  "집에 있는 옷장에서 옷이랑 모자를 바꿀 수 있어.",
-];
-
-function greeting(h: number) {
-  if (h >= 5 && h < 11) return "좋은 아침이야! ☀️ 오늘도 섬에 와 줘서 고마워.";
-  if (h >= 11 && h < 17) return "왔구나! 오늘 하루는 어때?";
-  if (h >= 17 && h < 20) return "노을이 예쁘지? 이 시간 섬이 제일 좋아.";
-  return "이 시간까지 깨어 있구나 🌙 너무 무리하지 마.";
-}
 
 /** 받침 유무로 을/를 */
 function eulReul(word: string) {
@@ -75,6 +73,11 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
   const { activeSeason } = useSeasonalContext();
   const season = activeSeason ?? getSeason();
   const latest = posts[0] ?? null;
+  // 콜백 안에서 최신 값을 읽기 위한 참조
+  const saveRef = useRef<IslandSave | null>(null);
+  saveRef.current = save;
+  const seasonRef = useRef(season);
+  seasonRef.current = season;
 
   const toast = useCallback((text: string) => {
     const id = Date.now() + Math.random();
@@ -90,7 +93,20 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
       else toast("바스락… 아무것도 떨어지지 않았어요");
       return;
     }
-    if (e.kind === "npc") setPanel({ kind: "npc", step: 0, pick: Math.floor(Math.random() * 1000) });
+    if (e.kind === "npc") {
+      const now = new Date();
+      const cur = saveRef.current;
+      setPanel({
+        kind: "npc",
+        view: "menu",
+        seed: 1 + Math.floor(Math.random() * 100000),
+        greet: cur ? greet({ now, season: seasonRef.current, save: cur }) : [],
+        chat: 0,
+        tip: 0,
+        rec: 0,
+      });
+      handleRef.current?.mutateSave((sv) => recordTalk(sv, now));
+    }
     else if (e.kind === "flower") setPanel({ kind: "flower", stage: e.stage });
     else setPanel({ kind: e.kind });
   }, [toast]);
@@ -346,6 +362,8 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
                   panel={panel}
                   posts={posts}
                   save={save}
+                  season={season}
+                  onMutate={(fn) => handleRef.current?.mutateSave(fn)}
                   setPanel={setPanel}
                   onClose={closePanel}
                   onPlant={() => {
@@ -452,6 +470,8 @@ function PanelBody({
   panel,
   posts,
   save,
+  season,
+  onMutate,
   setPanel,
   onClose,
   onPlant,
@@ -464,6 +484,8 @@ function PanelBody({
   panel: Panel;
   posts: IslandPost[];
   save: IslandSave | null;
+  season: Season;
+  onMutate: (fn: (save: IslandSave) => void) => void;
   setPanel: (p: Panel) => void;
   onClose: () => void;
   onPlant: () => void;
@@ -491,37 +513,184 @@ function PanelBody({
   );
 
   if (panel.kind === "npc") {
+    const st = save ? npcState(save) : null;
+    const hearts = st?.hearts ?? 0;
+    const go = (patch: Partial<typeof panel>) => setPanel({ ...panel, ...patch });
+    const toMenu = () => go({ view: "menu", greet: [], line: undefined, q: undefined, answer: undefined, gift: undefined });
+    const nextChat = () => {
+      const n = panel.chat;
+      // 세 번에 한 번은 모카가 질문을 던진다
+      if (n % 3 === 2) {
+        const order = shuffled(QUESTIONS.map((_, i) => i), panel.seed);
+        go({ view: "chat", chat: n + 1, q: order[Math.floor(n / 3) % order.length], answer: undefined, line: undefined });
+        return;
+      }
+      if (!save) return;
+      const { contextual, general } = chatLines({ now: new Date(), season, save });
+      const lines = [...shuffled(contextual, panel.seed), ...shuffled(general, panel.seed + 1)];
+      const k = n - Math.floor((n + 1) / 3);
+      go({ view: "chat", chat: n + 1, line: lines[k % lines.length], q: undefined, answer: undefined });
+    };
     const pool = posts.slice(1).length ? posts.slice(1) : posts;
-    const rec = pool.length ? pool[panel.pick % pool.length] : null;
-    // 0: 인사 + 추천, 1..: 이야기와 추천을 번갈아
-    const talkTip = panel.step > 0 && panel.step % 2 === 1;
-    const tip = TIPS[(panel.pick + panel.step) % TIPS.length];
+    const rec = pool.length ? pool[(panel.seed + panel.rec) % pool.length] : null;
+    const give = (item: GiftItem) => {
+      let result: GiftResult | null = null;
+      onMutate((sv) => {
+        result = giveGift(sv, item, new Date());
+      });
+      if (result) go({ view: "gift", gift: result });
+    };
+    const fishInBag = Object.entries(save?.fish ?? {}).filter(([, n]) => n > 0);
+    const chip = "rounded-full border-2 border-[#e8dcc4] bg-white/70 px-3 py-1 text-[13px] font-bold transition-transform active:scale-95";
+    const moreTalk = (
+      <>
+        <button type="button" className={secondary} onClick={toMenu}>
+          다른 얘기
+        </button>
+        <button type="button" className={secondary} onClick={onClose}>
+          안녕!
+        </button>
+      </>
+    );
     return (
       <>
-        <Tag>{NPC_NAME}</Tag>
-        {panel.step === 0 && <p>{greeting(new Date().getHours())}</p>}
-        {talkTip ? (
-          <p>{tip}</p>
-        ) : rec ? (
-          <p className="mt-1">
-            혹시 이 글 읽어 봤어? <b className="text-[#7d5bb0]">「{rec.title}」</b>
-          </p>
-        ) : (
-          <p>{tip}</p>
+        <Tag>
+          {NPC_NAME}{" "}
+          <span aria-label={`친밀도 ${hearts}/${MAX_HEARTS}`} className="tracking-tight">
+            {"♥".repeat(hearts)}
+            <span className="opacity-50">{"♡".repeat(MAX_HEARTS - hearts)}</span>
+          </span>
+        </Tag>
+
+        {panel.view === "menu" && (
+          <>
+            {panel.greet.length ? panel.greet.map((g) => <p key={g}>{g}</p>) : <p>또 무슨 얘기 할까?</p>}
+            <div className="mt-3 flex flex-wrap justify-end gap-1.5">
+              <button type="button" className={primary} onClick={nextChat}>
+                💬 수다 떨기
+              </button>
+              <button type="button" className={secondary} onClick={() => go({ view: "tip" })}>
+                🏝️ 섬 이야기
+              </button>
+              <button type="button" className={secondary} onClick={() => go({ view: "gift", gift: undefined })}>
+                🎁 선물 주기
+              </button>
+              {rec && (
+                <button type="button" className={secondary} onClick={() => go({ view: "rec" })}>
+                  📖 글 추천
+                </button>
+              )}
+              <button type="button" className={secondary} onClick={onClose}>
+                안녕!
+              </button>
+            </div>
+          </>
         )}
-        <div className="mt-3 flex flex-wrap justify-end gap-1.5">
-          {!talkTip && rec && (
-            <Link href={`/posts/${rec.slug}`} className={primary}>
-              읽어 볼래!
-            </Link>
-          )}
-          <button type="button" className={secondary} onClick={() => setPanel({ ...panel, step: panel.step + 1, pick: panel.pick + 7 })}>
-            다른 얘기 해 줘
-          </button>
-          <button type="button" className={secondary} onClick={onClose}>
-            안녕!
-          </button>
-        </div>
+
+        {panel.view === "chat" && panel.q !== undefined && !panel.answer && (
+          <>
+            <p>{QUESTIONS[panel.q][0]}</p>
+            <div className="mt-3 flex flex-wrap justify-end gap-1.5">
+              {[QUESTIONS[panel.q][1], QUESTIONS[panel.q][2]].map(([label, reply]) => (
+                <button key={label} type="button" className={primary} onClick={() => go({ answer: reply })}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {panel.view === "chat" && (panel.answer || panel.q === undefined) && (
+          <>
+            <p>{panel.answer ?? panel.line}</p>
+            <div className="mt-3 flex flex-wrap justify-end gap-1.5">
+              <button type="button" className={primary} onClick={nextChat}>
+                더 얘기하자
+              </button>
+              {moreTalk}
+            </div>
+          </>
+        )}
+
+        {panel.view === "tip" && (
+          <>
+            <p>{TIPS[(panel.seed + panel.tip) % TIPS.length]}</p>
+            <div className="mt-3 flex flex-wrap justify-end gap-1.5">
+              <button type="button" className={primary} onClick={() => go({ tip: panel.tip + 1 })}>
+                하나 더 알려 줘
+              </button>
+              {moreTalk}
+            </div>
+          </>
+        )}
+
+        {panel.view === "rec" && rec && (
+          <>
+            <p>
+              혹시 이 글 읽어 봤어? <b className="text-[#7d5bb0]">「{rec.title}」</b>
+            </p>
+            {rec.summary && <p className="mt-1 text-[13px] opacity-75">{rec.summary}</p>}
+            <div className="mt-3 flex flex-wrap justify-end gap-1.5">
+              <Link href={`/posts/${rec.slug}`} className={primary}>
+                읽어 볼래!
+              </Link>
+              {pool.length > 1 && (
+                <button type="button" className={secondary} onClick={() => go({ rec: panel.rec + 1 })}>
+                  다른 글
+                </button>
+              )}
+              {moreTalk}
+            </div>
+          </>
+        )}
+
+        {panel.view === "gift" && !panel.gift && (
+          <>
+            {save && (save.bag.apple || save.bag.orange || fishInBag.length) ? (
+              <>
+                <p>나 주려고? 뭐 줄 거야? 두근두근…</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {save.bag.apple > 0 && (
+                    <button type="button" className={chip} onClick={() => give({ kind: "apple" })}>
+                      🍎 사과 ×{save.bag.apple}
+                    </button>
+                  )}
+                  {save.bag.orange > 0 && (
+                    <button type="button" className={chip} onClick={() => give({ kind: "orange" })}>
+                      🍊 오렌지 ×{save.bag.orange}
+                    </button>
+                  )}
+                  {fishInBag.map(([id, n]) => {
+                    const sp = SPECIES_BY_ID.get(id);
+                    return (
+                      <button key={id} type="button" className={chip} onClick={() => give({ kind: "fish", id })}>
+                        {sp?.emoji ?? "🐟"} {sp?.name ?? id} ×{n}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <p>가방이 비었네? 나무를 흔들어 과일을 따거나 물고기를 낚아서 가져와 줘! 🍎🐟</p>
+            )}
+            <div className="mt-3 flex flex-wrap justify-end gap-1.5">{moreTalk}</div>
+          </>
+        )}
+
+        {panel.view === "gift" && panel.gift && (
+          <>
+            <p>{panel.gift.line}</p>
+            {panel.gift.heart && (
+              <p className="mt-1 text-[13px] font-bold text-[#e8707a]">♥ {NPC_NAME}와 조금 더 친해졌어요</p>
+            )}
+            {panel.gift.reward > 0 && (
+              <p className="mt-1">
+                {hearts >= MAX_HEARTS ? "이제 우리 단짝이야! 기념으로" : "고마운 마음에…"} 이거 받아! 🌱 꽃씨 {panel.gift.reward}개야.
+              </p>
+            )}
+            <div className="mt-3 flex flex-wrap justify-end gap-1.5">{moreTalk}</div>
+          </>
+        )}
       </>
     );
   }

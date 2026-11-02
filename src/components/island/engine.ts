@@ -68,6 +68,8 @@ export type IslandHandle = {
   endDialog: () => void;
   markMailRead: () => void;
   releaseFish: (id: string) => void;
+  /** 화면 쪽에서 저장 데이터를 고칠 때 (모카와의 대화·선물) */
+  mutateSave: (fn: (save: IslandSave) => void) => void;
   dispose: () => void;
 };
 
@@ -1952,6 +1954,10 @@ export async function createIsland(
     markMailRead: () => {
       save.mailRead = latestMail;
       syncMail();
+      persist();
+    },
+    mutateSave: (fn) => {
+      fn(save);
       persist();
     },
     releaseFish: (id) => {
