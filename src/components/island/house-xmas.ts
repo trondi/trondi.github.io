@@ -1,7 +1,8 @@
 import * as THREE from "three";
 
 /**
- * 12월의 집 장식 — 앞 박공 지붕선과 포치 처마의 전구, 포치 기둥 사이 갈란드, 현관문 리스.
+ * 12월의 집 장식 — 앞 박공 지붕선·포치 처마·벽 모서리의 전구, 창문 테두리 전구,
+ * 오른쪽 지붕 경사면에 걸쳐 놓은 큰 산타 양말, 포치 기둥 사이 갈란드, 현관문 리스.
  * 좌표는 집 모델(포치 달린 2층 집, House.glb) 기준이라 집 오브젝트의 자식으로 붙인다.
  * 전구는 색마다 재질을 하나씩 두고, 밤이 되면 밝아지며 번갈아 반짝인다.
  */
@@ -23,6 +24,16 @@ const PORCH_EAVE = { x0: -1.1, x1: 1.12, y: 0.8, z: 1.97 }; // 포치 지붕 앞
 const POSTS_X = [-0.95, -0.31, 0.32, 0.96]; // 포치 앞 기둥
 const POST_Z = 1.86;
 const DOOR = { x: -0.53, y: 0.42, z: 1.2 }; // 갈란드에 가리지 않게 문 가운데쯤
+const WALL_Z = 1.22; // 앞벽(창문 앞)
+const WINDOWS = [
+  { x0: -0.74, x1: -0.4, y0: 1.21, y1: 1.61 }, // 2층 왼쪽
+  { x0: 0.39, x1: 0.74, y0: 1.21, y1: 1.61 }, // 2층 오른쪽
+  { x0: -0.18, x1: 0.17, y0: 1.96, y1: 2.37 }, // 다락
+];
+const CORNER = { x: 1.37, y0: 0.22, y1: 1.6 }; // 앞벽 양쪽 모서리
+// 본채 지붕 앞 경사면 — 용마루(z -0.77, y 3.17)에서 처마(z 0.25, y 1.69)로 내려온다. 앞 박공 오른쪽에 보이는 자리
+const ROOF_TILT = Math.atan2(1.02, 1.48); // 경사면이 앞쪽(+z)에서 뒤로 누운 각도
+const STOCKING_TOP = { x: 1.24, y: 3.02, z: -0.6 }; // 경사면 위로 살짝 띄운 양말 고리 자리
 
 export function buildHouseXmas(mat: Mat): HouseXmas {
   const g = new THREE.Group();
@@ -53,6 +64,29 @@ export function buildHouseXmas(mat: Mat): HouseXmas {
   const peak = new THREE.Vector3(0, GABLE_PEAK_Y, GABLE_Z);
   string(new THREE.Vector3(-GABLE_EAVE.x, GABLE_EAVE.y, GABLE_Z), peak, 0.13);
   string(peak, new THREE.Vector3(GABLE_EAVE.x, GABLE_EAVE.y, GABLE_Z), 0.13);
+
+  // 벽 — 앞벽 양쪽 모서리를 따라 내려오는 전구, 창문마다 테두리 전구
+  for (const sx of [-1, 1]) {
+    string(new THREE.Vector3(sx * CORNER.x, CORNER.y1, WALL_Z - 0.04), new THREE.Vector3(sx * CORNER.x, CORNER.y0, WALL_Z - 0.04), 0.11);
+  }
+  for (const w of WINDOWS) {
+    const m = 0.05;
+    const c = [
+      new THREE.Vector3(w.x0 - m, w.y1 + m, WALL_Z),
+      new THREE.Vector3(w.x1 + m, w.y1 + m, WALL_Z),
+      new THREE.Vector3(w.x1 + m, w.y0 - m, WALL_Z),
+      new THREE.Vector3(w.x0 - m, w.y0 - m, WALL_Z),
+    ];
+    // 모서리 전구가 겹치지 않게 각 변의 끝점은 빼고 늘어놓는다
+    c.forEach((a, i) => {
+      const b = c[(i + 1) % 4];
+      const n = Math.max(1, Math.round(a.distanceTo(b) / 0.09));
+      for (let j = 0; j < n; j++) {
+        const p = a.clone().lerp(b, j / n);
+        bulb(p.x, p.y, p.z);
+      }
+    });
+  }
 
   // 포치 처마 — 짧게 늘어진 고리 모양
   string(
@@ -104,6 +138,13 @@ export function buildHouseXmas(mat: Mat): HouseXmas {
   }
   g.add(wreath);
 
+  // 산타 양말 — 오른쪽 지붕 경사면에 크게 걸쳐 둔다 (발끝은 오른쪽)
+  const stocking = buildStocking(mat);
+  stocking.position.set(STOCKING_TOP.x, STOCKING_TOP.y, STOCKING_TOP.z);
+  stocking.rotation.set(-ROOF_TILT, 0, 0.12, "XYZ");
+  stocking.scale.setScalar(1.4);
+  g.add(stocking);
+
   return {
     group: g,
     update(time, night) {
@@ -114,4 +155,55 @@ export function buildHouseXmas(mat: Mat): HouseXmas {
       });
     },
   };
+}
+
+/** 산타 양말 — 빨간 양말에 흰 털 단, 호랑가시 잎과 열매, 거는 고리. 고리 아래(단 윗면)가 원점 */
+function buildStocking(mat: Mat) {
+  const g = new THREE.Group();
+  const s = new THREE.Shape();
+  s.moveTo(-0.11, 0);
+  s.lineTo(-0.11, -0.36);
+  s.quadraticCurveTo(-0.11, -0.48, 0.0, -0.48);
+  s.lineTo(0.17, -0.48);
+  s.quadraticCurveTo(0.27, -0.48, 0.27, -0.395);
+  s.quadraticCurveTo(0.27, -0.31, 0.17, -0.31);
+  s.lineTo(0.11, -0.31);
+  s.lineTo(0.11, 0);
+  s.closePath();
+  const body = new THREE.ExtrudeGeometry(s, {
+    depth: 0.07,
+    bevelEnabled: true,
+    bevelThickness: 0.015,
+    bevelSize: 0.015,
+    bevelSegments: 1,
+    curveSegments: 6,
+  });
+  body.translate(0, 0, -0.035);
+  g.add(new THREE.Mesh(body, mat("#cf2f2b")));
+  // 흰 털 단 (위쪽)과 발끝
+  const white = mat("#f7f3ea");
+  const cuff = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.11, 0.13), white);
+  cuff.position.set(0, -0.03, 0);
+  g.add(cuff);
+  const toe = new THREE.Mesh(new THREE.IcosahedronGeometry(0.07, 0), white);
+  toe.position.set(0.22, -0.4, 0);
+  toe.scale.set(1, 1, 0.75);
+  g.add(toe);
+  // 털 단 위의 호랑가시 잎 두 장과 빨간 열매
+  const leaf = mat("#2f6b3a");
+  for (const sx of [-1, 1]) {
+    const l = new THREE.Mesh(new THREE.IcosahedronGeometry(0.04, 0), leaf);
+    l.position.set(-0.05 + sx * 0.035, -0.03, 0.075);
+    l.scale.set(1.3, 0.6, 0.4);
+    l.rotation.z = sx * 0.4;
+    g.add(l);
+  }
+  const berry = new THREE.Mesh(new THREE.IcosahedronGeometry(0.022, 0), mat("#d33a35"));
+  berry.position.set(-0.05, -0.03, 0.09);
+  g.add(berry);
+  // 거는 고리
+  const loop = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.01, 4, 10), white);
+  loop.position.set(-0.08, 0.04, 0);
+  g.add(loop);
+  return g;
 }
