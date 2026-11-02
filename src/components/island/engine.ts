@@ -90,10 +90,12 @@ const WELL = { x: -7.4, z: 2.9 };
 const NPC_HOME = { x: -1.6, z: 1.4, r: 2.6 };
 const SPAWN = { x: 0.6, z: 3.2 };
 const BENCH = { x: POND.x + 3.6, z: POND.z + 1.4 };
-/** 주민들 — 모카는 집 앞, 단풍이는 강 건너 과수원, 몽실이는 위쪽 연못가 벤치 옆 */
+/** 주민들 — 모카는 집 앞, 단풍이는 강 건너 과수원, 설기는 남쪽 바닷가, 토리는 남서쪽 꽃밭, 몽실이는 위쪽 연못가 벤치 옆 */
 const VILLAGERS = [
   { id: "mocha", model: "ShibaInu", scale: 0.24, speed: 0.9, home: NPC_HOME, hit: [0.55, 1.0], talkY: 1.0 },
   { id: "danpung", model: "Fox", scale: 0.22, speed: 1.0, home: { x: 11.9, z: -1.2, r: 1.4 }, hit: [0.55, 1.0], talkY: 0.9 },
+  { id: "seolgi", model: "Husky", scale: 0.24, speed: 1.15, home: { x: DOCK.x + 2.6, z: DOCK.z0 + 1.2, r: 1.3 }, hit: [0.55, 1.0], talkY: 1.0 },
+  { id: "tori", model: "Deer", scale: 0.2, speed: 0.75, home: { x: -9.4, z: 6.4, r: 1.4 }, hit: [0.6, 1.2], talkY: 1.2 },
   { id: "mongsil", model: "Alpaca", scale: 0.19, speed: 0.55, talkY: 1.35, home: { x: BENCH.x + 0.8, z: BENCH.z + 1.0, r: 1.2 }, hit: [0.6, 1.4] },
 ] as const;
 const LAMPS: Point[] = [
@@ -105,6 +107,12 @@ const CLEARINGS: { x: number; z: number; r: number }[] = [
   { x: -2, z: 0, r: 6.8 }, { x: SPAWN.x, z: SPAWN.z, r: 2.5 }, { x: DOCK.x, z: DOCK.z0 - 0.4, r: 2.6 },
   { x: RAMP.x, z: cliffZ(RAMP.x) - 2.6, r: 2.2 }, { x: RAMP.x, z: cliffZ(RAMP.x) + 2.6, r: 2.2 },
   { x: BENCH.x, z: BENCH.z, r: 1.8 }, { x: 12, z: 0, r: 4.6 },
+  // 주민들이 지내는 곳은 나무에 가리지 않게 비워 둔다
+  // (카메라가 남쪽에서 비추므로 집 앞쪽(남쪽)도 함께)
+  ...VILLAGERS.flatMap((v) => [
+    { x: v.home.x, z: v.home.z, r: v.home.r + 1.4 },
+    { x: v.home.x, z: v.home.z + 2.6, r: 2.2 },
+  ]),
   ...BRIDGES.flatMap((b) => [
     { x: riverX(b.z) - 2.6, z: b.z, r: 1.6 },
     { x: riverX(b.z) + 2.6, z: b.z, r: 1.6 },
@@ -121,7 +129,7 @@ const MODELS = [
   "Apple_4", "Apple_Harvested", "Apple_Crop", "Orange_4", "Orange_Harvested", "Orange_Crop",
   "Flower_1", "Flower_2", "Flower_3", "Flower_4", "Flowers", "Bush_1", "Bush_Snow_1", "BushBerries_1",
   "Rock_1", "Rock_2", "Rock_Moss_1", "Rock_Moss_2", "Rock_Snow_1", "Rock_Snow_2", "Grass", "Grass_Short",
-  "Lilypad", "TreeStump_Moss", "WoodLog_Moss", "Mushroom_1", "FishingRod_Lvl1", "Dock_Long", "Boat", "Fox", "Alpaca",
+  "Lilypad", "TreeStump_Moss", "WoodLog_Moss", "Mushroom_1", "FishingRod_Lvl1", "Dock_Long", "Boat", "Fox", "Alpaca", "Husky", "Deer",
 ] as const;
 type ModelName = (typeof MODELS)[number];
 
