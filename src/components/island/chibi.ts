@@ -17,6 +17,8 @@ export type Chibi = {
   setHair: (style: "a" | "b") => void;
   /** 모자 밑면 높이(머리 중심 기준) — 앞머리를 그 아래로 눌러 모자를 뚫지 않게 한다. null이면 원래대로 */
   setHatLine: (y: number | null) => void;
+  /** 앉은 정도 0(서 있음)~1(벤치에 앉음) — 발바닥 원점 기준 엉덩이를 의자 높이로 올리고 다리를 앞으로 뻗는다 */
+  setSit: (k: number) => void;
   play: (anim: ChibiAnim) => void;
   current: () => ChibiAnim;
   busy: () => boolean;
@@ -184,6 +186,7 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
   let anim: ChibiAnim = "Idle";
   let t = 0;
   let oneShotEnd = 0;
+  let sit = 0;
 
   return {
     root,
@@ -213,6 +216,9 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
         lock.scale.set(1.15, 0.8 * k, 0.75);
         lock.rotation.z = line === null ? rz : rz * 0.6;
       });
+    },
+    setSit: (k) => {
+      sit = Math.max(0, Math.min(1, k));
     },
     play: (next) => {
       if (next === anim && next !== "PickUp" && next !== "Victory") return;
@@ -261,15 +267,37 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
         hipY += Math.sin(t * 2.2) * 0.006;
         headTilt = Math.sin(t * 1.3) * 0.04;
       }
+      let leg0 = legSwing;
+      let leg1 = -legSwing;
+      let arm0 = -armSwing;
+      let arm1 = armSwing;
+      let armZ = armOut + armUp * 2.0;
+      let headTurn = 0;
+      if (sit > 0) {
+        // 벤치에 앉은 자세 — 엉덩이는 앉는 판 위, 짧은 다리는 앞으로 뻗어 달랑달랑 흔들고,
+        // 손은 무릎 위에 얹은 채 등을 살짝 기대고 천천히 경치를 둘러본다
+        const mix = (a: number, b: number) => a + (b - a) * sit;
+        const kick = Math.sin(t * 3.1) * 0.13;
+        hipY = mix(hipY, 0.51 + Math.sin(t * 2.2) * 0.004);
+        lean = mix(lean, -0.07);
+        leg0 = mix(leg0, -1.3 + kick);
+        leg1 = mix(leg1, -1.3 - kick);
+        arm0 = mix(arm0, -0.6);
+        arm1 = mix(arm1, -0.6);
+        armZ = mix(armZ, 0.1);
+        headTilt = mix(headTilt, Math.sin(t * 1.3) * 0.04 - 0.05);
+        headTurn = Math.sin(t * 0.35) * 0.35 * sit;
+      }
       hips.position.y = hipY;
       hips.scale.y = squash;
       torso.rotation.x = lean;
-      legs[0].rotation.x = legSwing;
-      legs[1].rotation.x = -legSwing;
-      arms[0].rotation.set(-armSwing, 0, -armOut - armUp * 2.0);
-      arms[1].rotation.set(armSwing, 0, armOut + armUp * 2.0);
+      legs[0].rotation.x = leg0;
+      legs[1].rotation.x = leg1;
+      arms[0].rotation.set(arm0, 0, -armZ);
+      arms[1].rotation.set(arm1, 0, armZ);
       if (holdingRod && anim !== "Victory") arms[1].rotation.set(-1.0, 0, 0.3);
       head.rotation.x = headTilt;
+      head.rotation.y = headTurn;
     },
   };
 }

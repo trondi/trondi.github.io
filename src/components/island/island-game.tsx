@@ -353,7 +353,7 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
           {!panel && !needsLook && mode === "walk" && (
             <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center px-4">
               <span className="rounded-full bg-black/35 px-4 py-2 text-center text-[12px] text-white/95 backdrop-blur">
-                {mobile ? "가고 싶은 곳을 탭하세요 · 나무·주민·우편함도 탭해 보세요" : "클릭 또는 WASD로 이동 · 나무·주민·우편함을 클릭해 보세요"}
+                {mobile ? "가고 싶은 곳을 탭하세요 · 나무·주민·우편함·벤치도 탭해 보세요" : "클릭 또는 WASD로 이동 · 나무·주민·우편함·벤치를 클릭해 보세요"}
               </span>
             </div>
           )}

@@ -329,7 +329,10 @@ export async function createIsland(
   const walkable = (x: number, z: number) => terrainWalkable(x, z) && !blocked(x, z);
 
   /* ── 상호작용 대상 ── */
-  type Target = { obj: THREE.Object3D; pos: Point; reach: number; act: () => void };
+  /** 벤치 자리 — at: 앉았을 때 발 원점, front: 앉기 전 서는 곳, rot: 앉아서 바라보는 방향 */
+  type Seat = { at: THREE.Vector3; front: Point; rot: number };
+  /** direct — 다가가는 길은 act가 직접 정한다 (벤치처럼 정해진 자리로 가야 할 때) */
+  type Target = { obj: THREE.Object3D; pos: Point; reach: number; act: () => void; direct?: boolean };
   const targets: Target[] = [];
   const hitProxies: THREE.Mesh[] = [];
   const proxyMat = new THREE.MeshBasicMaterial({ visible: false });
@@ -526,6 +529,14 @@ export async function createIsland(
   bench.rotation.y = -Math.PI / 2 - 0.4;
   scene.add(curveAll(bench));
   colliders.push({ x: BENCH.x, z: BENCH.z, r: 0.6 });
+  // 앉는 자리 두 곳 — 엉덩이 자리(at)와 그 앞에 서는 자리(front), 연못을 바라본다
+  bench.updateMatrixWorld(true);
+  const benchSeats: Seat[] = [-0.3, 0.3].map((x) => {
+    const at = bench.localToWorld(new THREE.Vector3(x, 0, 0.1));
+    const f = bench.localToWorld(new THREE.Vector3(x, 0, 0.8));
+    return { at, front: { x: f.x, z: f.z }, rot: bench.rotation.y };
+  });
+  addTarget({ obj: bench, pos: BENCH, reach: 0.9, direct: true, act: () => sitOnBench(benchSeats) }, 0.75, 1.0);
 
   // 가로등 — 밤에 켜진다
   const lampMat = std("#fff1b8", { emissive: 0xffc56b, emissiveIntensity: 0 });
@@ -1142,6 +1153,11 @@ export async function createIsland(
   /** 목표 근처까지 걸어간 뒤 실행 */
   const walkTo = (p: Point, onArrive: (() => void) | null = null) => {
     if (!player) return;
+    // 앉아 있으면 먼저 일어선 뒤 걷는다
+    if (sit) {
+      standUp(() => walkTo(p, onArrive));
+      return;
+    }
     const from = { x: player.root.position.x, z: player.root.position.z };
     const path = nav.find(from, p);
     if (!path) {
@@ -1155,6 +1171,14 @@ export async function createIsland(
 
   const approach = (t: Target) => {
     if (!player) return;
+    if (t.direct) {
+      t.act();
+      return;
+    }
+    if (sit) {
+      standUp(() => approach(t));
+      return;
+    }
     const pp = player.root.position;
     const d = Math.hypot(pp.x - t.pos.x, pp.z - t.pos.z);
     const run = () => {
@@ -1171,6 +1195,83 @@ export async function createIsland(
     let goal: Point = { x: t.pos.x + dir.x * t.reach, z: t.pos.z + dir.z * t.reach };
     if (!walkable(goal.x, goal.z)) goal = nav.nearestOpen(goal, 8) ?? goal;
     walkTo(goal, run);
+  };
+
+  /* ───────────── 벤치에 앉기 ───────────── */
+  /** in: 앉는 중, on: 앉아 있음, out: 일어서는 중 — then은 다 일어선 뒤 할 일 */
+  let sit: { seat: Seat; phase: "in" | "on" | "out"; t: number; turn: number; then: (() => void) | null } | null = null;
+  const SIT_TIME = 0.4;
+
+  /** 내 쪽에 가까운 빈자리로 걸어가 앉는다 */
+  function sitOnBench(seats: Seat[]) {
+    if (!player) return;
+    if (sit) {
+      // 일어서던 중에 다시 누르면 다 일어선 뒤 다시 앉는다
+      if (sit.phase === "out") sit.then = () => sitOnBench(seats);
+      return;
+    }
+    const pp = player.root.position;
+    const seat = seats.reduce((a, b) => (Math.hypot(a.front.x - pp.x, a.front.z - pp.z) <= Math.hypot(b.front.x - pp.x, b.front.z - pp.z) ? a : b));
+    let goal = seat.front;
+    if (!walkable(goal.x, goal.z)) goal = nav.nearestOpen(goal, 8) ?? goal;
+    const begin = () => {
+      if (!player) return;
+      player.path = [];
+      // 앞자리에 딱 서서 몸을 돌려 앉는다
+      player.root.position.set(seat.front.x, walkHeight(seat.front.x, seat.front.z), seat.front.z);
+      sit = { seat, phase: "in", t: 0, turn: player.root.rotation.y, then: null };
+      play(player, "Idle");
+      cb.onToast("🪑 벤치에 앉았어요 · 움직이면 일어나요");
+    };
+    if (Math.hypot(pp.x - goal.x, pp.z - goal.z) < 0.2) begin();
+    else walkTo(goal, begin);
+  }
+
+  /** 일어선다 — 다 일어서면 then을 이어서 한다 */
+  function standUp(then: (() => void) | null = null) {
+    if (!sit) {
+      then?.();
+      return;
+    }
+    if (sit.phase !== "out") {
+      // 앉던 중이면 앉은 만큼만 되돌린다
+      sit.t = sit.phase === "in" ? Math.max(0, SIT_TIME - sit.t) : 0;
+      sit.phase = "out";
+    }
+    sit.then = then;
+  }
+
+  const updateSit = (dt: number) => {
+    if (!sit || !player || !chibi) return;
+    sit.t += dt;
+    const done = sit.t >= SIT_TIME;
+    const k = Math.min(1, sit.t / SIT_TIME);
+    const raw = sit.phase === "in" ? k : sit.phase === "on" ? 1 : 1 - k;
+    const e = raw * raw * (3 - 2 * raw);
+    const { at, front, rot } = sit.seat;
+    const p = player.root.position;
+    const fy = walkHeight(front.x, front.z);
+    p.x = front.x + (at.x - front.x) * e;
+    p.z = front.z + (at.z - front.z) * e;
+    // 뒤로 콩 하고 뛰어 앉는다
+    p.y = fy + (at.y - fy) * e + Math.sin(e * Math.PI) * 0.12;
+    // 앉으면서 벤치 앞쪽(연못)을 보도록 돌아선다
+    let diff = rot - sit.turn;
+    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+    const turnK = sit.phase === "in" ? Math.min(1, k * 1.6) : 1;
+    player.root.rotation.y = sit.turn + diff * turnK;
+    chibi.setSit(e);
+    if (!done) return;
+    if (sit.phase === "in") {
+      sit.phase = "on";
+      sit.t = 0;
+    } else if (sit.phase === "out") {
+      const then = sit.then;
+      sit = null;
+      chibi.setSit(0);
+      p.y = fy;
+      then?.();
+    }
   };
 
   const drop = (type: ItemType, x: number, z: number) => {
@@ -1854,7 +1955,11 @@ export async function createIsland(
         if (keys.has("d") || keys.has("arrowright")) kx += 1;
       }
       let moving = false;
-      if (kx || kz) {
+      if (sit) {
+        // 앉아 있을 때 방향키를 누르면 일어선다 (일어서는 동안은 제자리)
+        if (kx || kz) standUp();
+        updateSit(dt);
+      } else if (kx || kz) {
         if (fishing.phase !== "idle") reelIn();
         player.path = [];
         player.onArrive = null;
@@ -2090,6 +2195,7 @@ export async function createIsland(
         return { x: v.actor.root.position.x, z: v.actor.root.position.z };
       },
       fishing: () => fishing.phase,
+      sit: () => (sit ? sit.phase : null),
       rodTip: () => {
         const v = new THREE.Vector3();
         rodTip.getWorldPosition(v);
