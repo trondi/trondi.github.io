@@ -11,6 +11,7 @@ import { FISH_MODELS, SPECIES_BY_ID, type Species, rollCatch, shadowScale } from
 import { type Chibi, type ChibiAnim, buildChibi } from "./chibi";
 import { buildFishFromAsset, buildFishModel } from "./fish-model";
 import { NavGrid, type Point } from "./pathfind";
+import { type TreeKind, type TreeOpts, buildTree } from "./tree-model";
 import {
   HAIR_COLORS, PANTS_COLORS, SHIRT_COLORS,
   type Glasses, type Hat, type IslandSave, type ItemType, type Look, flowerStage, today,
@@ -78,7 +79,6 @@ export type IslandHandle = {
 
 /* ───────────────────────────── 배치 ───────────────────────────── */
 
-type TreeKind = "common" | "pine" | "birch";
 const FRUIT_TREES: [string, number, number, "apple" | "orange"][] = [
   ["apple-1", 1.8, -1.4, "apple"], ["apple-2", -7.8, -1.6, "apple"], ["orange-2", -2.8, 5.6, "orange"],
   // 강 건너 과수원
@@ -127,10 +127,7 @@ const PETALS = [0xf2a7c3, 0xffffff, 0xf5d26b, 0xd66fa0];
 
 const MODELS = [
   "ShibaInu", "House", "Well", "Fence",
-  "CommonTree_1", "CommonTree_2", "CommonTree_3", "CommonTree_Autumn_1", "CommonTree_Autumn_2", "CommonTree_Autumn_3",
-  "CommonTree_Snow_1", "CommonTree_Snow_2", "CommonTree_Snow_3", "PineTree_1", "PineTree_2", "PineTree_Autumn_1",
-  "PineTree_Autumn_2", "PineTree_Snow_1", "PineTree_Snow_2", "BirchTree_1", "BirchTree_Autumn_1", "BirchTree_Snow_1",
-  "Apple_4", "Apple_Harvested", "Apple_Crop", "Orange_4", "Orange_Harvested", "Orange_Crop",
+  "Apple_Crop", "Orange_Crop",
   "Flower_1", "Flower_2", "Flower_3", "Flower_4", "Flowers", "Bush_1", "Bush_Snow_1", "BushBerries_1",
   "Rock_1", "Rock_2", "Rock_Moss_1", "Rock_Moss_2", "Rock_Snow_1", "Rock_Snow_2", "Grass", "Grass_Short",
   "Lilypad", "TreeStump_Moss", "WoodLog_Moss", "Mushroom_1", "FishingRod_Lvl1", "Dock_Long", "Boat", "Fox", "Alpaca", "Husky", "Deer", "Cat",
@@ -146,13 +143,6 @@ function rng(seed: number) {
   };
 }
 
-function treeModel(kind: TreeKind, variant: number, season: Season): ModelName {
-  const v = kind === "common" ? variant : Math.min(variant, kind === "pine" ? 2 : 1);
-  const s = season === "autumn" ? "_Autumn" : season === "winter" ? "_Snow" : "";
-  if (kind === "common") return `CommonTree${s}_${v}` as ModelName;
-  if (kind === "pine") return `PineTree${s}_${v}` as ModelName;
-  return `BirchTree${s}_1` as ModelName;
-}
 
 /** 지형 기준으로 나무 자리 정하기 — 결정적이라 나무 id가 매번 같다 */
 type TreeSpot = { id: string; x: number; z: number; kind: TreeKind; variant: number; scale: number };
@@ -299,6 +289,15 @@ export async function createIsland(
     o.scale.setScalar(scale);
     o.rotation.y = rot;
     return o;
+  };
+
+  /** 코드로 만든 나무 (tree-model.ts) */
+  const makeTree = (o: TreeOpts, x: number, z: number, scale = 1, rot = 0) => {
+    const t = curveAll(buildTree(o, (c) => cachedStd(c)));
+    t.position.set(x, groundHeight(x, z), z);
+    t.scale.multiplyScalar(scale);
+    t.rotation.y = rot;
+    return t;
   };
 
   /* 같은 모델을 다른 색으로 — 재질 이름으로 바꾼다 */
@@ -581,9 +580,19 @@ export async function createIsland(
 
     const R = rng(7);
     const cherry = season === "spring";
+    // 12월에는 마을 가까운 전나무 세 그루가 크리스마스 트리가 된다
+    const xmas = new Set(
+      new Date().getMonth() === 11
+        ? TREE_SPOTS.filter((t) => t.kind === "pine")
+            .map((t) => ({ id: t.id, d: Math.hypot(t.x - NPC_HOME.x, t.z - NPC_HOME.z) }))
+            .filter((t) => t.d < 16)
+            .sort((a, b) => a.d - b.d)
+            .slice(0, 3)
+            .map((t) => t.id)
+        : [],
+    );
     TREE_SPOTS.forEach(({ id, x, z, kind, variant, scale }, i) => {
-      const obj = place(treeModel(kind, variant, season), x, z, scale, R() * Math.PI * 2);
-      if (cherry && kind === "common" && i % 2 === 0) recolor(obj, "Green", 0xf4b8cc);
+      const obj = makeTree({ kind, variant, season, cherry: cherry && kind === "common" && i % 2 === 0, xmas: xmas.has(id) }, x, z, scale, R() * Math.PI * 2);
       seasonal.add(obj);
       addCollider({ x, z, r: 0.5 * scale });
       const t: TreeState = { id, obj, shake: 0 };
@@ -592,8 +601,7 @@ export async function createIsland(
     });
     FRUIT_TREES.forEach(([id, x, z, fruit]) => {
       const picked = save.harvested[id] === today();
-      const name = (fruit === "apple" ? (picked ? "Apple_Harvested" : "Apple_4") : picked ? "Orange_Harvested" : "Orange_4") as ModelName;
-      const obj = place(name, x, z, 1, (x * 7) % 6);
+      const obj = makeTree({ kind: fruit, variant: 1, season, picked }, x, z, 1, (x * 7) % 6);
       seasonal.add(obj);
       addCollider({ x, z, r: 0.45 });
       const t: TreeState = { id, obj, shake: 0, fruit };
@@ -610,7 +618,7 @@ export async function createIsland(
       if (tz > 6 || Math.abs(tx - riverX(tz)) < 2 || Math.abs(cliffZ(tx) - tz) < 1.2) continue;
       if (islandE(tx, tz) > 0.985) continue;
       const kind: TreeKind = D() < 0.6 ? "pine" : "common";
-      seasonal.add(place(treeModel(kind, 1 + Math.floor(D() * 2), season), tx, tz, 0.95 + D() * 0.2, D() * 6));
+      seasonal.add(makeTree({ kind, variant: 1 + Math.floor(D() * 2), season }, tx, tz, 0.95 + D() * 0.2, D() * 6));
     }
 
     // 덤불·바위·풀·꽃
@@ -1207,7 +1215,7 @@ export async function createIsland(
         const pos = t.obj.position.clone();
         const rot = t.obj.rotation.y;
         seasonal.remove(t.obj);
-        const bare = place(t.fruit === "apple" ? "Apple_Harvested" : "Orange_Harvested", pos.x, pos.z, 1, rot);
+        const bare = makeTree({ kind: t.fruit, variant: 1, season, picked: true }, pos.x, pos.z, 1, rot);
         seasonal.add(bare);
         const target = targets.find((x) => x.obj === t.obj);
         if (target) target.obj = bare;
