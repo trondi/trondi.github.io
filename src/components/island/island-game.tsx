@@ -175,6 +175,11 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
     handleRef.current?.setSeason(season);
   }, [season, ready]);
 
+  // 대화창·가방 같은 창이 열려 있는 동안에는 화면을 탭하거나 키를 눌러도 캐릭터가 움직이지 않는다
+  useEffect(() => {
+    handleRef.current?.setInputLocked(panel !== null);
+  }, [panel, ready]);
+
   // 시계
   useEffect(() => {
     const id = window.setInterval(() => setNow(new Date()), 15_000);

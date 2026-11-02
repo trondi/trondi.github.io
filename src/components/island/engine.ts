@@ -63,6 +63,8 @@ export type IslandHandle = {
   /** 모습 바꾸기 — persist=false면 미리보기만 */
   setLook: (look: Look, persist?: boolean) => void;
   setCloseUp: (on: boolean) => void;
+  /** 대화창 같은 창이 열려 있는 동안 캐릭터를 움직이지 못하게 */
+  setInputLocked: (on: boolean) => void;
   startPlanting: () => void;
   setRod: (on: boolean) => void;
   cancelMode: () => void;
@@ -1624,7 +1626,7 @@ export async function createIsland(
     if (moved < 12 && quick) tap(e.clientX, e.clientY);
   };
   const tap = (cx: number, cy: number) => {
-    if (!player || closeUp) return;
+    if (!player || closeUp || inputLocked) return;
     // 찌를 던진 뒤에는 어디를 탭해도 낚싯대를 챈다
     if (mode === "fish" && fishing.phase !== "idle" && fishing.phase !== "catch") {
       fishTap();
@@ -1676,6 +1678,7 @@ export async function createIsland(
   renderer.domElement.addEventListener("pointerup", onPointerUp);
 
   const keys = new Set<string>();
+  let inputLocked = false;
   const onKeyDown = (e: KeyboardEvent) => {
     const k = e.key.toLowerCase();
     if ((e.target as HTMLElement)?.closest?.("input, textarea")) return;
@@ -1847,7 +1850,7 @@ export async function createIsland(
       // 키보드 이동
       let kx = 0;
       let kz = 0;
-      if (!closeUp && fishing.phase !== "catch") {
+      if (!closeUp && !inputLocked && fishing.phase !== "catch") {
         if (keys.has("w") || keys.has("arrowup")) kz -= 1;
         if (keys.has("s") || keys.has("arrowdown")) kz += 1;
         if (keys.has("a") || keys.has("arrowleft")) kx -= 1;
@@ -2145,6 +2148,10 @@ export async function createIsland(
         save.look = look;
         persist();
       }
+    },
+    setInputLocked: (on) => {
+      inputLocked = on;
+      if (on) keys.clear();
     },
     setCloseUp: (on) => {
       closeUp = on;
