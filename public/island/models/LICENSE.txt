@@ -25,3 +25,6 @@ from FBX to GLB with textures dropped and recolored in code:
   https://opengameart.org/content/low-poly-crown
 - Wear_GlassesRound, Wear_GlassesVisor, Wear_GlassesPixel: "Lowpoly Glasses Pack" by iPoly3D
   https://opengameart.org/content/lowpoly-glasses-pack
+
+Weather data on the island (Seoul, current conditions) by Open-Meteo.com, CC BY 4.0:
+https://open-meteo.com/
