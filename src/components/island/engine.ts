@@ -6,6 +6,7 @@ import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js
 
 import type { Season } from "@/lib/season";
 
+import { CHATTER as CHATTER_LIST, type Chatter, pickChatter } from "./chatter";
 import { FISH_MODELS, SPECIES_BY_ID, type Species, rollCatch, shadowScale } from "./fish";
 import { type Chibi, type ChibiAnim, buildChibi } from "./chibi";
 import { buildFishFromAsset, buildFishModel } from "./fish-model";
@@ -91,9 +92,9 @@ const SPAWN = { x: 0.6, z: 3.2 };
 const BENCH = { x: POND.x + 3.6, z: POND.z + 1.4 };
 /** 주민들 — 모카는 집 앞, 단풍이는 강 건너 과수원, 몽실이는 위쪽 연못가 벤치 옆 */
 const VILLAGERS = [
-  { id: "mocha", model: "ShibaInu", scale: 0.24, speed: 0.9, home: NPC_HOME, hit: [0.55, 1.0] },
-  { id: "danpung", model: "Fox", scale: 0.22, speed: 1.0, home: { x: 11.9, z: -1.2, r: 1.4 }, hit: [0.55, 1.0] },
-  { id: "mongsil", model: "Alpaca", scale: 0.19, speed: 0.55, home: { x: BENCH.x + 0.8, z: BENCH.z + 1.0, r: 1.2 }, hit: [0.6, 1.4] },
+  { id: "mocha", model: "ShibaInu", scale: 0.24, speed: 0.9, home: NPC_HOME, hit: [0.55, 1.0], talkY: 1.0 },
+  { id: "danpung", model: "Fox", scale: 0.22, speed: 1.0, home: { x: 11.9, z: -1.2, r: 1.4 }, hit: [0.55, 1.0], talkY: 0.9 },
+  { id: "mongsil", model: "Alpaca", scale: 0.19, speed: 0.55, talkY: 1.35, home: { x: BENCH.x + 0.8, z: BENCH.z + 1.0, r: 1.2 }, hit: [0.6, 1.4] },
 ] as const;
 const LAMPS: Point[] = [
   { x: -0.6, z: 0.2 }, { x: 2.0, z: 1.7 }, { x: 8.4, z: 1.6 }, { x: -1.6, z: -7.2 },
@@ -904,14 +905,141 @@ export async function createIsland(
   };
   if (save.look) applyLook(save.look);
 
-  type Villager = { id: string; actor: Actor; home: { x: number; z: number; r: number }; speed: number; talking: boolean; wait: number; proxy: THREE.Mesh };
+  type Villager = {
+    id: string; actor: Actor; home: { x: number; z: number; r: number }; speed: number; talking: boolean; wait: number; proxy: THREE.Mesh;
+    /** 머리 위 말풍선 (주민끼리 대화할 때) */
+    bubble: CSS2DObject; bubbleText: HTMLDivElement; talkY: number;
+  };
+  const makeBubble = () => {
+    const el = document.createElement("div");
+    Object.assign(el.style, {
+      position: "relative", maxWidth: "190px", padding: "7px 11px", borderRadius: "14px", background: "#fffdf6",
+      color: "#4a3b2a", font: "600 12.5px/1.45 system-ui, sans-serif", boxShadow: "0 3px 10px rgba(0,0,0,.18)",
+      wordBreak: "keep-all", textAlign: "center", transition: "opacity .25s", opacity: "0", marginBottom: "8px",
+    });
+    const text = document.createElement("div");
+    const tail = document.createElement("div");
+    Object.assign(tail.style, {
+      position: "absolute", left: "50%", bottom: "-5px", width: "10px", height: "10px", background: "#fffdf6",
+      transform: "translateX(-50%) rotate(45deg)",
+    });
+    el.append(text, tail);
+    const obj = new CSS2DObject(el);
+    obj.center.set(0.5, 1);
+    obj.visible = false;
+    scene.add(obj);
+    return { obj, text };
+  };
   const villagers: Villager[] = VILLAGERS.map((d, i) => {
     const actor = makeActor(d.model, d.scale);
     actor.root.position.set(d.home.x, groundHeight(d.home.x, d.home.z), d.home.z);
-    const v = { id: d.id, actor, home: d.home, speed: d.speed, talking: false, wait: 2 + i, proxy: null as unknown as THREE.Mesh };
+    const b = makeBubble();
+    const v: Villager = {
+      id: d.id, actor, home: d.home, speed: d.speed, talking: false, wait: 2 + i, proxy: null as unknown as THREE.Mesh,
+      bubble: b.obj, bubbleText: b.text, talkY: d.talkY,
+    };
     v.proxy = addTarget({ obj: actor.root, pos: { x: d.home.x, z: d.home.z }, reach: 1.15, act: () => talkTo(v) }, d.hit[0], d.hit[1]);
     return v;
   });
+
+  /* 주민끼리 찾아가서 수다 떨기 — 찾아가기(go) → 말풍선 주고받기(talk) → 집으로(back) */
+  type Visit = { chat: Chatter; visitor: Villager; host: Villager; stage: "go" | "talk" | "back"; line: number; t: number };
+  let visit: Visit | null = null;
+  /** 개발용 — 테스트에서 시간을 빨리 돌릴 때 */
+  let timeScale = 1;
+  let nextVisit = 20 + Math.random() * 15;
+  const villagerById = (id: string) => villagers.find((v) => v.id === id);
+  const say = (v: Villager | null, text = "") => {
+    for (const x of villagers) {
+      const on = x === v;
+      x.bubble.visible = on;
+      (x.bubble.element as HTMLDivElement).style.opacity = on ? "1" : "0";
+      if (on) x.bubbleText.textContent = text;
+    }
+  };
+  const startVisit = (chat?: Chatter) => {
+    const c = chat ?? pickChatter(new Date().getHours(), season);
+    const visitor = villagerById(c.a);
+    const host = villagerById(c.b);
+    if (!visitor || !host || visitor.talking || host.talking) return false;
+    const hp = host.actor.root.position;
+    const vp = visitor.actor.root.position;
+    const d = Math.hypot(vp.x - hp.x, vp.z - hp.z) || 1;
+    // 몸이 길쭉한 동물들이라 서로 겹치지 않게 조금 떨어져 선다
+    let goal: Point = { x: hp.x + ((vp.x - hp.x) / d) * 1.5, z: hp.z + ((vp.z - hp.z) / d) * 1.5 };
+    if (!walkable(goal.x, goal.z)) goal = nav.nearestOpen(goal, 8) ?? goal;
+    const path = nav.find({ x: vp.x, z: vp.z }, goal);
+    if (!path) return false;
+    visitor.actor.path = path;
+    host.actor.path = [];
+    play(host.actor, "Idle");
+    visit = { chat: c, visitor, host, stage: "go", line: 0, t: 0 };
+    return true;
+  };
+  /** 수다를 끝내고 손님은 집으로 */
+  const endVisitTalk = () => {
+    if (!visit) return;
+    say(null);
+    visit.stage = "back";
+    visit.visitor.actor.path = [];
+  };
+  const lineTime = (text: string) => 2.2 + text.length * 0.07;
+  const updateVisit = (dt: number) => {
+    if (!visit) {
+      nextVisit -= dt;
+      if (nextVisit <= 0) nextVisit = startVisit() ? 0 : 15;
+      return;
+    }
+    const { visitor, host } = visit;
+    if (visitor.talking || host.talking) return;
+    const va = visitor.actor;
+    if (visit.stage === "go") {
+      if (va.path.length) {
+        moveActor(va, dt, visitor.speed * 1.15);
+        play(va, "Walk");
+      } else {
+        // 도착 — 서로 마주 보고 이야기 시작
+        const hp = host.actor.root.position;
+        const vp = va.root.position;
+        facePoint(va, { x: hp.x, z: hp.z });
+        facePoint(host.actor, { x: vp.x, z: vp.z });
+        play(va, "Idle");
+        play(host.actor, "Idle");
+        visit.stage = "talk";
+        visit.line = 0;
+        visit.t = 0;
+        const [who, text] = visit.chat.lines[0];
+        say(who ? host : visitor, text);
+      }
+    } else if (visit.stage === "talk") {
+      visit.t += dt;
+      const [, text] = visit.chat.lines[visit.line];
+      if (visit.t >= lineTime(text)) {
+        visit.line += 1;
+        visit.t = 0;
+        if (visit.line >= visit.chat.lines.length) endVisitTalk();
+        else {
+          const [who, next] = visit.chat.lines[visit.line];
+          say(who ? host : visitor, next);
+        }
+      }
+    } else {
+      const p = va.root.position;
+      if (va.path.length) {
+        moveActor(va, dt, visitor.speed);
+        play(va, "Walk");
+      } else if (Math.hypot(p.x - visitor.home.x, p.z - visitor.home.z) > visitor.home.r + 0.3) {
+        va.path = nav.find({ x: p.x, z: p.z }, { x: visitor.home.x, z: visitor.home.z }) ?? [];
+        if (!va.path.length) visit = null;
+      } else {
+        play(va, "Idle");
+        visitor.wait = 2;
+        host.wait = 1;
+        visit = null;
+        nextVisit = 35 + Math.random() * 45;
+      }
+    }
+  };
 
   /* ───────────── 땅에 떨어진 물건·심은 꽃 ───────────── */
   const itemObjs = new Map<string, THREE.Object3D>();
@@ -1103,6 +1231,8 @@ export async function createIsland(
 
   const talkTo = (v: Villager) => {
     if (!player) return;
+    // 다른 주민과 수다 중이었다면 그만두고 손님을 맞는다
+    if (visit && (visit.visitor === v || visit.host === v)) endVisitTalk();
     v.talking = true;
     v.actor.path = [];
     facePoint(v.actor, { x: player.root.position.x, z: player.root.position.z });
@@ -1671,7 +1801,7 @@ export async function createIsland(
     if (!running) return;
     raf = requestAnimationFrame(tick);
     timer.update();
-    const dt = Math.min(timer.getDelta(), 0.05);
+    const dt = Math.min(timer.getDelta(), 0.05) * timeScale;
     const time = timer.getElapsed();
 
     if (player) {
@@ -1769,9 +1899,15 @@ export async function createIsland(
     sun.position.copy(camTarget).setY(0).add(dir);
     sun.target.position.copy(camTarget).setY(0);
 
+    // 주민끼리 수다
+    updateVisit(dt);
     // 주민
     for (const v of villagers) {
       const a = v.actor;
+      if (visit && (visit.visitor === v || visit.host === v)) {
+        a.anim.update(dt);
+        continue;
+      }
       if (!v.talking) {
         if (a.path.length) {
           moveActor(a, dt, v.speed);
@@ -1791,6 +1927,11 @@ export async function createIsland(
         }
       }
       a.anim.update(dt);
+    }
+    for (const v of villagers) {
+      if (!v.bubble.visible) continue;
+      const p = v.actor.root.position;
+      v.bubble.position.set(p.x, p.y + v.talkY, p.z);
     }
 
     // 나무 흔들림
@@ -1896,6 +2037,15 @@ export async function createIsland(
   if (process.env.NODE_ENV === "development") {
     (window as unknown as { __island?: unknown }).__island = {
       player: () => player && { x: player.root.position.x, z: player.root.position.z, anim: player.anim.current() },
+      startVisit: (i: number) => {
+        const c = CHATTER_LIST[i];
+        nextVisit = 999;
+        return startVisit(c);
+      },
+      timeScale: (k: number) => {
+        timeScale = k;
+      },
+      visit: () => (visit ? { stage: visit.stage, line: visit.line, a: visit.visitor.id, b: visit.host.id } : null),
       npc: (id = "mocha") => {
         const v = villagers.find((x) => x.id === id) ?? villagers[0];
         return { x: v.actor.root.position.x, z: v.actor.root.position.z };
