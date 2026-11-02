@@ -85,8 +85,9 @@ const FRUIT_TREES: [string, number, number, "apple" | "orange"][] = [
   ["apple-3", 10.2, -4.6, "apple"], ["apple-4", 13.2, -2.6, "apple"], ["orange-1", 10.6, 0.2, "orange"],
   ["orange-3", 13.6, 1.8, "orange"], ["apple-5", 11.6, 4.4, "apple"],
 ];
-/** 집 — 모델의 현관은 +z 쪽. 카메라가 남쪽(+z)에서 비추므로 rot≈0이면 문이 정면을 본다 (광장 쪽으로 살짝 틀어 둠) */
-const HOUSE = { x: -4.4, z: -3.7, rot: 0.12, scale: 2.2 };
+/** 집 — 포치 달린 2층 집 (높이 약 3.2, 바닥 중심이 원점). 현관 포치는 +z 쪽.
+ *  카메라가 남쪽(+z)에서 비추므로 rot≈0이면 문이 정면을 본다 (광장 쪽으로 살짝 틀어 둠) */
+const HOUSE = { x: -4.4, z: -3.7, rot: 0.12, scale: 0.95 };
 const MAILBOX = { x: -1.8, z: -1.5 };
 const BOARD = { x: 0.7, z: -3.7 };
 const WELL = { x: -7.4, z: 2.9 };
@@ -284,15 +285,6 @@ export async function createIsland(
   // 나중에 필요할 때 불러오는 모델 (낚시 물고기, 모자·안경) — 처음 로딩 진행률과는 따로
   const lazyLoader = new GLTFLoader();
   lazyLoader.setMeshoptDecoder(MeshoptDecoder);
-  // 집은 32×32 색상표 텍스처 — 번지지 않게 가장 가까운 픽셀로
-  gltfs.get("House")!.scene.traverse((c) => {
-    const map = ((c as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined)?.map;
-    if (map) {
-      map.magFilter = THREE.NearestFilter;
-      map.minFilter = THREE.NearestFilter;
-      map.generateMipmaps = false;
-    }
-  });
 
   const place = (name: ModelName, x: number, z: number, scale = 1, rot = 0, y?: number) => {
     const o = gltfs.get(name)!.scene.clone(true);
@@ -452,10 +444,12 @@ export async function createIsland(
   scene.add(house);
   // 집 앞쪽(현관 방향)으로 d만큼 떨어진 점
   const houseFront = (d: number) => ({ x: HOUSE.x + Math.sin(HOUSE.rot) * d, z: HOUSE.z + Math.cos(HOUSE.rot) * d });
-  colliders.push({ x: HOUSE.x, z: HOUSE.z, r: 1.9 }, { ...houseFront(1.3), r: 1.0 });
+  // 본채(뒤쪽)와 현관 포치(앞쪽)
+  colliders.push({ ...houseFront(-0.6), r: 1.4 }, { ...houseFront(1.2), r: 0.95 });
+  // 밤에 현관 포치 아래 켜지는 불빛
   const houseGlow = glowSprite(0xffc56b, 3.2);
-  const glowAt = houseFront(2.0);
-  houseGlow.position.set(glowAt.x, 1.1, glowAt.z);
+  const glowAt = houseFront(1.1);
+  houseGlow.position.set(glowAt.x, 1.0, glowAt.z);
   scene.add(houseGlow);
   addTarget({ obj: house, pos: { x: HOUSE.x, z: HOUSE.z }, reach: 2.6, act: () => cb.onInteract({ kind: "house" }) }, 2.0, 3.4);
 
@@ -668,7 +662,8 @@ export async function createIsland(
       for (let i = 0; i < 170; i++) {
         const x = (G() - 0.5) * 46;
         const z = (G() - 0.5) * 38 - 1.5;
-        if (!terrainWalkable(x, z) || islandE(x, z) > 0.9 || Math.abs(cliffZ(x) - z) < 0.8) continue;
+        // 집·바위 등 막힌 자리에는 풀을 두지 않는다 (포치 바닥을 뚫고 나오지 않게)
+        if (!terrainWalkable(x, z) || blocked(x, z) || islandE(x, z) > 0.9 || Math.abs(cliffZ(x) - z) < 0.8) continue;
         seasonal.add(place(G() < 0.6 ? "Grass_Short" : "Grass", x, z, 0.5 + G() * 0.3, G() * 6));
       }
       for (const t of TREE_SPOTS.filter((_, i) => i % 7 === 0)) {
