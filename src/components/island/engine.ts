@@ -85,7 +85,8 @@ const FRUIT_TREES: [string, number, number, "apple" | "orange"][] = [
   ["apple-3", 10.2, -4.6, "apple"], ["apple-4", 13.2, -2.6, "apple"], ["orange-1", 10.6, 0.2, "orange"],
   ["orange-3", 13.6, 1.8, "orange"], ["apple-5", 11.6, 4.4, "apple"],
 ];
-const HOUSE = { x: -4.4, z: -3.7, rot: Math.PI / 2 + 0.15, scale: 2.2 };
+/** 집 — 모델의 현관은 +z 쪽. 카메라가 남쪽(+z)에서 비추므로 rot≈0이면 문이 정면을 본다 (광장 쪽으로 살짝 틀어 둠) */
+const HOUSE = { x: -4.4, z: -3.7, rot: 0.12, scale: 2.2 };
 const MAILBOX = { x: -1.8, z: -1.5 };
 const BOARD = { x: 0.7, z: -3.7 };
 const WELL = { x: -7.4, z: 2.9 };
@@ -449,9 +450,12 @@ export async function createIsland(
   // 집
   const house = place("House", HOUSE.x, HOUSE.z, HOUSE.scale, HOUSE.rot);
   scene.add(house);
-  colliders.push({ x: HOUSE.x, z: HOUSE.z, r: 1.9 }, { x: HOUSE.x - 0.4, z: HOUSE.z + 1.2, r: 1.2 });
+  // 집 앞쪽(현관 방향)으로 d만큼 떨어진 점
+  const houseFront = (d: number) => ({ x: HOUSE.x + Math.sin(HOUSE.rot) * d, z: HOUSE.z + Math.cos(HOUSE.rot) * d });
+  colliders.push({ x: HOUSE.x, z: HOUSE.z, r: 1.9 }, { ...houseFront(1.3), r: 1.0 });
   const houseGlow = glowSprite(0xffc56b, 3.2);
-  houseGlow.position.set(HOUSE.x + 0.4, 1.3, HOUSE.z + 2.1);
+  const glowAt = houseFront(2.0);
+  houseGlow.position.set(glowAt.x, 1.1, glowAt.z);
   scene.add(houseGlow);
   addTarget({ obj: house, pos: { x: HOUSE.x, z: HOUSE.z }, reach: 2.6, act: () => cb.onInteract({ kind: "house" }) }, 2.0, 3.4);
 
