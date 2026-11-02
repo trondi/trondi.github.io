@@ -25,18 +25,43 @@ export const BRIDGES = [
   { z: 10.5, tier: false },
   { z: -13.5, tier: true },
 ].map((b) => ({ ...b, halfWidth: 0.55, halfLength: 1.9 }));
-/** 남쪽 바닷가 선착장 */
-export const DOCK = { x: -6, z0: 14.8, z1: 21, halfWidth: 0.8, y: 0.32 };
-
 const smooth = THREE.MathUtils.smoothstep;
+
+/** 섬 크기 — 가로·세로 반지름과 중심 z. 처음 섬(24 × 18.5)보다 30% 넓다 */
+export const ISLAND = { rx: 31.2, rz: 24.05, cz: -1.5 };
+/** 처음 섬 크기 — 원래 있던 나무 자리를 그대로 두려고 남겨 둔다 */
+const FIRST_ISLAND = { rx: 24, rz: 18.5 };
+
+function ellipseE(x: number, z: number, rx: number, rz: number) {
+  const dz = z - ISLAND.cz;
+  const th = Math.atan2(dz, x);
+  const wobble = 1 + 0.05 * Math.sin(th * 3 + 0.4) + 0.03 * Math.cos(th * 5);
+  return Math.hypot(x / rx, dz / rz) * wobble;
+}
 
 /** 섬 외곽 (살짝 일그러진 타원). 1보다 크면 바다 */
 export function islandE(x: number, z: number) {
-  const dz = z + 1.5;
-  const th = Math.atan2(dz, x);
-  const wobble = 1 + 0.05 * Math.sin(th * 3 + 0.4) + 0.03 * Math.cos(th * 5);
-  return Math.hypot(x / 24, dz / 18.5) * wobble;
+  return ellipseE(x, z, ISLAND.rx, ISLAND.rz);
 }
+
+/** 넓히기 전 섬 기준 — 1보다 크면 새로 늘어난 땅(또는 바다) */
+export function firstIslandE(x: number, z: number) {
+  return ellipseE(x, z, FIRST_ISLAND.rx, FIRST_ISLAND.rz);
+}
+
+/** 남쪽 해안선 z (그 x에서) */
+function southShoreZ(x: number) {
+  let z = ISLAND.cz;
+  while (islandE(x, z) < 1 && z < 60) z += 0.01;
+  return z;
+}
+
+/** 남쪽 바닷가 선착장 — 해안선에서 조금 안쪽부터 바다로 뻗는다 */
+export const DOCK = (() => {
+  const x = -6;
+  const shore = southShoreZ(x);
+  return { x, z0: shore - 2.45, z1: shore + 3.75, halfWidth: 0.8, y: 0.32 };
+})();
 
 /** 경사로 가까이일수록 1 */
 function rampK(x: number) {
