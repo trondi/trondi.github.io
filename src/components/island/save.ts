@@ -66,6 +66,8 @@ export type IslandSave = {
   /** 도감 — 한 번이라도 낚은 것 */
   dex: Record<string, DexEntry>;
   npc?: NpcState;
+  /** 모카 말고 다른 주민들 (주민 id → 사이) */
+  npcs?: Record<string, NpcState>;
 };
 
 const KEY = "trond-island:v1";
