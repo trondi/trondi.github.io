@@ -17,8 +17,8 @@ import {
 } from "./save";
 import { skyAt, skyTexture } from "./sky";
 import {
-  BRIDGES, DOCK, HIGH_WATER_Y, LOW, POND, RAMP, TIER, WATER_Y, type WaterKind,
-  buildGround, buildUpperRiver, cliffZ, groundHeight, islandE, riverX, terrainWalkable, tierT, walkHeight, waterAt,
+  BRIDGES, DOCK, HIGH_WATER_Y, ISLAND, LOW, POND, RAMP, TIER, WATER_Y, type WaterKind,
+  buildGround, buildUpperRiver, cliffZ, firstIslandE, groundHeight, islandE, riverX, terrainWalkable, tierT, walkHeight, waterAt,
 } from "./terrain";
 
 /* ───────────────────────────── 타입 ───────────────────────────── */
@@ -160,23 +160,38 @@ const TREE_SPOTS: TreeSpot[] = (() => {
   const R = rng(20261030);
   const spots: TreeSpot[] = [];
   const reserved = FRUIT_TREES.map(([, x, z]) => ({ x, z }));
-  const ok = (x: number, z: number) =>
+  const ok = (x: number, z: number, spacing = 2.5) =>
     terrainWalkable(x, z) &&
     islandE(x, z) < 0.9 &&
+    // 선착장 위·옆은 비워 둔다
+    !(Math.abs(x - DOCK.x) < DOCK.halfWidth + 1.6 && z > DOCK.z0 - 2) &&
     Math.abs(x - riverX(z)) > 2.2 &&
     Math.hypot(x - POND.x, z - POND.z) > POND.r + 1.6 &&
     Math.abs(cliffZ(x) - z) > 1.2 &&
     !CLEARINGS.some((c) => (x - c.x) ** 2 + (z - c.z) ** 2 < c.r * c.r) &&
     !reserved.some((p) => (x - p.x) ** 2 + (z - p.z) ** 2 < 2.6 * 2.6) &&
-    !spots.some((p) => (x - p.x) ** 2 + (z - p.z) ** 2 < 2.5 * 2.5);
-  for (let i = 0; i < 4000 && spots.length < 84; i++) {
-    const x = (R() - 0.5) * 46;
-    const z = (R() - 0.5) * 38 - 1.5;
-    if (!ok(x, z)) continue;
+    !spots.some((p) => (x - p.x) ** 2 + (z - p.z) ** 2 < spacing * spacing);
+  const add = (x: number, z: number, R: () => number) => {
     const high = tierT(x, z) > 0.5;
     const r = R();
     const kind: TreeKind = high ? (r < 0.55 ? "pine" : r < 0.8 ? "birch" : "common") : r < 0.55 ? "common" : r < 0.8 ? "pine" : "birch";
     spots.push({ id: `tree-${spots.length}`, x, z, kind, variant: 1 + Math.floor(R() * 3), scale: 0.85 + R() * 0.25 });
+  };
+  // 처음 섬에 있던 나무 — 자리가 그대로 남도록 처음과 같은 방식으로 뽑는다
+  for (let i = 0; i < 4000 && spots.length < 84; i++) {
+    const x = (R() - 0.5) * 46;
+    const z = (R() - 0.5) * 38 - 1.5;
+    if (firstIslandE(x, z) >= 0.9 || !ok(x, z)) continue;
+    add(x, z, R);
+  }
+  // 넓힌 땅의 나무 — 조금 더 성기게 심어 풀밭을 남긴다
+  const N = rng(20261102);
+  const firstCount = spots.length;
+  for (let i = 0; i < 6000 && spots.length < firstCount + 30; i++) {
+    const x = (N() - 0.5) * ISLAND.rx * 2;
+    const z = (N() - 0.5) * ISLAND.rz * 2 + ISLAND.cz;
+    if (firstIslandE(x, z) < 0.9 || !ok(x, z, 3.6)) continue;
+    add(x, z, N);
   }
   return spots;
 })();
@@ -614,10 +629,10 @@ export async function createIsland(
 
     // 섬 둘레 숲 — 장식 (걸어갈 수 없는 바깥쪽 가장자리)
     const D = rng(21);
-    for (let a = 0; a < Math.PI * 2; a += 0.1) {
+    for (let a = 0; a < Math.PI * 2; a += 0.08) {
       const rr = 0.965 + D() * 0.03;
-      const tx = Math.cos(a) * 24 * rr;
-      const tz = -1.5 + Math.sin(a) * 18.5 * rr;
+      const tx = Math.cos(a) * ISLAND.rx * rr;
+      const tz = ISLAND.cz + Math.sin(a) * ISLAND.rz * rr;
       if (tz > 6 || Math.abs(tx - riverX(tz)) < 2 || Math.abs(cliffZ(tx) - tz) < 1.2) continue;
       if (islandE(tx, tz) > 0.985) continue;
       const kind: TreeKind = D() < 0.6 ? "pine" : "common";
@@ -629,9 +644,9 @@ export async function createIsland(
     const bush = snow ? "Bush_Snow_1" : season === "summer" ? "BushBerries_1" : "Bush_1";
     const B = rng(33);
     const freeSpot = (minTree: number, extra?: (x: number, z: number) => boolean) => {
-      for (let k = 0; k < 60; k++) {
-        const x = (B() - 0.5) * 46;
-        const z = (B() - 0.5) * 38 - 1.5;
+      for (let k = 0; k < 80; k++) {
+        const x = (B() - 0.5) * ISLAND.rx * 1.9;
+        const z = (B() - 0.5) * ISLAND.rz * 1.9 + ISLAND.cz;
         if (!terrainWalkable(x, z) || islandE(x, z) > 0.92) continue;
         if (Math.abs(x - riverX(z)) < 1.8 || Math.abs(cliffZ(x) - z) < 0.9) continue;
         // 선착장 위·바로 옆은 비워 둔다
@@ -643,14 +658,14 @@ export async function createIsland(
       }
       return null;
     };
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 26; i++) {
       const p = freeSpot(0.8);
       if (!p) continue;
       seasonal.add(place(bush, p.x, p.z, 0.62, p.x));
       addCollider({ x: p.x, z: p.z, r: 0.5 });
     }
     const rockNames: ModelName[] = snow ? ["Rock_Snow_1", "Rock_Snow_2"] : ["Rock_1", "Rock_2", "Rock_Moss_1", "Rock_Moss_2"];
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 22; i++) {
       // 절반은 바닷가에
       const p = freeSpot(0.6, i % 2 ? undefined : (x, z) => islandE(x, z) > 0.8 && z > 4);
       if (!p) continue;
@@ -658,13 +673,13 @@ export async function createIsland(
       seasonal.add(place(rockNames[i % rockNames.length], p.x, p.z, s, p.x * 2));
       addCollider({ x: p.x, z: p.z, r: 0.35 * s + 0.1 });
     }
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 6; i++) {
       const p = freeSpot(0.6);
       if (!p) continue;
       seasonal.add(place("TreeStump_Moss", p.x, p.z, 0.55, p.x));
       addCollider({ x: p.x, z: p.z, r: 0.38 });
     }
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       const p = freeSpot(0.8, i === 0 ? (x, z) => islandE(x, z) > 0.82 && z > 6 : undefined);
       if (!p) continue;
       seasonal.add(place("WoodLog_Moss", p.x, p.z, 0.65, p.x));
@@ -672,16 +687,16 @@ export async function createIsland(
     }
     if (!snow) {
       const G = rng(5);
-      for (let i = 0; i < 170; i++) {
-        const x = (G() - 0.5) * 46;
-        const z = (G() - 0.5) * 38 - 1.5;
+      for (let i = 0; i < 290; i++) {
+        const x = (G() - 0.5) * ISLAND.rx * 1.9;
+        const z = (G() - 0.5) * ISLAND.rz * 1.9 + ISLAND.cz;
         if (!terrainWalkable(x, z) || islandE(x, z) > 0.9 || Math.abs(cliffZ(x) - z) < 0.8) continue;
         seasonal.add(place(G() < 0.6 ? "Grass_Short" : "Grass", x, z, 0.5 + G() * 0.3, G() * 6));
       }
       for (const t of TREE_SPOTS.filter((_, i) => i % 7 === 0)) {
         seasonal.add(place("Mushroom_1", t.x + 0.6, t.z + 0.4, 1.6, t.x));
       }
-      for (let i = 0; i < 26; i++) {
+      for (let i = 0; i < 40; i++) {
         // 남서쪽 꽃밭에 몰아서
         const p = i < 12 ? freeSpot(0.3, (x, z) => x < -6 && z > 3 && islandE(x, z) < 0.85) : freeSpot(0.3);
         if (!p) continue;
@@ -697,10 +712,10 @@ export async function createIsland(
     }
     // 바닷가 조개껍데기
     const SH = rng(77);
-    for (let i = 0; i < 18; i++) {
-      for (let k = 0; k < 30; k++) {
-        const x = (SH() - 0.5) * 40;
-        const z = 4 + SH() * 14;
+    for (let i = 0; i < 28; i++) {
+      for (let k = 0; k < 40; k++) {
+        const x = (SH() - 0.5) * ISLAND.rx * 1.7;
+        const z = 4 + SH() * (ISLAND.cz + ISLAND.rz - 4);
         const e = islandE(x, z);
         if (e < 0.9 || e > 0.95 || !terrainWalkable(x, z)) continue;
         const shell = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 4, 0, Math.PI * 2, 0, Math.PI / 2), cachedStd(SH() < 0.5 ? "#f6d0d4" : "#fff4e0"));
@@ -1157,6 +1172,11 @@ export async function createIsland(
     if (!player) return;
     // 앉아 있으면 먼저 일어선 뒤 걷는다
     if (sit) {
+      // 못 가는 곳(연못 등)을 누르면 그대로 앉아 있는다
+      if (!nav.find(sit.seat.front, p)) {
+        cb.onToast("거기는 갈 수 없어요");
+        return;
+      }
       standUp(() => walkTo(p, onArrive));
       return;
     }
@@ -1203,6 +1223,9 @@ export async function createIsland(
   /** in: 앉는 중, on: 앉아 있음, out: 일어서는 중 — then은 다 일어선 뒤 할 일 */
   let sit: { seat: Seat; phase: "in" | "on" | "out"; t: number; turn: number; then: (() => void) | null } | null = null;
   const SIT_TIME = 0.4;
+  /** 앉아서 둘러보는 시야 — 캐릭터를 중심으로 도는 카메라 (yaw: 방위각, pitch: 올려다보는 각도) */
+  const look = { yaw: 0, pitch: 0.4, dist: mobile ? 6.2 : 5.6 };
+  const LOOK_PITCH = [0.1, 1.05] as const;
 
   /** 내 쪽에 가까운 빈자리로 걸어가 앉는다 */
   function sitOnBench(seats: Seat[]) {
@@ -1222,8 +1245,11 @@ export async function createIsland(
       // 앞자리에 딱 서서 몸을 돌려 앉는다
       player.root.position.set(seat.front.x, walkHeight(seat.front.x, seat.front.z), seat.front.z);
       sit = { seat, phase: "in", t: 0, turn: player.root.rotation.y, then: null };
+      // 처음엔 어깨 너머로 연못을 바라본다
+      look.yaw = seat.rot + Math.PI;
+      look.pitch = 0.4;
       play(player, "Idle");
-      cb.onToast("🪑 벤치에 앉았어요 · 움직이면 일어나요");
+      cb.onToast(mobile ? "🪑 벤치에 앉았어요 · 화면을 끌어 둘러보고, 다른 곳을 탭하면 일어나요" : "🪑 벤치에 앉았어요 · 끌어서 둘러보고, 움직이면 일어나요");
     };
     if (Math.hypot(pp.x - goal.x, pp.z - goal.z) < 0.2) begin();
     else walkTo(goal, begin);
@@ -1714,17 +1740,29 @@ export async function createIsland(
   /* ───────────── 입력 ───────────── */
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
-  let down: { x: number; y: number; t: number; id: number } | null = null;
+  let down: { x: number; y: number; t: number; id: number; lx: number; ly: number; drag: boolean } | null = null;
   const onPointerDown = (e: PointerEvent) => {
     if (!e.isPrimary) return;
-    down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId };
+    down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId, lx: e.clientX, ly: e.clientY, drag: false };
+  };
+  /** 벤치에 앉아 있을 때 끌면 시야를 돌린다 (좌우: 둘러보기, 위아래: 내려다보기·올려다보기) */
+  const onPointerMove = (e: PointerEvent) => {
+    if (!down || e.pointerId !== down.id || !sit || sit.phase === "out" || closeUp || inputLocked) return;
+    if (!down.drag && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 6) return;
+    down.drag = true;
+    const k = (Math.PI * 1.4) / renderer.domElement.clientHeight;
+    look.yaw -= (e.clientX - down.lx) * k;
+    look.pitch = THREE.MathUtils.clamp(look.pitch + (e.clientY - down.ly) * k, LOOK_PITCH[0], LOOK_PITCH[1]);
+    down.lx = e.clientX;
+    down.ly = e.clientY;
   };
   const onPointerUp = (e: PointerEvent) => {
     if (!down || e.pointerId !== down.id) return;
     const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
     const quick = performance.now() - down.t < 600;
+    const dragged = down.drag;
     down = null;
-    if (moved < 12 && quick) tap(e.clientX, e.clientY);
+    if (moved < 12 && quick && !dragged) tap(e.clientX, e.clientY);
   };
   const tap = (cx: number, cy: number) => {
     if (!player || closeUp || inputLocked) return;
@@ -1776,6 +1814,7 @@ export async function createIsland(
     else walkTo({ x: point.x, z: point.z });
   };
   renderer.domElement.addEventListener("pointerdown", onPointerDown);
+  renderer.domElement.addEventListener("pointermove", onPointerMove);
   renderer.domElement.addEventListener("pointerup", onPointerUp);
 
   const keys = new Set<string>();
@@ -1916,6 +1955,8 @@ export async function createIsland(
   let raf = 0;
   let running = true;
   const tmp = new THREE.Vector3();
+  const lookOffset = new THREE.Vector3();
+  const seatedView = () => !!sit && sit.phase !== "out" && !closeUp;
   const moveActor = (a: Actor, dt: number, speed: number) => {
     if (!a.path.length) return false;
     const p = a.root.position;
@@ -2010,14 +2051,27 @@ export async function createIsland(
 
       // 카메라
       const pr = player.root.position;
-      const tx = closeUp ? pr.x : THREE.MathUtils.clamp(pr.x, -17, 17);
-      const tz = closeUp ? pr.z : THREE.MathUtils.clamp(pr.z - 1.5, -17, 17.5);
+      // 섬 가장자리에서는 바다만 보이지 않게 카메라를 조금 안쪽에 묶어 둔다
+      const tx = closeUp ? pr.x : THREE.MathUtils.clamp(pr.x, -(ISLAND.rx - 7), ISLAND.rx - 7);
+      const tz = closeUp ? pr.z : THREE.MathUtils.clamp(pr.z - 1.5, ISLAND.cz - ISLAND.rz + 3, ISLAND.cz + ISLAND.rz + 0.5);
       // 옷장에서는 아래쪽 패널에 가리지 않게 캐릭터를 화면 위쪽에 둔다
       // (데스크톱은 오른쪽 패널을 피해 캐릭터를 왼쪽에)
       tmp.set(closeUp && !mobile ? tx + 1.0 : tx, closeUp ? pr.y - (mobile ? 0.5 : 0.0) : 0, closeUp ? tz + (mobile ? 0.8 : 0.2) : tz);
+      // 벤치에 앉아 있으면 캐릭터 머리 높이를 중심으로 가까이서 둘러본다
+      // (바라보는 쪽으로 조금 앞을 중심으로 삼아 캐릭터가 경치를 가리지 않게 한다)
+      if (seatedView()) tmp.set(pr.x - Math.sin(look.yaw) * 1.3, pr.y + 0.8, pr.z - Math.cos(look.yaw) * 1.3);
       if (opts.reducedMotion) camTarget.copy(tmp);
       else camTarget.lerp(tmp, Math.min(1, dt * 3));
-      const goalOffset = closeUp ? nearOffset : farOffset;
+      let goalOffset = closeUp ? nearOffset : farOffset;
+      if (seatedView()) {
+        const h = Math.cos(look.pitch) * look.dist;
+        lookOffset.set(Math.sin(look.yaw) * h, Math.sin(look.pitch) * look.dist, Math.cos(look.yaw) * h);
+        // 땅 속으로 파고들지 않게
+        const gx = tmp.x + lookOffset.x;
+        const gz = tmp.z + lookOffset.z;
+        lookOffset.y = Math.max(lookOffset.y, Math.max(groundHeight(gx, gz), waterAt(gx, gz)?.y ?? WATER_Y) + 0.45 - tmp.y);
+        goalOffset = lookOffset;
+      }
       if (opts.reducedMotion) camOffset.copy(goalOffset);
       else camOffset.lerp(goalOffset, Math.min(1, dt * 4));
     }
@@ -2029,7 +2083,8 @@ export async function createIsland(
       const pz = player.root.position.z;
       for (const obj of [...trees.map((t) => t.obj), ...props]) {
         let hide = false;
-        if (closeUp) {
+        // 앉아서 둘러볼 때도 시야를 가리는 나무는 숨긴다 (앉아 있는 벤치는 빼고)
+        if (closeUp || (seatedView() && obj !== bench)) {
           const ox = obj.position.x - px;
           const oz = obj.position.z - pz;
           const cx = camera.position.x - px;
@@ -2040,6 +2095,21 @@ export async function createIsland(
           hide = along > -0.3 && along < len + 1 && side < 1.6;
         }
         obj.visible = !hide;
+      }
+      // 앉아서 둘러볼 때 카메라 바로 앞을 가리는 주민도 잠시 숨긴다
+      for (const v of villagers) {
+        let hide = false;
+        if (seatedView()) {
+          const ox = v.actor.root.position.x - px;
+          const oz = v.actor.root.position.z - pz;
+          const cx = camera.position.x - px;
+          const cz = camera.position.z - pz;
+          const len = Math.hypot(cx, cz) || 1;
+          const along = (ox * cx + oz * cz) / len;
+          const side = Math.abs(ox * cz - oz * cx) / len;
+          hide = along > 0.4 && along < len + 0.5 && side < 1.0;
+        }
+        v.actor.root.visible = !hide;
       }
     }
     const dir = (sun.userData.dir as THREE.Vector3) ?? new THREE.Vector3(-6, 10, 5);
@@ -2199,6 +2269,7 @@ export async function createIsland(
       },
       fishing: () => fishing.phase,
       sit: () => (sit ? sit.phase : null),
+      look: () => ({ ...look, cam: { x: camera.position.x, y: camera.position.y, z: camera.position.z } }),
       rodTip: () => {
         const v = new THREE.Vector3();
         rodTip.getWorldPosition(v);
@@ -2302,6 +2373,7 @@ export async function createIsland(
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      renderer.domElement.removeEventListener("pointermove", onPointerMove);
       renderer.domElement.removeEventListener("pointerup", onPointerUp);
       scene.traverse((o) => {
         const mesh = o as THREE.Mesh;
