@@ -85,7 +85,9 @@ const FRUIT_TREES: [string, number, number, "apple" | "orange"][] = [
   ["apple-3", 10.2, -4.6, "apple"], ["apple-4", 13.2, -2.6, "apple"], ["orange-1", 10.6, 0.2, "orange"],
   ["orange-3", 13.6, 1.8, "orange"], ["apple-5", 11.6, 4.4, "apple"],
 ];
-const HOUSE = { x: -4.4, z: -3.7, rot: Math.PI / 2 + 0.15, scale: 2.2 };
+/** 집 — 포치 달린 2층 집 (가로로 1.3배 넓힘, 폭 약 3.3 × 깊이 3.9 × 높이 3.2, 바닥 중심이 원점). 현관 포치는 +z 쪽.
+ *  카메라가 남쪽(+z)에서 비추므로 rot≈0이면 문이 정면을 본다 (광장 쪽으로 살짝 틀어 둠) */
+const HOUSE = { x: -4.4, z: -3.7, rot: 0.12, scale: 0.95 };
 const MAILBOX = { x: -1.8, z: -1.5 };
 const BOARD = { x: 0.7, z: -3.7 };
 const WELL = { x: -7.4, z: 2.9 };
@@ -273,15 +275,6 @@ export async function createIsland(
   // 나중에 필요할 때 불러오는 모델 (낚시 물고기, 모자·안경) — 처음 로딩 진행률과는 따로
   const lazyLoader = new GLTFLoader();
   lazyLoader.setMeshoptDecoder(MeshoptDecoder);
-  // 집은 32×32 색상표 텍스처 — 번지지 않게 가장 가까운 픽셀로
-  gltfs.get("House")!.scene.traverse((c) => {
-    const map = ((c as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined)?.map;
-    if (map) {
-      map.magFilter = THREE.NearestFilter;
-      map.minFilter = THREE.NearestFilter;
-      map.generateMipmaps = false;
-    }
-  });
 
   const place = (name: ModelName, x: number, z: number, scale = 1, rot = 0, y?: number) => {
     const o = gltfs.get(name)!.scene.clone(true);
@@ -448,9 +441,21 @@ export async function createIsland(
   // 집
   const house = place("House", HOUSE.x, HOUSE.z, HOUSE.scale, HOUSE.rot);
   scene.add(house);
-  colliders.push({ x: HOUSE.x, z: HOUSE.z, r: 1.9 }, { x: HOUSE.x - 0.4, z: HOUSE.z + 1.2, r: 1.2 });
+  // 집 앞쪽(현관 방향)으로 d, 옆(현관을 바라볼 때 오른쪽)으로 side만큼 떨어진 점
+  const houseFront = (d: number, side = 0) => {
+    const s = Math.sin(HOUSE.rot), c = Math.cos(HOUSE.rot);
+    return { x: HOUSE.x + s * d + c * side, z: HOUSE.z + c * d - s * side };
+  };
+  // 본채(뒤쪽)와 넓은 현관 포치(앞쪽 좌우)
+  colliders.push(
+    { ...houseFront(-0.6), r: 1.6 },
+    { ...houseFront(1.2, -0.6), r: 0.85 },
+    { ...houseFront(1.2, 0.6), r: 0.85 },
+  );
+  // 밤에 현관 포치 아래 켜지는 불빛
   const houseGlow = glowSprite(0xffc56b, 3.2);
-  houseGlow.position.set(HOUSE.x + 0.4, 1.3, HOUSE.z + 2.1);
+  const glowAt = houseFront(1.1);
+  houseGlow.position.set(glowAt.x, 1.0, glowAt.z);
   scene.add(houseGlow);
   addTarget({ obj: house, pos: { x: HOUSE.x, z: HOUSE.z }, reach: 2.6, act: () => cb.onInteract({ kind: "house" }) }, 2.0, 3.4);
 
@@ -672,7 +677,8 @@ export async function createIsland(
       for (let i = 0; i < 170; i++) {
         const x = (G() - 0.5) * 46;
         const z = (G() - 0.5) * 38 - 1.5;
-        if (!terrainWalkable(x, z) || islandE(x, z) > 0.9 || Math.abs(cliffZ(x) - z) < 0.8) continue;
+        // 집·바위 등 막힌 자리에는 풀을 두지 않는다 (포치 바닥을 뚫고 나오지 않게)
+        if (!terrainWalkable(x, z) || blocked(x, z) || islandE(x, z) > 0.9 || Math.abs(cliffZ(x) - z) < 0.8) continue;
         seasonal.add(place(G() < 0.6 ? "Grass_Short" : "Grass", x, z, 0.5 + G() * 0.3, G() * 6));
       }
       for (const t of TREE_SPOTS.filter((_, i) => i % 7 === 0)) {

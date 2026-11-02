@@ -6,7 +6,8 @@ Packs used (converted to GLB, animations trimmed, meshopt-compressed):
 - Ultimate Nature Pack
 - Ultimate Crops Pack
 - Ultimate Animated Animals (ShibaInu, Fox, Alpaca, Husky, Deer)
-- Simple Buildings Pack (House.glb: roof color of the palette texture edited to purple)
+- Buildings Pack (House.glb: "House1", converted from OBJ; roof recolored purple,
+  walls cream, widened 1.3x)
 - Farm Buildings Pack
 - Cute Fish Pack (fish, FishingRod_Lvl1, Dock_Long, Boat)
 - Animal Pack Vol.2 (Cat.glb — converted from FBX; recolored with vertex colors after
