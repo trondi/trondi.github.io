@@ -611,9 +611,11 @@ export async function createIsland(
 
     const R = rng(7);
     const cherry = season === "spring";
-    // 12월에는 마을 가까운 전나무 세 그루가 크리스마스 트리가 된다
+    // 11월부터 1월 6일까지 마을 가까운 전나무 세 그루가 크리스마스 트리가 된다
+    const now = new Date();
+    const holiday = now.getMonth() >= 10 || (now.getMonth() === 0 && now.getDate() <= 6);
     const xmas = new Set(
-      new Date().getMonth() === 11
+      holiday
         ? TREE_SPOTS.filter((t) => t.kind === "pine")
             .map((t) => ({ id: t.id, d: Math.hypot(t.x - NPC_HOME.x, t.z - NPC_HOME.z) }))
             .filter((t) => t.d < 16)
