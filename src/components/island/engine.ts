@@ -23,7 +23,7 @@ import {
 /* ───────────────────────────── 타입 ───────────────────────────── */
 
 export type InteractEvent =
-  | { kind: "npc" }
+  | { kind: "npc"; id: string }
   | { kind: "mail" }
   | { kind: "board" }
   | { kind: "house" }
@@ -89,6 +89,12 @@ const WELL = { x: -7.4, z: 2.9 };
 const NPC_HOME = { x: -1.6, z: 1.4, r: 2.6 };
 const SPAWN = { x: 0.6, z: 3.2 };
 const BENCH = { x: POND.x + 3.6, z: POND.z + 1.4 };
+/** 주민들 — 모카는 집 앞, 단풍이는 강 건너 과수원, 몽실이는 위쪽 연못가 벤치 옆 */
+const VILLAGERS = [
+  { id: "mocha", model: "ShibaInu", scale: 0.24, speed: 0.9, home: NPC_HOME, hit: [0.55, 1.0] },
+  { id: "danpung", model: "Fox", scale: 0.22, speed: 1.0, home: { x: 11.9, z: -1.2, r: 1.4 }, hit: [0.55, 1.0] },
+  { id: "mongsil", model: "Alpaca", scale: 0.19, speed: 0.55, home: { x: BENCH.x + 0.8, z: BENCH.z + 1.0, r: 1.2 }, hit: [0.6, 1.4] },
+] as const;
 const LAMPS: Point[] = [
   { x: -0.6, z: 0.2 }, { x: 2.0, z: 1.7 }, { x: 8.4, z: 1.6 }, { x: -1.6, z: -7.2 },
   { x: DOCK.x + 1.4, z: DOCK.z0 - 1 }, { x: POND.x + 2.4, z: POND.z - 2.6 }, { x: 8.6, z: 10.0 },
@@ -114,7 +120,7 @@ const MODELS = [
   "Apple_4", "Apple_Harvested", "Apple_Crop", "Orange_4", "Orange_Harvested", "Orange_Crop",
   "Flower_1", "Flower_2", "Flower_3", "Flower_4", "Flowers", "Bush_1", "Bush_Snow_1", "BushBerries_1",
   "Rock_1", "Rock_2", "Rock_Moss_1", "Rock_Moss_2", "Rock_Snow_1", "Rock_Snow_2", "Grass", "Grass_Short",
-  "Lilypad", "TreeStump_Moss", "WoodLog_Moss", "Mushroom_1", "FishingRod_Lvl1", "Dock_Long", "Boat",
+  "Lilypad", "TreeStump_Moss", "WoodLog_Moss", "Mushroom_1", "FishingRod_Lvl1", "Dock_Long", "Boat", "Fox", "Alpaca",
 ] as const;
 type ModelName = (typeof MODELS)[number];
 
@@ -898,11 +904,14 @@ export async function createIsland(
   };
   if (save.look) applyLook(save.look);
 
-  const npc = makeActor("ShibaInu", 0.24);
-  npc.root.position.set(NPC_HOME.x, groundHeight(NPC_HOME.x, NPC_HOME.z), NPC_HOME.z);
-  let npcTalking = false;
-  let npcWait = 2;
-  const npcProxy = addTarget({ obj: npc.root, pos: NPC_HOME, reach: 1.15, act: () => talkToNpc() }, 0.55, 1.0);
+  type Villager = { id: string; actor: Actor; home: { x: number; z: number; r: number }; speed: number; talking: boolean; wait: number; proxy: THREE.Mesh };
+  const villagers: Villager[] = VILLAGERS.map((d, i) => {
+    const actor = makeActor(d.model, d.scale);
+    actor.root.position.set(d.home.x, groundHeight(d.home.x, d.home.z), d.home.z);
+    const v = { id: d.id, actor, home: d.home, speed: d.speed, talking: false, wait: 2 + i, proxy: null as unknown as THREE.Mesh };
+    v.proxy = addTarget({ obj: actor.root, pos: { x: d.home.x, z: d.home.z }, reach: 1.15, act: () => talkTo(v) }, d.hit[0], d.hit[1]);
+    return v;
+  });
 
   /* ───────────── 땅에 떨어진 물건·심은 꽃 ───────────── */
   const itemObjs = new Map<string, THREE.Object3D>();
@@ -1092,13 +1101,13 @@ export async function createIsland(
     });
   };
 
-  const talkToNpc = () => {
+  const talkTo = (v: Villager) => {
     if (!player) return;
-    npcTalking = true;
-    npc.path = [];
-    facePoint(npc, { x: player.root.position.x, z: player.root.position.z });
-    play(npc, "Idle");
-    cb.onInteract({ kind: "npc" });
+    v.talking = true;
+    v.actor.path = [];
+    facePoint(v.actor, { x: player.root.position.x, z: player.root.position.z });
+    play(v.actor, "Idle");
+    cb.onInteract({ kind: "npc", id: v.id });
   };
 
   /* ───────────── 낚시 ───────────── */
@@ -1469,11 +1478,17 @@ export async function createIsland(
           return;
         }
       }
-      npcProxy.position.set(npc.root.position.x, npc.root.position.y + 0.5, npc.root.position.z);
-      const hit = raycaster.intersectObjects(hitProxies, false)[0];
+      for (const v of villagers) {
+        const p = v.actor.root.position;
+        v.proxy.position.set(p.x, p.y + (v.proxy.geometry as THREE.CylinderGeometry).parameters.height / 2, p.z);
+      }
+      // 주민이 나무 밑에 있어도 주민을 먼저 고른다
+      const hits = raycaster.intersectObjects(hitProxies, false);
+      const hit = hits.find((h) => villagers.some((v) => v.proxy === h.object)) ?? hits[0];
       if (hit) {
         const t = hit.object.userData.target as Target;
-        if (t.obj === npc.root) t.pos = { x: npc.root.position.x, z: npc.root.position.z };
+        const v = villagers.find((x) => x.actor.root === t.obj);
+        if (v) t.pos = { x: v.actor.root.position.x, z: v.actor.root.position.z };
         approach(t);
         return;
       }
@@ -1755,25 +1770,28 @@ export async function createIsland(
     sun.target.position.copy(camTarget).setY(0);
 
     // 주민
-    if (!npcTalking) {
-      if (npc.path.length) {
-        moveActor(npc, dt, 0.9);
-        play(npc, "Walk");
-      } else {
-        npcWait -= dt;
-        if (npcWait <= 0) {
-          const a = Math.random() * Math.PI * 2;
-          const r = Math.random() * NPC_HOME.r;
-          const goal = { x: NPC_HOME.x + Math.cos(a) * r, z: NPC_HOME.z + Math.sin(a) * r };
-          npc.path = nav.find({ x: npc.root.position.x, z: npc.root.position.z }, goal) ?? [];
-          npcWait = 3 + Math.random() * 5;
-          if (!npc.path.length) play(npc, Math.random() < 0.4 ? "Eating" : "Idle_2");
-        } else if (npc.anim.current() === "Walk") {
-          play(npc, Math.random() < 0.3 ? "Eating" : "Idle");
+    for (const v of villagers) {
+      const a = v.actor;
+      if (!v.talking) {
+        if (a.path.length) {
+          moveActor(a, dt, v.speed);
+          play(a, "Walk");
+        } else {
+          v.wait -= dt;
+          if (v.wait <= 0) {
+            const ang = Math.random() * Math.PI * 2;
+            const r = Math.random() * v.home.r;
+            const goal = { x: v.home.x + Math.cos(ang) * r, z: v.home.z + Math.sin(ang) * r };
+            a.path = nav.find({ x: a.root.position.x, z: a.root.position.z }, goal) ?? [];
+            v.wait = 3 + Math.random() * 5;
+            if (!a.path.length) play(a, Math.random() < 0.4 ? "Eating" : "Idle_2");
+          } else if (a.anim.current() === "Walk") {
+            play(a, Math.random() < 0.3 ? "Eating" : "Idle");
+          }
         }
       }
+      a.anim.update(dt);
     }
-    npc.anim.update(dt);
 
     // 나무 흔들림
     for (const t of trees) {
@@ -1878,7 +1896,10 @@ export async function createIsland(
   if (process.env.NODE_ENV === "development") {
     (window as unknown as { __island?: unknown }).__island = {
       player: () => player && { x: player.root.position.x, z: player.root.position.z, anim: player.anim.current() },
-      npc: () => ({ x: npc.root.position.x, z: npc.root.position.z }),
+      npc: (id = "mocha") => {
+        const v = villagers.find((x) => x.id === id) ?? villagers[0];
+        return { x: v.actor.root.position.x, z: v.actor.root.position.z };
+      },
       fishing: () => fishing.phase,
       rodTip: () => {
         const v = new THREE.Vector3();
@@ -1948,8 +1969,10 @@ export async function createIsland(
     setRod: (on) => setMode(on ? "fish" : "walk"),
     cancelMode: () => setMode("walk"),
     endDialog: () => {
-      npcTalking = false;
-      npcWait = 1.5;
+      for (const v of villagers) {
+        if (v.talking) v.wait = 1.5;
+        v.talking = false;
+      }
     },
     markMailRead: () => {
       save.mailRead = latestMail;

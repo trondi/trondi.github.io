@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 import type { CatchEvent, FishingPhase, InteractEvent, IslandHandle, Mode } from "./engine";
 import { SPECIES, SPECIES_BY_ID } from "./fish";
 import {
-  type GiftItem, type GiftResult, MAX_HEARTS, NPC_NAME, QUESTIONS, TIPS, chatLines, giveGift, greet, npcState, recordTalk, shuffled,
-} from "./mocha";
+  type GiftItem, type GiftResult, MAX_HEARTS, RESIDENTS, chatLines, giveGift, greet, npcState, recordTalk, shuffled,
+} from "./residents";
 import {
   FLOWER_STAGE_LABEL, GLASSES, HAIR_COLORS, HATS, PANTS_COLORS, SHIRT_COLORS,
   type IslandSave, type Look, loadSave, writeSave,
@@ -22,6 +22,8 @@ export type IslandPost = { slug: string; title: string; summary: string };
 type Panel =
   | {
       kind: "npc";
+      /** 주민 id */
+      who: string;
       view: "menu" | "chat" | "tip" | "gift" | "rec";
       seed: number;
       /** 처음 열었을 때의 인사 — 메뉴로 돌아오면 비운다 */
@@ -46,6 +48,13 @@ type Panel =
 const SEASON_EMOJI = { spring: "🌸", summer: "🌿", autumn: "🍂", winter: "❄️" } as const;
 const SKIN_SWATCH = ["#f6d7bd", "#e2b08b", "#a8714a"];
 const DEFAULT_OUTFIT = { shirt: 0, pants: 0, hair: 0, hat: "none", glasses: "none" } as const;
+
+/** 받침 유무로 와/과 */
+function withWa(word: string) {
+  const c = word.charCodeAt(word.length - 1);
+  if (c < 0xac00 || c > 0xd7a3) return "와";
+  return (c - 0xac00) % 28 ? "과" : "와";
+}
 
 /** 받침 유무로 을/를 */
 function eulReul(word: string) {
@@ -96,16 +105,18 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
     if (e.kind === "npc") {
       const now = new Date();
       const cur = saveRef.current;
+      const r = RESIDENTS[e.id] ?? RESIDENTS.mocha;
       setPanel({
         kind: "npc",
+        who: r.id,
         view: "menu",
         seed: 1 + Math.floor(Math.random() * 100000),
-        greet: cur ? greet({ now, season: seasonRef.current, save: cur }) : [],
+        greet: cur ? greet(r, { now, season: seasonRef.current, save: cur }) : [],
         chat: 0,
         tip: 0,
         rec: 0,
       });
-      handleRef.current?.mutateSave((sv) => recordTalk(sv, now));
+      handleRef.current?.mutateSave((sv) => recordTalk(r, sv, now));
     }
     else if (e.kind === "flower") setPanel({ kind: "flower", stage: e.stage });
     else setPanel({ kind: e.kind });
@@ -513,7 +524,8 @@ function PanelBody({
   );
 
   if (panel.kind === "npc") {
-    const st = save ? npcState(save) : null;
+    const r = RESIDENTS[panel.who] ?? RESIDENTS.mocha;
+    const st = save ? npcState(save, r.id) : null;
     const hearts = st?.hearts ?? 0;
     const go = (patch: Partial<typeof panel>) => setPanel({ ...panel, ...patch });
     const toMenu = () => go({ view: "menu", greet: [], line: undefined, q: undefined, answer: undefined, gift: undefined });
@@ -521,12 +533,12 @@ function PanelBody({
       const n = panel.chat;
       // 세 번에 한 번은 모카가 질문을 던진다
       if (n % 3 === 2) {
-        const order = shuffled(QUESTIONS.map((_, i) => i), panel.seed);
+        const order = shuffled(r.questions.map((_, i) => i), panel.seed);
         go({ view: "chat", chat: n + 1, q: order[Math.floor(n / 3) % order.length], answer: undefined, line: undefined });
         return;
       }
       if (!save) return;
-      const { contextual, general } = chatLines({ now: new Date(), season, save });
+      const { contextual, general } = chatLines(r, { now: new Date(), season, save });
       const lines = [...shuffled(contextual, panel.seed), ...shuffled(general, panel.seed + 1)];
       const k = n - Math.floor((n + 1) / 3);
       go({ view: "chat", chat: n + 1, line: lines[k % lines.length], q: undefined, answer: undefined });
@@ -536,7 +548,7 @@ function PanelBody({
     const give = (item: GiftItem) => {
       let result: GiftResult | null = null;
       onMutate((sv) => {
-        result = giveGift(sv, item, new Date());
+        result = giveGift(r, sv, item, new Date());
       });
       if (result) go({ view: "gift", gift: result });
     };
@@ -554,8 +566,8 @@ function PanelBody({
     );
     return (
       <>
-        <Tag>
-          {NPC_NAME}{" "}
+        <Tag color={r.color}>
+          {r.name}{" "}
           <span aria-label={`친밀도 ${hearts}/${MAX_HEARTS}`} className="tracking-tight">
             {"♥".repeat(hearts)}
             <span className="opacity-50">{"♡".repeat(MAX_HEARTS - hearts)}</span>
@@ -589,9 +601,9 @@ function PanelBody({
 
         {panel.view === "chat" && panel.q !== undefined && !panel.answer && (
           <>
-            <p>{QUESTIONS[panel.q][0]}</p>
+            <p>{r.questions[panel.q][0]}</p>
             <div className="mt-3 flex flex-wrap justify-end gap-1.5">
-              {[QUESTIONS[panel.q][1], QUESTIONS[panel.q][2]].map(([label, reply]) => (
+              {[r.questions[panel.q][1], r.questions[panel.q][2]].map(([label, reply]) => (
                 <button key={label} type="button" className={primary} onClick={() => go({ answer: reply })}>
                   {label}
                 </button>
@@ -614,7 +626,7 @@ function PanelBody({
 
         {panel.view === "tip" && (
           <>
-            <p>{TIPS[(panel.seed + panel.tip) % TIPS.length]}</p>
+            <p>{r.tips[(panel.seed + panel.tip) % r.tips.length]}</p>
             <div className="mt-3 flex flex-wrap justify-end gap-1.5">
               <button type="button" className={primary} onClick={() => go({ tip: panel.tip + 1 })}>
                 하나 더 알려 줘
@@ -627,7 +639,7 @@ function PanelBody({
         {panel.view === "rec" && rec && (
           <>
             <p>
-              혹시 이 글 읽어 봤어? <b className="text-[#7d5bb0]">「{rec.title}」</b>
+              {r.recIntro} <b className="text-[#7d5bb0]">「{rec.title}」</b>
             </p>
             {rec.summary && <p className="mt-1 text-[13px] opacity-75">{rec.summary}</p>}
             <div className="mt-3 flex flex-wrap justify-end gap-1.5">
@@ -681,12 +693,10 @@ function PanelBody({
           <>
             <p>{panel.gift.line}</p>
             {panel.gift.heart && (
-              <p className="mt-1 text-[13px] font-bold text-[#e8707a]">♥ {NPC_NAME}와 조금 더 친해졌어요</p>
+              <p className="mt-1 text-[13px] font-bold text-[#e8707a]">♥ {r.name}{withWa(r.name)} 조금 더 친해졌어요</p>
             )}
             {panel.gift.reward > 0 && (
-              <p className="mt-1">
-                {hearts >= MAX_HEARTS ? "이제 우리 단짝이야! 기념으로" : "고마운 마음에…"} 이거 받아! 🌱 꽃씨 {panel.gift.reward}개야.
-              </p>
+              <p className="mt-1">{r.reward(panel.gift.reward, hearts >= MAX_HEARTS)}</p>
             )}
             <div className="mt-3 flex flex-wrap justify-end gap-1.5">{moreTalk}</div>
           </>
