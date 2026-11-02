@@ -96,7 +96,7 @@ const VILLAGERS = [
   { id: "danpung", model: "Fox", scale: 0.22, speed: 1.0, home: { x: 11.9, z: -1.2, r: 1.4 }, hit: [0.55, 1.0], talkY: 0.9 },
   { id: "seolgi", model: "Husky", scale: 0.24, speed: 1.15, home: { x: DOCK.x + 2.6, z: DOCK.z0 + 1.2, r: 1.3 }, hit: [0.55, 1.0], talkY: 1.0 },
   // 둥이 — Quaternius 고양이에 실제 둥이 무늬를 칠하고 통통하게 다듬은 모델
-  { id: "dungi", model: "Cat", scale: 0.0014, speed: 0.85, home: { x: 3.4, z: 9.0, r: 1.2 }, hit: [0.5, 0.8], talkY: 0.75 },
+  { id: "dungi", model: "Cat", scale: 0.00125, speed: 0.85, home: { x: 3.4, z: 9.0, r: 1.2 }, hit: [0.5, 0.8], talkY: 0.75 },
   { id: "tori", model: "Deer", scale: 0.2, speed: 0.75, home: { x: -9.4, z: 6.4, r: 1.4 }, hit: [0.6, 1.2], talkY: 1.2 },
   { id: "mongsil", model: "Alpaca", scale: 0.19, speed: 0.55, talkY: 1.35, home: { x: BENCH.x + 0.8, z: BENCH.z + 1.0, r: 1.2 }, hit: [0.6, 1.4] },
 ] as const;
@@ -936,7 +936,7 @@ export async function createIsland(
       const glint = new THREE.Mesh(new THREE.SphereGeometry(2.8, 8, 6), shine);
       glint.position.set(side * 3.2, 4.5, 7.2);
       eye.add(ball, dot, glint);
-      const world = actor.root.localToWorld(new THREE.Vector3(side * 29, 252, 235));
+      const world = actor.root.localToWorld(new THREE.Vector3(side * 25, 262, 271));
       eye.position.copy(head.worldToLocal(world));
       eye.quaternion.copy(headQ).multiply(rootQ).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0.05, side * 0.4, 0)));
       eye.scale.setScalar(k);
