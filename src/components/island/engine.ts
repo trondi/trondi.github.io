@@ -13,6 +13,7 @@ import { buildFishFromAsset, buildFishModel } from "./fish-model";
 import { buildHouseXmas } from "./house-xmas";
 import { NavGrid, type Point } from "./pathfind";
 import { type TreeKind, type TreeOpts, buildTree } from "./tree-model";
+import type { WeatherKind } from "./weather";
 import {
   HAIR_COLORS, PANTS_COLORS, SHIRT_COLORS,
   type Glasses, type Hat, type IslandSave, type ItemType, type Look, flowerStage, today,
@@ -65,6 +66,8 @@ export type IslandHandle = {
   /** 모습 바꾸기 — persist=false면 미리보기만 */
   setLook: (look: Look, persist?: boolean) => void;
   setCloseUp: (on: boolean) => void;
+  /** 실제 날씨 (null이면 계절 효과만) */
+  setWeather: (kind: WeatherKind | null) => void;
   /** 대화창 같은 창이 열려 있는 동안 캐릭터를 움직이지 못하게 */
   setInputLocked: (on: boolean) => void;
   startPlanting: () => void;
@@ -198,6 +201,8 @@ export async function createIsland(
 ): Promise<IslandHandle> {
   const save = opts.save;
   let season = opts.season;
+  /** 실제 날씨 — 화면 쪽에서 받아 와 setWeather로 알려 준다 */
+  let weather: WeatherKind | null = null;
   const W = () => host.clientWidth;
   const H = () => host.clientHeight;
   const mobile = W() < 768;
@@ -619,9 +624,11 @@ export async function createIsland(
 
     const R = rng(7);
     const cherry = season === "spring";
-    // 12월에는 마을 가까운 전나무 세 그루가 크리스마스 트리가 된다
+    // 11월부터 1월 6일까지 마을 가까운 전나무 세 그루가 크리스마스 트리가 된다
+    const now = new Date();
+    const holiday = now.getMonth() >= 10 || (now.getMonth() === 0 && now.getDate() <= 6);
     const xmas = new Set(
-      new Date().getMonth() === 11
+      holiday
         ? TREE_SPOTS.filter((t) => t.kind === "pine")
             .map((t) => ({ id: t.id, d: Math.hypot(t.x - NPC_HOME.x, t.z - NPC_HOME.z) }))
             .filter((t) => t.d < 16)
@@ -1873,6 +1880,7 @@ export async function createIsland(
   /* ───────────── 하늘·빛 ───────────── */
   let skyTex: THREE.CanvasTexture | undefined;
   let night = 0;
+  let baseHemi = 1;
   const GLOW_I = 7;
   const stars = (() => {
     const S = rng(9);
@@ -1886,14 +1894,26 @@ export async function createIsland(
   })();
   const applySky = () => {
     const s = skyAt(new Date());
+    // 날씨 — 흐리거나 비·눈이 오면 하늘이 잿빛이 되고 햇빛이 약해진다
+    const cloud = weather === "storm" ? 0.85 : weather === "rain" ? 0.7 : weather === "snow" ? 0.55 : weather === "fog" ? 0.6 : weather === "cloudy" ? 0.45 : 0;
+    if (cloud) {
+      const grey = new THREE.Color(night > 0.5 ? "#2a2d36" : "#9aa3ad");
+      s.top.lerp(grey, cloud * 0.75);
+      s.bottom.lerp(grey, cloud * 0.6);
+      s.fog.lerp(grey, cloud * 0.6);
+    }
     skyTex = skyTexture(s.top, s.bottom, skyTex);
     scene.background = skyTex;
-    (scene.fog as THREE.Fog).color.copy(s.fog);
+    const fog = scene.fog as THREE.Fog;
+    fog.color.copy(s.fog);
+    fog.near = weather === "fog" ? 8 : weather === "rain" || weather === "storm" || weather === "snow" ? 18 : 26;
+    fog.far = weather === "fog" ? 30 : weather === "rain" || weather === "storm" || weather === "snow" ? 42 : 52;
     hemi.color.copy(s.hemiSky);
     hemi.groundColor.copy(s.hemiGround);
-    hemi.intensity = s.hemi;
+    hemi.intensity = s.hemi * (1 - cloud * 0.38);
     sun.color.copy(s.sun);
-    sun.intensity = s.sunI;
+    sun.intensity = s.sunI * (1 - cloud * 0.72);
+    baseHemi = hemi.intensity;
     sun.userData.dir = s.sunDir;
     night = s.night;
     (stars.material as THREE.PointsMaterial).opacity = night;
@@ -1909,22 +1929,46 @@ export async function createIsland(
     syncFlowers();
   }, 30_000);
 
-  /* ───────────── 계절 입자 (꽃잎·낙엽·눈·반딧불) ───────────── */
+  /* ───────────── 계절 입자 (꽃잎·낙엽·눈·반딧불) + 날씨 (비·눈) ───────────── */
+  let rain: THREE.LineSegments | null = null;
+  let lightning = 0;
+  let nextBolt = 6;
   let particles: THREE.Points | null = null;
   let velocity: Float32Array | null = null;
   let fireflies: THREE.Points | null = null;
   function rebuildParticles() {
     if (particles) scene.remove(particles);
     if (fireflies) scene.remove(fireflies);
+    if (rain) scene.remove(rain);
     particles = null;
     fireflies = null;
+    rain = null;
     if (opts.reducedMotion) return;
-    const conf = {
+    const wet = weather === "rain" || weather === "storm";
+    if (wet) {
+      // 빗줄기 — 짧은 선분을 카메라 주변에 뿌리고 매 프레임 떨어뜨린다
+      const n = weather === "storm" ? 1100 : 800;
+      const pos = new Float32Array(n * 6);
+      for (let i = 0; i < n; i++) {
+        const x = camTarget.x + (Math.random() - 0.5) * 24;
+        const y = Math.random() * 10;
+        const z = camTarget.z + (Math.random() - 0.5) * 20;
+        pos.set([x, y, z, x + 0.06, y + 0.6, z + 0.03], i * 6);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      rain = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xeef4fb, transparent: true, opacity: 0.85, depthWrite: false }));
+      rain.frustumCulled = false;
+      scene.add(rain);
+    }
+    // 날씨를 알면 겨울이라도 눈은 실제로 눈이 올 때만 내린다
+    const seasonal = {
       spring: { n: 90, color: 0xf6b9cc, size: 0.14 },
       summer: { n: 0, color: 0xffffff, size: 0.1 },
       autumn: { n: 80, color: 0xe8964a, size: 0.16 },
-      winter: { n: 180, color: 0xffffff, size: 0.12 },
+      winter: { n: weather && weather !== "snow" ? 0 : 180, color: 0xffffff, size: 0.12 },
     }[season];
+    const conf = weather === "snow" ? { n: 340, color: 0xffffff, size: 0.14 } : wet ? { n: 0, color: 0xffffff, size: 0.1 } : seasonal;
     if (conf.n) {
       const pos = new Float32Array(conf.n * 3);
       velocity = new Float32Array(conf.n * 3);
@@ -1937,7 +1981,7 @@ export async function createIsland(
       particles = new THREE.Points(geo, new THREE.PointsMaterial({ size: conf.size, color: conf.color, map: dotTexture(), transparent: true, depthWrite: false }));
       scene.add(particles);
     }
-    if (season === "summer" || season === "autumn") {
+    if ((season === "summer" || season === "autumn") && !wet) {
       const n = season === "summer" ? 60 : 24;
       const pos = new Float32Array(n * 3);
       for (let i = 0; i < n; i++) {
@@ -2204,6 +2248,36 @@ export async function createIsland(
         ripples.splice(i, 1);
       }
     }
+    // 비
+    if (rain) {
+      const pos = rain.geometry.attributes.position as THREE.BufferAttribute;
+      const fall = (weather === "storm" ? 16 : 12) * dt;
+      for (let i = 0; i < pos.count; i += 2) {
+        let y = pos.getY(i) - fall;
+        let x = pos.getX(i) - fall * 0.08;
+        let z = pos.getZ(i);
+        if (y < 0) {
+          y = 9 + Math.random() * 2;
+          x = camTarget.x + (Math.random() - 0.5) * 24;
+          z = camTarget.z + (Math.random() - 0.5) * 20;
+        }
+        pos.setXYZ(i, x, y, z);
+        pos.setXYZ(i + 1, x + 0.06, y + 0.6, z + 0.03);
+      }
+      pos.needsUpdate = true;
+    }
+    // 번개 — 뇌우일 때 가끔 하늘이 번쩍인다
+    if (weather === "storm" && !opts.reducedMotion) {
+      nextBolt -= dt;
+      if (nextBolt <= 0) {
+        lightning = 0.35;
+        nextBolt = 7 + Math.random() * 12;
+      }
+    }
+    if (lightning > 0) {
+      lightning = Math.max(0, lightning - dt);
+      hemi.intensity = baseHemi + (lightning > 0.25 || (lightning > 0.08 && lightning < 0.14) ? 2.2 : 0);
+    } else if (hemi.intensity !== baseHemi) hemi.intensity = baseHemi;
     // 입자
     if (particles && velocity) {
       const pos = particles.geometry.attributes.position as THREE.BufferAttribute;
@@ -2348,6 +2422,12 @@ export async function createIsland(
         save.look = look;
         persist();
       }
+    },
+    setWeather: (kind) => {
+      if (kind === weather) return;
+      weather = kind;
+      applySky();
+      rebuildParticles();
     },
     setInputLocked: (on) => {
       inputLocked = on;

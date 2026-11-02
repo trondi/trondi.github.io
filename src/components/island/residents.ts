@@ -4,6 +4,7 @@ import {
   type ChatCtx, type GiftItem, MAX_HEARTS, type Resident, dayKey, daysBetween, facts, timeSlot,
 } from "./resident-core";
 import type { IslandSave, NpcState } from "./save";
+import type { WeatherKind } from "./weather";
 import { DANPUNG, DUNGI, MONGSIL, SEOLGI, TORI } from "./villagers";
 
 export { MAX_HEARTS, shuffled, type GiftItem, type Resident } from "./resident-core";
@@ -47,8 +48,20 @@ export function greet(r: Resident, ctx: ChatCtx): string[] {
   return lines;
 }
 
+/** 주민마다 날씨 이야기 — 비·눈·뇌우·안개일 때 수다 맨 앞에 끼워 넣는다 */
+const WEATHER_TALK: Record<string, Partial<Record<WeatherKind, string>>> = {
+  mocha: { rain: "비 온다! 털이 젖으면 냄새나서 싫은데… 그래도 빗소리는 좋아 🌧️", snow: "눈이다!! 나도 모르게 뛰어다니게 돼! ❄️", storm: "천둥 무서워… 오늘은 집 근처에 꼭 붙어 있을래 ⛈️", fog: "안개 때문에 코로만 길을 찾고 있어. 킁킁!" },
+  danpung: { rain: "비 오는 날엔 과수원 나무 밑이 최고야. 흐흥, 여기 비 안 맞거든!", snow: "눈 위에 발자국 찍기 놀이 하자! 내가 먼저 찍었다~", storm: "번개 칠 때마다 꼬리가 빵빵해져… 웃지 마!", fog: "안개 낀 날엔 숨바꼭질 필승이야. 날 찾아봐!" },
+  mongsil: { rain: "빗소리… 시 쓰기 좋은 날이야. 「톡, 톡, 연못이 웃는다」…", snow: "눈이 털에 쌓이면… 나 하얀 알파카 돼.", storm: "천둥이 치면 구름이 화난 거래… 금방 풀릴 거야.", fog: "안개 속 연못은 꿈속 같아… 천천히 걸어." },
+  seolgi: { rain: "비 오는 날 바다 수영 최고!! …아, 감기 걸린다고? 괜찮아!", snow: "눈이다!!! 허스키의 계절이야!! 같이 뒹굴자!!", storm: "번개 치는 바다는 위험해! 오늘은 모래사장에서만 놀자.", fog: "안개 때문에 바다가 안 보여! 냄새로 찾아갈 거야!" },
+  tori: { rain: "비가 오면 꽃들이 물을 마셔서 좋아해요… 저도 좋아요.", snow: "눈꽃이 피었어요… 꽃밭이 하얘졌어요.", storm: "처, 천둥이요…? 저 몽실 언니한테 가 있어도 될까요…", fog: "안개 속에선 제가 더 잘 숨어요… 헤헤." },
+  dungi: { rain: "비 온다냥… 오늘은 다리 밑에서 한 발짝도 안 나간다냥.", snow: "눈은 차갑다냥! 발 시려… 그래도 조금 예쁘긴 하다냥.", storm: "천둥 싫다냥!! 이불 속에 들어가 있고 싶다냥 😿", fog: "안개 낀 날은 사냥하기 좋다냥. 나비가 안 보이지만." },
+};
+
 export function chatLines(r: Resident, ctx: ChatCtx) {
-  return r.chat(ctx, facts(ctx.save), npcState(ctx.save, r.id));
+  const lines = r.chat(ctx, facts(ctx.save), npcState(ctx.save, r.id));
+  const w = ctx.weather ? WEATHER_TALK[r.id]?.[ctx.weather] : undefined;
+  return w ? { contextual: lines.contextual, general: lines.general, weather: w } : { ...lines, weather: undefined as string | undefined };
 }
 
 export type GiftResult = { line: string; heart: boolean; reward: number; given: boolean };
