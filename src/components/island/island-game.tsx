@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 import type { CatchEvent, FishingPhase, InteractEvent, IslandHandle, Mode } from "./engine";
 import { SPECIES, SPECIES_BY_ID } from "./fish";
+import { WEATHER_PLACE, WEATHER_TTL, type Weather, fetchWeather } from "./weather";
 import {
   type GiftItem, type GiftResult, MAX_HEARTS, RESIDENTS, chatLines, giveGift, greet, npcState, recordTalk, shuffled,
 } from "./residents";
@@ -175,6 +176,25 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
     handleRef.current?.setSeason(season);
   }, [season, ready]);
 
+  // 서울의 실제 날씨 — 20분마다 다시 받아 온다
+  const [weather, setWeatherState] = useState<Weather | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      fetchWeather().then((w) => {
+        if (alive) setWeatherState(w);
+      });
+    load();
+    const id = window.setInterval(load, WEATHER_TTL);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, []);
+  useEffect(() => {
+    handleRef.current?.setWeather(weather?.kind ?? null);
+  }, [weather, ready]);
+
   // 대화창·가방 같은 창이 열려 있는 동안에는 화면을 탭하거나 키를 눌러도 캐릭터가 움직이지 않는다
   useEffect(() => {
     handleRef.current?.setInputLocked(panel !== null);
@@ -278,6 +298,17 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
             <div className="text-[22px] font-black leading-7 tracking-tight">
               {clock.time} <span className="text-[13px]">{clock.ampm}</span>
             </div>
+            {weather && (
+              <a
+                href="https://open-meteo.com/"
+                target="_blank"
+                rel="noreferrer"
+                title={`${WEATHER_PLACE}의 지금 날씨 · 날씨 정보: Open-Meteo.com`}
+                className="pointer-events-auto mt-0.5 block text-[11px] font-bold opacity-75"
+              >
+                {weather.emoji} {WEATHER_PLACE} {weather.label} {weather.temp}°
+              </a>
+            )}
           </div>
 
           {/* 오른쪽 위 버튼 */}
@@ -379,6 +410,7 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
                   posts={posts}
                   save={save}
                   season={season}
+                  weather={weather}
                   onMutate={(fn) => handleRef.current?.mutateSave(fn)}
                   setPanel={setPanel}
                   onClose={closePanel}
@@ -487,6 +519,7 @@ function PanelBody({
   posts,
   save,
   season,
+  weather,
   onMutate,
   setPanel,
   onClose,
@@ -501,6 +534,7 @@ function PanelBody({
   posts: IslandPost[];
   save: IslandSave | null;
   season: Season;
+  weather: Weather | null;
   onMutate: (fn: (save: IslandSave) => void) => void;
   setPanel: (p: Panel) => void;
   onClose: () => void;
@@ -543,8 +577,9 @@ function PanelBody({
         return;
       }
       if (!save) return;
-      const { contextual, general } = chatLines(r, { now: new Date(), season, save });
-      const lines = [...shuffled(contextual, panel.seed), ...shuffled(general, panel.seed + 1)];
+      const { contextual, general, weather: weatherLine } = chatLines(r, { now: new Date(), season, save, weather: weather?.kind ?? null });
+      // 비·눈 오는 날엔 날씨 이야기부터
+      const lines = [...(weatherLine ? [weatherLine] : []), ...shuffled(contextual, panel.seed), ...shuffled(general, panel.seed + 1)];
       const k = n - Math.floor((n + 1) / 3);
       go({ view: "chat", chat: n + 1, line: lines[k % lines.length], q: undefined, answer: undefined });
     };

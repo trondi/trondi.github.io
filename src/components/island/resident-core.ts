@@ -2,12 +2,13 @@ import type { Season } from "@/lib/season";
 
 import { SPECIES, SPECIES_BY_ID, type Species } from "./fish";
 import { GLASSES, HATS, type IslandSave, type NpcState, flowerStage } from "./save";
+import type { WeatherKind } from "./weather";
 
 /** 섬 주민 공통 — 주민마다 말투·좋아하는 것만 다르고 대화 흐름은 같다 */
 
 export const MAX_HEARTS = 5;
 
-export type ChatCtx = { now: Date; season: Season; save: IslandSave };
+export type ChatCtx = { now: Date; season: Season; save: IslandSave; weather?: WeatherKind | null };
 export type Question = [string, [string, string], [string, string]];
 export type GiftItem = { kind: "apple" } | { kind: "orange" } | { kind: "fish"; id: string };
 export type GiftReaction = { line: string; heart: boolean };
