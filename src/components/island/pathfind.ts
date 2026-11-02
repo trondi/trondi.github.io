@@ -4,10 +4,11 @@ export type Walkable = (x: number, z: number) => boolean;
 export type Point = { x: number; z: number };
 
 const CELL = 0.3;
-const MIN_X = -26;
-const MIN_Z = -23;
-const COLS = Math.ceil(52 / CELL);
-const ROWS = Math.ceil(46 / CELL);
+// 섬 전체(선착장 끝까지)를 덮는 격자
+const MIN_X = -33;
+const MIN_Z = -27;
+const COLS = Math.ceil(66 / CELL);
+const ROWS = Math.ceil(56 / CELL);
 
 export class NavGrid {
   private open: Uint8Array;
