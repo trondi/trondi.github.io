@@ -89,6 +89,8 @@ const FRUIT_TREES: [string, number, number, "apple" | "orange"][] = [
   ["apple-3", 10.2, -4.6, "apple"], ["apple-4", 13.2, -2.6, "apple"], ["orange-1", 10.6, 0.2, "orange"],
   ["orange-3", 13.6, 1.8, "orange"], ["apple-5", 11.6, 4.4, "apple"],
 ];
+/** 크리스마스 시즌 — 11월부터 1월 6일까지 (트리와 집 장식이 함께 따른다) */
+const isHolidaySeason = (d = new Date()) => d.getMonth() >= 10 || (d.getMonth() === 0 && d.getDate() <= 6);
 /** 집 — 포치 달린 2층 집 (가로로 1.3배 넓힘, 폭 약 3.3 × 깊이 3.9 × 높이 3.2, 바닥 중심이 원점). 현관 포치는 +z 쪽.
  *  카메라가 남쪽(+z)에서 비추므로 rot≈0이면 문이 정면을 본다 (광장 쪽으로 살짝 틀어 둠) */
 const HOUSE = { x: -4.4, z: -3.7, rot: 0.12, scale: 0.95 };
@@ -482,8 +484,8 @@ export async function createIsland(
   houseGlow.position.set(glowAt.x, 1.0, glowAt.z);
   scene.add(houseGlow);
   addTarget({ obj: house, pos: { x: HOUSE.x, z: HOUSE.z }, reach: 2.6, act: () => cb.onInteract({ kind: "house" }) }, 2.0, 3.4);
-  // 12월에는 집도 크리스마스 장식 — 지붕선·포치 전구, 포치 갈란드, 현관 리스
-  const houseXmas = new Date().getMonth() === 11 ? buildHouseXmas(cachedStd) : null;
+  // 크리스마스 시즌에는 집도 장식 — 지붕·벽·창문·포치 전구, 지붕 위 산타 양말, 포치 갈란드, 현관 리스
+  const houseXmas = isHolidaySeason() ? buildHouseXmas(cachedStd) : null;
   if (houseXmas) {
     house.add(curveAll(houseXmas.group));
     // 작은 장식이라 그림자는 드리우지 않는다
@@ -625,8 +627,7 @@ export async function createIsland(
     const R = rng(7);
     const cherry = season === "spring";
     // 11월부터 1월 6일까지 마을 가까운 전나무 세 그루가 크리스마스 트리가 된다
-    const now = new Date();
-    const holiday = now.getMonth() >= 10 || (now.getMonth() === 0 && now.getDate() <= 6);
+    const holiday = isHolidaySeason();
     const xmas = new Set(
       holiday
         ? TREE_SPOTS.filter((t) => t.kind === "pine")
