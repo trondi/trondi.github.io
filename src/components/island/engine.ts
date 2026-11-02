@@ -90,11 +90,13 @@ const WELL = { x: -7.4, z: 2.9 };
 const NPC_HOME = { x: -1.6, z: 1.4, r: 2.6 };
 const SPAWN = { x: 0.6, z: 3.2 };
 const BENCH = { x: POND.x + 3.6, z: POND.z + 1.4 };
-/** 주민들 — 모카는 집 앞, 단풍이는 강 건너 과수원, 설기는 남쪽 바닷가, 토리는 남서쪽 꽃밭, 몽실이는 위쪽 연못가 벤치 옆 */
+/** 주민들 — 모카는 집 앞, 단풍이는 강 건너 과수원, 설기는 남쪽 바닷가, 둥이는 남쪽 다리 옆 강가, 토리는 남서쪽 꽃밭, 몽실이는 위쪽 연못가 벤치 옆 */
 const VILLAGERS = [
   { id: "mocha", model: "ShibaInu", scale: 0.24, speed: 0.9, home: NPC_HOME, hit: [0.55, 1.0], talkY: 1.0 },
   { id: "danpung", model: "Fox", scale: 0.22, speed: 1.0, home: { x: 11.9, z: -1.2, r: 1.4 }, hit: [0.55, 1.0], talkY: 0.9 },
   { id: "seolgi", model: "Husky", scale: 0.24, speed: 1.15, home: { x: DOCK.x + 2.6, z: DOCK.z0 + 1.2, r: 1.3 }, hit: [0.55, 1.0], talkY: 1.0 },
+  // 둥이 — Quaternius 고양이에 실제 둥이 무늬를 칠하고 통통하게 다듬은 모델
+  { id: "dungi", model: "Cat", scale: 0.00125, speed: 0.85, home: { x: 3.4, z: 9.0, r: 1.2 }, hit: [0.5, 0.8], talkY: 0.75 },
   { id: "tori", model: "Deer", scale: 0.2, speed: 0.75, home: { x: -9.4, z: 6.4, r: 1.4 }, hit: [0.6, 1.2], talkY: 1.2 },
   { id: "mongsil", model: "Alpaca", scale: 0.19, speed: 0.55, talkY: 1.35, home: { x: BENCH.x + 0.8, z: BENCH.z + 1.0, r: 1.2 }, hit: [0.6, 1.4] },
 ] as const;
@@ -129,7 +131,7 @@ const MODELS = [
   "Apple_4", "Apple_Harvested", "Apple_Crop", "Orange_4", "Orange_Harvested", "Orange_Crop",
   "Flower_1", "Flower_2", "Flower_3", "Flower_4", "Flowers", "Bush_1", "Bush_Snow_1", "BushBerries_1",
   "Rock_1", "Rock_2", "Rock_Moss_1", "Rock_Moss_2", "Rock_Snow_1", "Rock_Snow_2", "Grass", "Grass_Short",
-  "Lilypad", "TreeStump_Moss", "WoodLog_Moss", "Mushroom_1", "FishingRod_Lvl1", "Dock_Long", "Boat", "Fox", "Alpaca", "Husky", "Deer",
+  "Lilypad", "TreeStump_Moss", "WoodLog_Moss", "Mushroom_1", "FishingRod_Lvl1", "Dock_Long", "Boat", "Fox", "Alpaca", "Husky", "Deer", "Cat",
 ] as const;
 type ModelName = (typeof MODELS)[number];
 
@@ -913,6 +915,34 @@ export async function createIsland(
   };
   if (save.look) applyLook(save.look);
 
+  /** 둥이 고양이 모델에는 눈이 없어서, 머리 뼈대에 초록 눈을 붙인다 (모델 좌표 기준 위치) */
+  const addDungiEyes = (actor: Actor) => {
+    const head = actor.root.getObjectByName("Bone003");
+    if (!head) return;
+    actor.root.updateMatrixWorld(true);
+    const iris = cachedStd("#c3d26e");
+    const pupil = cachedStd("#1c1c1c");
+    const shine = new THREE.MeshBasicMaterial({ color: "#ffffff" });
+    const headQ = head.getWorldQuaternion(new THREE.Quaternion()).invert();
+    const rootQ = actor.root.getWorldQuaternion(new THREE.Quaternion());
+    const k = actor.root.scale.x / head.getWorldScale(new THREE.Vector3()).x;
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Group();
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(13, 14, 10), iris);
+      ball.scale.set(1, 1.05, 0.55);
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(5.4, 10, 8), pupil);
+      dot.scale.set(0.6, 1.5, 0.5);
+      dot.position.z = 5.8;
+      const glint = new THREE.Mesh(new THREE.SphereGeometry(2.8, 8, 6), shine);
+      glint.position.set(side * 3.2, 4.5, 7.2);
+      eye.add(ball, dot, glint);
+      const world = actor.root.localToWorld(new THREE.Vector3(side * 25, 262, 271));
+      eye.position.copy(head.worldToLocal(world));
+      eye.quaternion.copy(headQ).multiply(rootQ).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0.05, side * 0.4, 0)));
+      eye.scale.setScalar(k);
+      head.add(curveAll(eye));
+    }
+  };
   type Villager = {
     id: string; actor: Actor; home: { x: number; z: number; r: number }; speed: number; talking: boolean; wait: number; proxy: THREE.Mesh;
     /** 머리 위 말풍선 (주민끼리 대화할 때) */
@@ -940,6 +970,7 @@ export async function createIsland(
   };
   const villagers: Villager[] = VILLAGERS.map((d, i) => {
     const actor = makeActor(d.model, d.scale);
+    if (d.id === "dungi") addDungiEyes(actor);
     actor.root.position.set(d.home.x, groundHeight(d.home.x, d.home.z), d.home.z);
     const b = makeBubble();
     const v: Villager = {
