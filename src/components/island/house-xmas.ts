@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 /**
- * 12월의 집 장식 — 앞 박공 지붕선·포치 처마·벽 모서리의 전구, 창문 테두리 전구,
+ * 12월의 집 장식 — 지붕 라인(앞 박공·용마루·양옆 박공·처마)·포치 처마·벽 모서리의 전구, 창문 테두리 전구,
  * 오른쪽 지붕 경사면에 걸쳐 놓은 큰 산타 양말, 포치 기둥 사이 갈란드, 현관문 리스.
  * 좌표는 집 모델(포치 달린 2층 집, House.glb) 기준이라 집 오브젝트의 자식으로 붙인다.
  * 전구는 색마다 재질을 하나씩 두고, 밤이 되면 밝아지며 번갈아 반짝인다.
@@ -20,6 +20,10 @@ const BULB_COLORS = ["#ff5a4f", "#ffd54a", "#5fd17a", "#5aa8ff"];
 const GABLE_Z = 1.36; // 앞 박공 지붕 끝
 const GABLE_EAVE = { x: 1.3, y: 1.68 }; // 박공 양쪽 처마 끝
 const GABLE_PEAK_Y = 3.06;
+// 본채 지붕 — 용마루는 x축 방향(z -0.77), 양옆 박공 끝은 x ±1.66
+const RIDGE = { x: 1.6, y: 3.21, z: -0.77 };
+const SIDE_RAKE = { x: 1.69, top: { y: 3.16, z: -0.77 }, eave: { y: 1.66, z: 0.29 } };
+const SIDE_EAVE_X0 = 1.36; // 옆 처마가 앞 박공 벽 뒤로 숨기 시작하는 곳
 const PORCH_EAVE = { x0: -1.1, x1: 1.12, y: 0.8, z: 1.97 }; // 포치 지붕 앞 끝
 const POSTS_X = [-0.95, -0.31, 0.32, 0.96]; // 포치 앞 기둥
 const POST_Z = 1.86;
@@ -64,6 +68,16 @@ export function buildHouseXmas(mat: Mat): HouseXmas {
   const peak = new THREE.Vector3(0, GABLE_PEAK_Y, GABLE_Z);
   string(new THREE.Vector3(-GABLE_EAVE.x, GABLE_EAVE.y, GABLE_Z), peak, 0.13);
   string(peak, new THREE.Vector3(GABLE_EAVE.x, GABLE_EAVE.y, GABLE_Z), 0.13);
+
+  // 본채 지붕 라인 — 용마루, 앞 박공 용마루, 양옆 박공의 앞쪽 경사와 처마
+  string(new THREE.Vector3(-RIDGE.x, RIDGE.y, RIDGE.z), new THREE.Vector3(RIDGE.x, RIDGE.y, RIDGE.z), 0.13);
+  string(new THREE.Vector3(0, GABLE_PEAK_Y + 0.09, GABLE_Z - 0.14), new THREE.Vector3(0, RIDGE.y - 0.02, RIDGE.z + 0.16), 0.13);
+  for (const sx of [-1, 1]) {
+    const top = new THREE.Vector3(sx * SIDE_RAKE.x, SIDE_RAKE.top.y, SIDE_RAKE.top.z);
+    const eave = new THREE.Vector3(sx * SIDE_RAKE.x, SIDE_RAKE.eave.y, SIDE_RAKE.eave.z);
+    string(top, eave, 0.13);
+    string(eave, new THREE.Vector3(sx * SIDE_EAVE_X0, SIDE_RAKE.eave.y, SIDE_RAKE.eave.z), 0.11);
+  }
 
   // 벽 — 앞벽 양쪽 모서리를 따라 내려오는 전구, 창문마다 테두리 전구
   for (const sx of [-1, 1]) {
