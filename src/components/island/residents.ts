@@ -4,11 +4,11 @@ import {
   type ChatCtx, type GiftItem, MAX_HEARTS, type Resident, dayKey, daysBetween, facts, timeSlot,
 } from "./resident-core";
 import type { IslandSave, NpcState } from "./save";
-import { DANPUNG, MONGSIL, SEOLGI, TORI } from "./villagers";
+import { DANPUNG, DUNGI, MONGSIL, SEOLGI, TORI } from "./villagers";
 
 export { MAX_HEARTS, shuffled, type GiftItem, type Resident } from "./resident-core";
 
-export const RESIDENTS: Record<string, Resident> = { mocha: MOCHA, danpung: DANPUNG, mongsil: MONGSIL, seolgi: SEOLGI, tori: TORI };
+export const RESIDENTS: Record<string, Resident> = { mocha: MOCHA, danpung: DANPUNG, mongsil: MONGSIL, seolgi: SEOLGI, tori: TORI, dungi: DUNGI };
 
 const EMPTY: NpcState = { talks: 0, hearts: 0, lastTalk: null, lastGift: null };
 
