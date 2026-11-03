@@ -47,7 +47,11 @@ export type CatchEvent = {
 export type FishingPhase = "idle" | "wait" | "bite";
 export type Mode = "walk" | "plant" | "fish";
 
+/** 엔진이 알려 주는 효과음 순간 (소리는 화면 쪽 sfx.ts가 낸다) */
+export type EngineSfx = "step" | "rustle" | "drop" | "pickup" | "plant" | "plop" | "nibble" | "bite" | "catch";
+
 export type IslandCallbacks = {
+  onSfx?: (name: EngineSfx) => void;
   onProgress: (ratio: number) => void;
   onInteract: (e: InteractEvent) => void;
   onToast: (text: string) => void;
@@ -1707,6 +1711,7 @@ export async function createIsland(
         dropped.push("seed");
       }
     }
+    cb.onSfx?.("rustle");
     cb.onInteract({ kind: "tree", dropped });
     persist();
   };
@@ -1720,6 +1725,7 @@ export async function createIsland(
     scene.remove(o);
     itemObjs.delete(id);
     if (player && mode !== "fish") play(player, "PickUp", true);
+    cb.onSfx?.("pickup");
     cb.onToast(g.type === "apple" ? "🍎 사과를 주웠어요" : g.type === "orange" ? "🍊 오렌지를 주웠어요" : "🌱 꽃씨를 주웠어요");
     persist();
   };
@@ -1750,6 +1756,7 @@ export async function createIsland(
       save.bag.seed -= 1;
       save.flowers.push({ id: `f-${Date.now().toString(36)}`, x: p.x, z: p.z, color: Math.floor(Math.random() * PETAL_HEADS.length), at: Date.now() });
       syncFlowers();
+      cb.onSfx?.("plant");
       cb.onToast("🌱 꽃씨를 심었어요 · 시간이 지나면 자라요");
       persist();
       setMode("walk");
@@ -1938,6 +1945,7 @@ export async function createIsland(
     save.dex[species.id] = { count: (prev?.count ?? 0) + 1, best: Math.max(prev?.best ?? 0, size), first: prev?.first ?? Date.now() };
     save.fish[species.id] = (save.fish[species.id] ?? 0) + 1;
     persist();
+    cb.onSfx?.("catch");
     cb.onCatch({ species, size, isNew, isRecord });
     report("idle");
     navigator.vibrate?.(40);
@@ -1989,6 +1997,7 @@ export async function createIsland(
         if (f.t < 0.25) bobber.position.copy(tip);
         if (k >= 1) {
           ripple(f.target);
+          cb.onSfx?.("plop");
           f.phase = "wait";
           f.t = 0;
           f.next = 0.8 + Math.random() * 1.6;
@@ -2031,6 +2040,7 @@ export async function createIsland(
         fishShadow.rotation.z = Math.atan2(to.x - fishShadow.position.x, to.z - fishShadow.position.z) - Math.PI / 2;
         if (f.t > f.next) {
           f.phase = "nibble";
+          cb.onSfx?.("nibble");
           f.t = 0;
           f.nibbles = 1 + Math.floor(Math.random() * 3);
           f.next = 0.7 + Math.random() * 0.7;
@@ -2045,9 +2055,11 @@ export async function createIsland(
           f.nibbles -= 1;
           f.t = 0;
           f.next = 0.7 + Math.random() * 0.9;
+          if (f.nibbles > 0) cb.onSfx?.("nibble");
           if (f.nibbles <= 0) {
             f.phase = "bite";
             ripple(f.target, 1.4);
+            cb.onSfx?.("bite");
             report("bite");
             navigator.vibrate?.([30, 30, 30]);
           }
@@ -2380,6 +2392,8 @@ export async function createIsland(
     return true;
   };
 
+  let stepAcc = 0.45;
+  let lastDropSfx = -1;
   const tick = () => {
     if (!running) return;
     raf = requestAnimationFrame(tick);
@@ -2399,6 +2413,7 @@ export async function createIsland(
         if (keys.has("d") || keys.has("arrowright")) kx += 1;
       }
       let moving = false;
+      const before = player.root.position.clone();
       if (sit) {
         // 앉아 있을 때 방향키를 누르면 일어선다 (일어서는 동안은 제자리)
         if (kx || kz) standUp();
@@ -2438,6 +2453,15 @@ export async function createIsland(
       const oneShot = player.anim.busy();
       if (moving) play(player, !(kx || kz) && player.speed > 3 ? "Run" : "Walk");
       if (!moving && !oneShot && player.anim.current() !== "Idle") play(player, "Idle");
+      // 발소리 — 걸은 거리만큼 (뛸 때는 보폭이 길다). 멈췄다 걸으면 곧바로 한 걸음 소리가 난다
+      if (moving) {
+        stepAcc += Math.hypot(player.root.position.x - before.x, player.root.position.z - before.z);
+        const stride = !(kx || kz) && player.speed > 3 ? 0.85 : 0.6;
+        if (stepAcc >= stride) {
+          stepAcc = 0;
+          cb.onSfx?.("step");
+        }
+      } else stepAcc = 0.45;
 
       // 지나가며 줍기
       for (const [id, o] of itemObjs) {
@@ -2564,7 +2588,14 @@ export async function createIsland(
         f.t += dt * 2.2;
         const k = Math.min(1, f.t);
         o.position.y = f.from + (f.to - f.from) * (k * k);
-        if (k >= 1) delete o.userData.fall;
+        if (k >= 1) {
+          delete o.userData.fall;
+          // 한꺼번에 떨어진 열매는 한 번만 툭
+          if (time - lastDropSfx > 0.12) {
+            lastDropSfx = time;
+            cb.onSfx?.("drop");
+          }
+        }
       } else {
         o.rotation.y += dt * 0.8;
       }
