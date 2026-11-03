@@ -57,6 +57,8 @@ export type Sfx = {
   babble: (text: string, voice: number) => void;
   /** 문 두드리는 소리 (똑똑) */
   knock: () => void;
+  /** 코인을 주웠을 때 맑게 띵띵 */
+  chime: () => void;
 };
 
 export function createSfx(initialOn: boolean): Sfx {
@@ -136,6 +138,27 @@ export function createSfx(initialOn: boolean): Sfx {
         t += 0.075;
       });
       babbleUntil = t;
+    },
+    chime() {
+      const r = ready();
+      if (!r) return;
+      const { c, o } = r;
+      // 높은 종소리 두 번 — 사인파에 배음을 조금 섞어 맑게
+      [[1568, 0], [2093, 0.09]].forEach(([f, dt]) => {
+        const t = c.currentTime + 0.03 + dt;
+        for (const [mul, amp] of [[1, 0.16], [2.01, 0.05]]) {
+          const osc = c.createOscillator();
+          osc.type = "sine";
+          osc.frequency.value = f * mul;
+          const g = c.createGain();
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(amp, t + 0.005);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+          osc.connect(g).connect(o);
+          osc.start(t);
+          osc.stop(t + 0.5);
+        }
+      });
     },
     knock() {
       const r = ready();

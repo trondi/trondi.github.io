@@ -18,7 +18,7 @@ import { type TreeKind, type TreeOpts, buildTree } from "./tree-model";
 import type { WeatherKind } from "./weather";
 import {
   HAIR_COLORS, PANTS_COLORS, SHIRT_COLORS,
-  type Glasses, type Hat, type IslandSave, type Neck, type ItemType, type Look, flowerStage, today,
+  type Glasses, type GroundType, type Hat, type IslandSave, type Neck, type Look, flowerStage, today,
 } from "./save";
 import { skyAt, skyTexture } from "./sky";
 import {
@@ -34,7 +34,7 @@ export type InteractEvent =
   | { kind: "board" }
   | { kind: "house" }
   | { kind: "flower"; stage: number }
-  | { kind: "tree"; dropped: ItemType[] }
+  | { kind: "tree"; dropped: GroundType[] }
   | { kind: "gift"; reward: GiftReward };
 
 export type CatchEvent = {
@@ -48,7 +48,7 @@ export type FishingPhase = "idle" | "wait" | "bite";
 export type Mode = "walk" | "plant" | "fish";
 
 /** 엔진이 알려 주는 효과음 순간 (소리는 화면 쪽 sfx.ts가 낸다) */
-export type EngineSfx = "step" | "rustle" | "drop" | "pickup" | "plant" | "plop" | "nibble" | "bite" | "catch";
+export type EngineSfx = "step" | "rustle" | "drop" | "pickup" | "coin" | "plant" | "plop" | "nibble" | "bite" | "catch";
 
 export type IslandCallbacks = {
   onSfx?: (name: EngineSfx) => void;
@@ -752,7 +752,7 @@ export async function createIsland(
   const nav = new NavGrid(walkable);
 
   /* ───────────── 계절에 따라 바뀌는 것 ───────────── */
-  type TreeState = { id: string; obj: THREE.Object3D; shake: number; fruit?: "apple" | "orange" };
+  type TreeState = { id: string; obj: THREE.Object3D; shake: number; fruit?: "apple" | "orange"; /** 마을의 크리스마스 트리 (흔들면 돈주머니) */ xmas?: boolean };
   const trees: TreeState[] = [];
   const seasonal = new THREE.Group();
   scene.add(seasonal);
@@ -794,7 +794,7 @@ export async function createIsland(
       const obj = makeTree({ kind, variant, season, cherry: cherry && kind === "common" && i % 2 === 0, xmas: xmas.has(id) }, x, z, scale, R() * Math.PI * 2);
       seasonal.add(obj);
       addCollider({ x, z, r: 0.5 * scale });
-      const t: TreeState = { id, obj, shake: 0 };
+      const t: TreeState = { id, obj, shake: 0, xmas: xmas.has(id) };
       trees.push(t);
       addTarget({ obj, pos: { x, z }, reach: 0.95, act: () => shakeTree(t) }, 0.9, 3);
     });
@@ -1448,7 +1448,26 @@ export async function createIsland(
 
   /* ───────────── 땅에 떨어진 물건·심은 꽃 ───────────── */
   const itemObjs = new Map<string, THREE.Object3D>();
-  const itemModel = (type: ItemType) => {
+  const itemModel = (type: GroundType) => {
+    // 돈주머니 — 끈을 묶은 갈색 주머니에 반짝이는 금화 하나
+    if (type === "coin") {
+      const g = new THREE.Group();
+      const sack = new THREE.Mesh(new THREE.IcosahedronGeometry(0.15, 1), std("#a8743f"));
+      sack.scale.set(1, 1.05, 0.9);
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.08, 6), std("#a8743f"));
+      neck.position.y = 0.17;
+      const tie = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.018, 5, 10), std("#f2c94c"));
+      tie.position.y = 0.15;
+      tie.rotation.x = Math.PI / 2;
+      const coin = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.075, 0.075, 0.025, 12),
+        std("#f2c94c", { emissive: 0x7a5a10, emissiveIntensity: 0.6, metalness: 0.4, roughness: 0.4 }),
+      );
+      coin.rotation.x = Math.PI / 2;
+      coin.position.set(0, 0.0, 0.135);
+      g.add(sack, neck, tie, coin);
+      return curveAll(g);
+    }
     if (type === "seed") {
       const g = new THREE.Group();
       const bag = new THREE.Mesh(new THREE.IcosahedronGeometry(0.13, 1), std("#c99a5b"));
@@ -1462,7 +1481,7 @@ export async function createIsland(
     o.scale.setScalar(1.5);
     return o;
   };
-  const spawnItem = (id: string, type: ItemType, x: number, z: number) => {
+  const spawnItem = (id: string, type: GroundType, x: number, z: number) => {
     const o = itemModel(type);
     o.position.set(x, groundHeight(x, z) + 0.12, z);
     o.userData.item = { id, type };
@@ -1665,7 +1684,7 @@ export async function createIsland(
     }
   };
 
-  const drop = (type: ItemType, x: number, z: number) => {
+  const drop = (type: GroundType, x: number, z: number, amount?: number) => {
     const ang = Math.random() * Math.PI * 2;
     let px = x + Math.cos(ang) * 0.9;
     let pz = z + Math.sin(ang) * 0.9;
@@ -1674,7 +1693,7 @@ export async function createIsland(
       if (near) ({ x: px, z: pz } = near);
     }
     const id = `${type}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
-    save.ground.push({ id, type, x: px, z: pz });
+    save.ground.push({ id, type, x: px, z: pz, ...(amount ? { amount } : {}) });
     spawnItem(id, type, px, pz);
     const o = itemObjs.get(id)!;
     o.userData.fall = { t: 0, from: o.position.y + 1.6, to: o.position.y };
@@ -1686,7 +1705,7 @@ export async function createIsland(
     burstLeaves(t.obj.position);
     if (player) play(player, "PickUp", true);
     const day = today();
-    const dropped: ItemType[] = [];
+    const dropped: GroundType[] = [];
     if (t.fruit) {
       if (save.harvested[t.id] !== day) {
         save.harvested[t.id] = day;
@@ -1705,8 +1724,14 @@ export async function createIsland(
       }
     } else if (save.shaken[t.id] !== day) {
       save.shaken[t.id] = day;
+      // 마을의 크리스마스 트리는 하루 한 번 돈주머니가 떨어진다 (100~500코인, 가끔 1000코인)
+      if (t.xmas) {
+        const amount = Math.random() < 0.1 ? 1000 : 100 + Math.floor(Math.random() * 9) * 50;
+        drop("coin", t.obj.position.x, t.obj.position.z, amount);
+        dropped.push("coin");
+      }
       // 나무마다 하루 한 번, 절반 확률로 꽃씨가 떨어진다
-      if (Math.random() < 0.5) {
+      else if (Math.random() < 0.5) {
         drop("seed", t.obj.position.x, t.obj.position.z);
         dropped.push("seed");
       }
@@ -1721,12 +1746,17 @@ export async function createIsland(
     const o = itemObjs.get(id);
     if (!g || !o) return;
     save.ground = save.ground.filter((x) => x.id !== id);
-    save.bag[g.type] += 1;
+    if (g.type === "coin") save.coins = (save.coins ?? 0) + (g.amount ?? 100);
+    else save.bag[g.type] += 1;
     scene.remove(o);
     itemObjs.delete(id);
     if (player && mode !== "fish") play(player, "PickUp", true);
-    cb.onSfx?.("pickup");
-    cb.onToast(g.type === "apple" ? "🍎 사과를 주웠어요" : g.type === "orange" ? "🍊 오렌지를 주웠어요" : "🌱 꽃씨를 주웠어요");
+    cb.onSfx?.(g.type === "coin" ? "coin" : "pickup");
+    cb.onToast(
+      g.type === "coin"
+        ? `🪙 ${(g.amount ?? 100).toLocaleString()}코인을 주웠어요! (모두 ${(save.coins ?? 0).toLocaleString()}코인)`
+        : g.type === "apple" ? "🍎 사과를 주웠어요" : g.type === "orange" ? "🍊 오렌지를 주웠어요" : "🌱 꽃씨를 주웠어요",
+    );
     persist();
   };
 
