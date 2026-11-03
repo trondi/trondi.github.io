@@ -13,11 +13,12 @@ import { type Chibi, type ChibiAnim, buildChibi } from "./chibi";
 import { buildFishFromAsset, buildFishModel } from "./fish-model";
 import { buildHouseXmas, buildWreath } from "./house-xmas";
 import { NavGrid, type Point } from "./pathfind";
+import { GIFT_COLORS, GIFT_COUNT, type GiftReward, openGift } from "./gifts";
 import { type TreeKind, type TreeOpts, buildTree } from "./tree-model";
 import type { WeatherKind } from "./weather";
 import {
   HAIR_COLORS, PANTS_COLORS, SHIRT_COLORS,
-  type Glasses, type Hat, type IslandSave, type ItemType, type Look, flowerStage, today,
+  type Glasses, type Hat, type IslandSave, type Neck, type ItemType, type Look, flowerStage, today,
 } from "./save";
 import { skyAt, skyTexture } from "./sky";
 import {
@@ -33,7 +34,8 @@ export type InteractEvent =
   | { kind: "board" }
   | { kind: "house" }
   | { kind: "flower"; stage: number }
-  | { kind: "tree"; dropped: ItemType[] };
+  | { kind: "tree"; dropped: ItemType[] }
+  | { kind: "gift"; reward: GiftReward };
 
 export type CatchEvent = {
   species: Species;
@@ -344,6 +346,43 @@ export async function createIsland(
     o.position.set(x, groundHeight(x, z), z);
     o.rotation.y = rot;
     return o;
+  };
+
+  /** 선물 상자 — 상자, 십자 리본, 위에 나비 리본 */
+  type GiftBox = { obj: THREE.Object3D; shake: number };
+  const giftBoxes: GiftBox[] = [];
+  const makeGiftBox = (i: number) => {
+    const [c, rc] = GIFT_COLORS[i % GIFT_COLORS.length];
+    const g = new THREE.Group();
+    const s = 0.34 + (i % 2) * 0.08;
+    const box = new THREE.Mesh(new THREE.BoxGeometry(s, s * 0.8, s), cachedStd(c));
+    box.position.y = s * 0.4;
+    const r1 = new THREE.Mesh(new THREE.BoxGeometry(s + 0.01, s * 0.8 + 0.01, 0.07), cachedStd(rc));
+    r1.position.y = s * 0.4;
+    const r2 = r1.clone();
+    r2.rotation.y = Math.PI / 2;
+    g.add(box, r1, r2);
+    for (const side of [-1, 1]) {
+      const loop = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.022, 6, 12), cachedStd(rc));
+      loop.position.set(side * 0.055, s * 0.8 + 0.05, 0);
+      loop.rotation.set(0, Math.PI / 2, side * 0.5);
+      g.add(loop);
+    }
+    return curveAll(g);
+  };
+  const openGiftBox = (i: number, gift: GiftBox) => {
+    const day = today();
+    if (save.xmasGifts?.day !== day) save.xmasGifts = { day, opened: [] };
+    if (save.xmasGifts.opened.includes(i)) return;
+    save.xmasGifts.opened.push(i);
+    const reward = openGift(save);
+    if (player) play(player, "PickUp", true);
+    burstLeaves(gift.obj.position);
+    removeTarget(gift.obj);
+    seasonal.remove(gift.obj);
+    giftBoxes.splice(giftBoxes.indexOf(gift), 1);
+    persist();
+    cb.onInteract({ kind: "gift", reward });
   };
 
   /*
@@ -721,6 +760,8 @@ export async function createIsland(
 
   const buildSeason = () => {
     for (const t of trees) removeTarget(t.obj);
+    for (const g of giftBoxes) removeTarget(g.obj);
+    giftBoxes.length = 0;
     seasonal.clear();
     trees.length = 0;
     for (const c of seasonColliders) colliders.splice(colliders.indexOf(c), 1);
@@ -757,6 +798,33 @@ export async function createIsland(
       trees.push(t);
       addTarget({ obj, pos: { x, z }, reach: 0.95, act: () => shakeTree(t) }, 0.9, 3);
     });
+    // 크리스마스 시즌에는 집 오른쪽(현관 앞 마당)에 잘 보이는 큰 트리를 하나 더 세운다
+    if (holiday) {
+      const at = houseFront(0.1, 3.3);
+      const obj = makeTree({ kind: "pine", variant: 1, season, xmas: true, noPresents: true }, at.x, at.z, 1.15, 0.4);
+      seasonal.add(obj);
+      addCollider({ x: at.x, z: at.z, r: 0.75 });
+      const t: TreeState = { id: "xmas-house", obj, shake: 0 };
+      trees.push(t);
+      addTarget({ obj, pos: { x: at.x, z: at.z }, reach: 1.2, act: () => shakeTree(t) }, 1.0, 3.2);
+      // 트리 앞에 놓인 선물 상자 — 하루에 세 개, 탭해서 열어 볼 수 있다
+      const day = today();
+      const opened = save.xmasGifts?.day === day ? save.xmasGifts.opened : [];
+      for (let i = 0; i < GIFT_COUNT; i++) {
+        if (opened.includes(i)) continue;
+        // 트리 앞쪽(카메라 쪽)에 나란히
+        const ang = (i - 1) * 0.62;
+        const gx = at.x + Math.sin(ang) * 1.2;
+        const gz = at.z + Math.cos(ang) * 1.2;
+        const box = makeGiftBox(i);
+        box.position.set(gx, groundHeight(gx, gz), gz);
+        box.rotation.y = i * 0.7;
+        seasonal.add(box);
+        const gift = { obj: box, shake: 0 };
+        giftBoxes.push(gift);
+        addTarget({ obj: box, pos: { x: gx, z: gz }, reach: 0.8, act: () => openGiftBox(i, gift) }, 0.45, 0.7);
+      }
+    }
     FRUIT_TREES.forEach(([id, x, z, fruit]) => {
       const picked = save.harvested[id] === today();
       const obj = makeTree({ kind: fruit, variant: 1, season, picked }, x, z, 1, (x * 7) % 6);
@@ -983,7 +1051,7 @@ export async function createIsland(
   };
   /** 모자 앞쪽 테두리 높이 — 앞머리를 이 아래로 눌러 모자를 뚫지 않게 한다 (왕관·사슴뿔·헤드폰·리본은 그대로) */
   const HAT_LINE: Partial<Record<Hat, number>> = {
-    beanie: 0.18, cap: 0.18, straw: 0.17, cloche: 0.19, beret: 0.15, hardhat: 0.15, elf: 0.14, grad: 0.17, tophat: 0.27,
+    beanie: 0.18, cap: 0.18, santa: 0.18, straw: 0.17, cloche: 0.19, beret: 0.15, hardhat: 0.15, elf: 0.14, grad: 0.17, tophat: 0.27,
   };
   const wearCache = new Map<string, Promise<THREE.Object3D | null>>();
   const loadWear = (fit: WearFit) => {
@@ -1048,6 +1116,46 @@ export async function createIsland(
       const button = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), cachedStd("#3a7fb0"));
       button.position.y = 0.1 + R * 0.95;
       g.add(dome("#4f9fd0"), visor, button);
+    } else if (kind === "santa") {
+      // 산타 모자 — 머리를 덮는 빨간 모자에서 고깔이 위로 솟았다가 옆으로 축 늘어지고, 하얀 털 테두리와 방울
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(rimR, 0.055, 10, 28), cachedStd("#f7f5f0"));
+      rim.rotation.x = Math.PI / 2;
+      rim.scale.set(1.1, 1.06, 1);
+      rim.position.set(0, rimY, -0.03);
+      const red = cachedStd("#d0353d");
+      const lower = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.26, 0.2, 18), red);
+      lower.position.set(0, 0.42, -0.05);
+      lower.rotation.z = 0.15;
+      const upper = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.3, 16), red);
+      upper.position.set(0.12, 0.54, -0.05);
+      upper.rotation.z = -1.0;
+      const pom = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), cachedStd("#f7f5f0"));
+      pom.position.set(0.27, 0.46, -0.05);
+      g.add(dome("#d0353d"), lower, upper, rim, pom);
+    } else if (kind === "rudolph") {
+      // 루돌프 머리띠 — 갈색 뿔 두 개와 빨간 코
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.018, 6, 24, Math.PI), cachedStd("#7a4a2a"));
+      band.position.set(0, 0.1, -0.02);
+      band.scale.set(1.1, 1.0, 1);
+      g.add(band);
+      for (const side of [-1, 1]) {
+        const antler = new THREE.Group();
+        const main = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.026, 0.2, 6), cachedStd("#a0703f"));
+        main.position.y = 0.1;
+        const tine1 = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.018, 0.1, 6), cachedStd("#a0703f"));
+        tine1.position.set(side * 0.04, 0.14, 0);
+        tine1.rotation.z = -side * 0.9;
+        const tine2 = tine1.clone();
+        tine2.position.set(-side * 0.03, 0.18, 0);
+        tine2.rotation.z = side * 0.7;
+        antler.add(main, tine1, tine2);
+        antler.position.set(side * 0.2, 0.36, -0.02);
+        antler.rotation.z = -side * 0.35;
+        g.add(antler);
+      }
+      const nose = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 10), new THREE.MeshStandardMaterial({ color: "#e0302f", emissive: "#e0302f", emissiveIntensity: 0.35, roughness: 0.4 }));
+      nose.position.set(0, -0.045, 0.315);
+      g.add(nose);
     } else {
       const knot = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), cachedStd("#f28bb3"));
       for (const s of [-1, 1]) {
@@ -1063,6 +1171,56 @@ export async function createIsland(
     }
     return curveAll(g);
   };
+
+  /** 별 안경 — 노란 별 두 개를 다리로 잇는다 */
+  const buildStarGlasses = () => {
+    const g = new THREE.Group();
+    const shape = new THREE.Shape();
+    for (let s = 0; s < 10; s++) {
+      const a = (s / 10) * Math.PI * 2 + Math.PI / 2;
+      const rr = s % 2 ? 0.045 : 0.095;
+      if (s) shape.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      else shape.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    }
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.02, bevelEnabled: false });
+    const mat = new THREE.MeshStandardMaterial({ color: "#f5c542", emissive: "#f5c542", emissiveIntensity: 0.25, roughness: 0.35 });
+    for (const side of [-1, 1]) {
+      const star = new THREE.Mesh(geo, mat);
+      star.position.set(side * 0.115, 0.0, 0.3);
+      star.rotation.y = side * 0.25;
+      g.add(star);
+    }
+    const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.07, 6), mat);
+    bridge.rotation.z = Math.PI / 2;
+    bridge.position.set(0, 0.02, 0.315);
+    g.add(bridge);
+    return curveAll(g);
+  };
+  /** 목도리 — 목에 한 바퀴 두르고 앞으로 한 자락 늘어뜨린다 */
+  const buildScarf = (kind: Neck) => {
+    if (kind === "none") return null;
+    const [c, stripe] = kind === "scarf_red" ? ["#c8323a", "#f4efe6"] : ["#2f7a4a", "#e0453a"];
+    const g = new THREE.Group();
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.055, 10, 24), cachedStd(c));
+    ring.rotation.x = Math.PI / 2;
+    ring.scale.set(1.05, 1, 1);
+    g.add(ring);
+    for (const y of [-0.06, -0.14]) {
+      const band = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 0.05), cachedStd(stripe));
+      band.position.set(0.09, y, 0.15);
+      band.rotation.z = 0.15;
+      g.add(band);
+    }
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.2, 0.04), cachedStd(c));
+    tail.position.set(0.09, -0.1, 0.14);
+    tail.rotation.z = 0.15;
+    const fringe = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 0.035), cachedStd(stripe));
+    fringe.position.set(0.105, -0.205, 0.14);
+    fringe.rotation.z = 0.15;
+    g.add(tail, fringe);
+    return curveAll(g);
+  };
+  let scarf: THREE.Object3D | null = null;
 
   const applyLook = (look: Look) => {
     if (!chibi) {
@@ -1096,8 +1254,12 @@ export async function createIsland(
     hat?.removeFromParent();
     glasses?.removeFromParent();
     hat = buildHat(look.hat ?? "none");
-    glasses = null;
+    glasses = look.glasses === "star" ? buildStarGlasses() : null;
     if (hat) chibi.head.add(hat);
+    if (glasses) chibi.head.add(glasses);
+    scarf?.removeFromParent();
+    scarf = buildScarf(look.neck ?? "none");
+    if (scarf) chibi.neck.add(scarf);
     // 모델 모자·안경은 불러온 뒤에 씌운다 (그 사이 다른 걸 고르면 버린다)
     const token = ++wearToken;
     const hatFit = WEAR[look.hat ?? "none"];
@@ -2003,7 +2165,10 @@ export async function createIsland(
       }
       // 주민이 나무 밑에 있어도 주민을 먼저 고른다
       const hits = raycaster.intersectObjects(hitProxies, false);
-      const hit = hits.find((h) => villagers.some((v) => v.proxy === h.object)) ?? hits[0];
+      const hit =
+        hits.find((h) => villagers.some((v) => v.proxy === h.object)) ??
+        hits.find((h) => giftBoxes.some((g) => g.obj === (h.object.userData.target as Target).obj)) ??
+        hits[0];
       if (hit) {
         const t = hit.object.userData.target as Target;
         const v = villagers.find((x) => x.actor.root === t.obj);
