@@ -110,7 +110,7 @@ const BENCH = { x: POND.x + 3.6, z: POND.z + 1.4 };
 /**
  * 주민 집 — KayKit 오두막(KayKit_Homes.glb). 문은 +z(남쪽, 카메라 쪽)를 보고 rot만큼 돌린다.
  * 모카·토리·설기는 남쪽 바닷가 꽃밭 마을에 모여 살고, 둥이는 남쪽 다리 옆 강가, 단풍이는 과수원 앞 강가,
- * 몽실이는 연못가 위 단에 산다. 모두 돌계단 달린 2층 집(폭 2.0·높이 2.9)으로, 내 집(높이 3.2)보다 조금 작다.
+ * 몽실이는 연못가 위 단에 산다. 모두 2층 집(폭 2.4, 땅 위로 굴뚝까지 3.1)이다.
  * (단층 오두막은 지붕이 땅까지 내려와 위에서 내려다보는 카메라에는 지붕만 보여서 쓰지 않는다)
  */
 const RESIDENT_HOUSES = [
@@ -346,9 +346,9 @@ export async function createIsland(
     // 풀·꽃은 한 파일에 모델별 노드로 들어 있다 — 노드를 하나씩 떼어 쓴다
     loader.loadAsync("/island/models/MegaKit_Plants.glb").then((g) => {
       curveAll(g.scene);
+      // (노드의 위치·크기는 압축을 되돌리는 값이라 그대로 둔다 — 지우면 모델이 땅속으로 반쯤 꺼진다)
       for (const node of [...g.scene.children]) {
         node.traverse((c) => (c.castShadow = false));
-        node.position.set(0, 0, 0);
         const holder = new THREE.Group();
         holder.add(node);
         plants.set(node.name as PlantName, holder);
@@ -358,8 +358,9 @@ export async function createIsland(
     loader.loadAsync("/island/models/KayKit_Homes.glb").then((g) => {
       curveAll(g.scene);
       for (const node of [...g.scene.children]) {
-        node.position.set(0, 0, 0);
-        homeModels.set(node.name as HomeModel, node);
+        const holder = new THREE.Group();
+        holder.add(node);
+        homeModels.set(node.name as HomeModel, holder);
       }
     }),
   ]);
@@ -671,14 +672,14 @@ export async function createIsland(
   for (const h of RESIDENT_HOUSES) {
     const o = new THREE.Group();
     const m = homeModels.get(h.model)!.clone(true);
-    // 위에서 내려다보는 카메라에 벽이 더 보이도록 세로로 조금 늘린다
-    m.scale.set(2.2, 2.75, 2.2);
+    // 원본(폭 0.87·높이 1.28) 기준 2.8배 — 폭 2.4, 굴뚝까지 높이 3.6.
+    // 돌 받침과 앞 계단(원본 높이 0.19까지)은 땅에 묻어 문턱이 땅에 닿게 한다
+    m.scale.setScalar(2.8);
     o.add(m);
-    o.position.set(h.x, groundHeight(h.x, h.z), h.z);
+    o.position.set(h.x, groundHeight(h.x, h.z) - 0.19 * 2.8, h.z);
     o.rotation.y = h.rot;
     scene.add(o);
-    // 본채와 앞 돌계단
-    colliders.push({ ...houseSpot(h.id, -0.2), r: 1.1 }, { ...houseSpot(h.id, 1.0), r: 0.42 });
+    colliders.push({ ...houseSpot(h.id, -0.2), r: 1.2 });
     addTarget({ obj: o, pos: { x: h.x, z: h.z }, reach: 2.0, act: () => cb.onToast(`🏠 ${h.label}이에요`) }, 1.2, 3.0);
     const glowSpot = houseSpot(h.id, 1.5);
     const g = glowSprite(0xffc56b, 2.2);
@@ -969,10 +970,10 @@ export async function createIsland(
         if (r < 0.78) {
           // 풀은 덤불 몇 개를 한데 모아 무리로 — 짧은 풀이 대부분, 가끔 키 큰 풀·하늘하늘한 풀
           const [name, size]: [GrassName, number] =
-            r < 0.4 ? ["Grass_Common_Short", 0.58]
-            : r < 0.6 ? ["Grass_Wispy_Short", 0.58]
-            : r < 0.7 ? ["Grass_Common_Tall", 0.44]
-            : ["Grass_Wispy_Tall", 0.44];
+            r < 0.4 ? ["Grass_Common_Short", 0.34]
+            : r < 0.6 ? ["Grass_Wispy_Short", 0.36]
+            : r < 0.7 ? ["Grass_Common_Tall", 0.26]
+            : ["Grass_Wispy_Tall", 0.27];
           const n = 3 + Math.floor(G() * 3);
           for (let k = 0; k < n; k++) {
             const a = G() * Math.PI * 2;
@@ -984,18 +985,18 @@ export async function createIsland(
           }
         } else {
           // 사이사이 클로버·보라 잎
-          const [name, size]: [PlantName, number] = r < 0.93 ? [G() < 0.5 ? "Clover_1" : "Clover_2", 0.4] : ["Plant_7", 0.6];
+          const [name, size]: [PlantName, number] = r < 0.93 ? [G() < 0.5 ? "Clover_1" : "Clover_2", 0.26] : ["Plant_7", 0.5];
           seasonal.add(placePlant(name, x, z, size * (0.85 + G() * 0.35), G() * 6));
         }
       }
       // 숲 바닥 — 나무 밑동 옆에 버섯·고사리·잎 식물
       TREE_SPOTS.forEach((t, i) => {
-        if (i % 7 === 0) seasonal.add(placePlant("Mushroom_Common", t.x + 0.6, t.z + 0.4, 0.7, t.x));
-        else if (i % 4 === 1) seasonal.add(placePlant("Fern_1", t.x - 0.6, t.z + 0.55, 0.42, t.z));
-        else if (i % 6 === 2) seasonal.add(placePlant("Plant_1", t.x + 0.55, t.z - 0.5, 0.4, t.x));
+        if (i % 7 === 0) seasonal.add(placePlant("Mushroom_Common", t.x + 0.6, t.z + 0.4, 0.5, t.x));
+        else if (i % 4 === 1) seasonal.add(placePlant("Fern_1", t.x - 0.6, t.z + 0.55, 0.34, t.z));
+        else if (i % 6 === 2) seasonal.add(placePlant("Plant_1", t.x + 0.55, t.z - 0.5, 0.3, t.x));
       });
       const WILD: [PlantName, number][] = [
-        ["Flower_3_Group", 0.32], ["Flower_4_Group", 0.28], ["Flower_3_Single", 0.32], ["Flower_4_Single", 0.28], ["Plant_7_Big", 0.55],
+        ["Flower_3_Group", 0.2], ["Flower_4_Group", 0.17], ["Flower_3_Single", 0.2], ["Flower_4_Single", 0.17], ["Plant_7_Big", 0.5],
       ];
       for (let i = 0; i < 44; i++) {
         // 남서쪽 꽃밭에 몰아서
@@ -1008,7 +1009,7 @@ export async function createIsland(
       for (let i = 0; i < 8; i++) {
         const p = freeSpot(0.7);
         if (!p) continue;
-        seasonal.add(placePlant("Bush_Common_Flowers", p.x, p.z, 0.4, p.x));
+        seasonal.add(placePlant("Bush_Common_Flowers", p.x, p.z, 0.38, p.x));
         addCollider({ x: p.x, z: p.z, r: 0.4 });
       }
       for (const z of [-3.4, 4.6, 7.4, 13.2]) seasonal.add(place("Lilypad", riverX(z) + (z % 2 ? 0.45 : -0.45), z, 0.45, z, WATER_Y + 0.01));
@@ -1563,7 +1564,7 @@ export async function createIsland(
   const flowerModelFor = (stage: number, color: number) => {
     const g = new THREE.Group();
     if (stage === 0) {
-      g.add(plantModel("Clover_2", 0.13));
+      g.add(plantModel("Clover_2", 0.12));
       return g;
     }
     if (stage === 1) {

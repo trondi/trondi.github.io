@@ -100,7 +100,8 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
 
   const toast = useCallback((text: string) => {
     const id = Date.now() + Math.random();
-    setToasts((t) => [...t.slice(-2), { id, text }]);
+    // 같은 안내가 이미 떠 있으면 겹쳐 쌓지 않고 그 자리를 새로 띄운다 (집·나무를 여러 번 탭할 때)
+    setToasts((t) => [...t.filter((x) => x.text !== text).slice(-2), { id, text }]);
     window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2600);
   }, []);
 
