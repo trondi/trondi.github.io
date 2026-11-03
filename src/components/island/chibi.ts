@@ -8,6 +8,8 @@ import * as THREE from "three";
 
 export type ChibiAnim = "Idle" | "Walk" | "Run" | "PickUp" | "Victory";
 export type ChibiColors = { skin: string; shirt: string; pants: string; hair: string };
+/** 상의 종류 — 색은 상의 색을 따르고, 무늬·장식은 그 색에 맞춰 밝게/어둡게 */
+export type TopStyle = "tee" | "stripe" | "hoodie" | "collar" | "knit" | "overalls" | "dress";
 
 export type Chibi = {
   root: THREE.Group;
@@ -17,6 +19,7 @@ export type Chibi = {
   neck: THREE.Object3D;
   setColors: (c: ChibiColors) => void;
   setHair: (style: "a" | "b") => void;
+  setTop: (style: TopStyle) => void;
   /** 모자 밑면 높이(머리 중심 기준) — 앞머리를 그 아래로 눌러 모자를 뚫지 않게 한다. null이면 원래대로 */
   setHatLine: (y: number | null) => void;
   /** 앉은 정도 0(서 있음)~1(벤치에 앉음) — 발바닥 원점 기준 엉덩이를 의자 높이로 올리고 다리를 앞으로 뻗는다 */
@@ -41,6 +44,10 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
     eye: new THREE.MeshStandardMaterial({ color: "#2a1f1f", roughness: 0.35 }),
     shine: new THREE.MeshBasicMaterial({ color: "#ffffff" }),
     blush: new THREE.MeshBasicMaterial({ color: "#f7a8a8", transparent: true, opacity: 0.55 }),
+    /** 상의 무늬·장식용 — 상의 색보다 조금 어둡게 / 흰색 */
+    shirtDark: new THREE.MeshStandardMaterial({ color: "#3a3670", roughness: 0.9 }),
+    trim: new THREE.MeshStandardMaterial({ color: "#f6f2ea", roughness: 0.9 }),
+    button: new THREE.MeshStandardMaterial({ color: "#e8c56a", roughness: 0.5, metalness: 0.2 }),
   };
   Object.values(mats).forEach(wrapMaterial);
   const mesh = (geo: THREE.BufferGeometry, mat: THREE.Material, shadow = true) => {
@@ -74,6 +81,131 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
   shorts.position.y = 0.02;
   shorts.scale.z = 0.85;
   torso.add(shirt, shorts);
+
+  // 상의 종류별 장식 — 기본 종 모양 상의 위에 덧붙인다
+  /** 상의 바닥에서 h만큼 위의 반지름 (shirtProfile을 따라) */
+  const shirtR = (h: number) => {
+    for (let i = 1; i < shirtProfile.length; i++) {
+      const a = shirtProfile[i - 1];
+      const b = shirtProfile[i];
+      if (h <= b.y) return a.x + ((b.x - a.x) * (h - a.y)) / (b.y - a.y || 1);
+    }
+    return 0.1;
+  };
+  const band = (h: number, height: number, mat: THREE.Material, grow = 1.025) => {
+    const m = mesh(new THREE.CylinderGeometry(shirtR(h + height / 2) * grow, shirtR(h - height / 2) * grow, height, 20, 1, true), mat);
+    m.position.y = 0.04 + h;
+    m.scale.z = 0.85;
+    return m;
+  };
+  const tops: Record<TopStyle, THREE.Group> = {
+    tee: new THREE.Group(),
+    stripe: new THREE.Group(),
+    hoodie: new THREE.Group(),
+    collar: new THREE.Group(),
+    knit: new THREE.Group(),
+    overalls: new THREE.Group(),
+    dress: new THREE.Group(),
+  };
+  // 줄무늬 티
+  for (const h of [0.05, 0.11, 0.17, 0.23]) tops.stripe.add(band(h, 0.026, mats.trim));
+  // 후드티 — 등 뒤 모자, 앞 주머니, 끈
+  {
+    const hood = ball(0.15, mats.shirt, 1.2, 0.75, 0.8);
+    hood.position.set(0, 0.29, -0.11);
+    const hoodIn = ball(0.11, mats.shirtDark, 1.1, 0.6, 0.5);
+    hoodIn.position.set(0, 0.3, -0.06);
+    const pocket = mesh(new THREE.BoxGeometry(0.17, 0.06, 0.02), mats.shirtDark);
+    pocket.position.set(0, 0.1, 0.142);
+    pocket.rotation.x = -0.1;
+    tops.hoodie.add(hood, hoodIn, pocket);
+    for (const side of [-1, 1]) {
+      const str = mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.08, 5), mats.trim);
+      str.position.set(side * 0.03, 0.24, 0.125);
+      str.rotation.x = -0.35;
+      const tip = ball(0.011, mats.trim);
+      tip.position.set(side * 0.03, 0.2, 0.14);
+      tops.hoodie.add(str, tip);
+    }
+  }
+  // 칼라 셔츠 — 흰 깃, 단추, 넥타이
+  {
+    for (const side of [-1, 1]) {
+      const flap = mesh(new THREE.BoxGeometry(0.075, 0.012, 0.055), mats.trim);
+      flap.position.set(side * 0.045, 0.302, 0.075);
+      flap.rotation.set(0.5, side * 0.5, side * -0.35);
+      tops.collar.add(flap);
+    }
+    const tieMat = new THREE.MeshStandardMaterial({ color: "#c8323a", roughness: 0.6 });
+    wrapMaterial(tieMat);
+    const tie = mesh(new THREE.ConeGeometry(0.03, 0.14, 4), tieMat);
+    tie.position.set(0, 0.22, 0.125);
+    tie.rotation.set(Math.PI - 0.32, Math.PI / 4, 0);
+    const knot = ball(0.019, tieMat);
+    knot.position.set(0, 0.285, 0.098);
+    tops.collar.add(tie, knot);
+    for (const h of [0.07, 0.13]) {
+      const b = ball(0.01, mats.trim);
+      b.position.set(0, h + 0.04, shirtR(h) * 0.85 + 0.003);
+      tops.collar.add(b);
+    }
+  }
+  // 터틀넥 니트 — 목 부분과 밑단 고무단, 가운데 꽈배기
+  {
+    // 머리에 가려지지 않게 턱 밑으로 도톰하게 접힌 목 부분
+    const neck = mesh(new THREE.TorusGeometry(0.125, 0.04, 10, 22), mats.shirt);
+    neck.rotation.x = Math.PI / 2;
+    neck.scale.set(1.05, 0.95, 1);
+    neck.position.set(0, 0.285, 0.01);
+    tops.knit.add(neck, band(0.012, 0.03, mats.shirtDark, 1.04));
+    for (let k = 0; k < 4; k++) {
+      const cable = ball(0.022, mats.shirtDark, 0.8, 1.3, 0.5);
+      cable.position.set(0, 0.08 + k * 0.045, shirtR(0.04 + k * 0.045) * 0.85 + 0.002);
+      cable.rotation.z = k % 2 ? 0.5 : -0.5;
+      tops.knit.add(cable);
+    }
+  }
+  // 멜빵바지 — 앞판과 어깨끈, 금색 단추 (바지 색)
+  {
+    const bib = mesh(new THREE.BoxGeometry(0.15, 0.13, 0.02), mats.pants);
+    bib.position.set(0, 0.13, 0.135);
+    bib.rotation.x = -0.12;
+    const pocket = mesh(new THREE.BoxGeometry(0.07, 0.04, 0.01), mats.pants);
+    pocket.position.set(0, 0.13, 0.148);
+    tops.overalls.add(bib, pocket, band(0.012, 0.05, mats.pants, 1.05));
+    for (const side of [-1, 1]) {
+      const strap = mesh(new THREE.BoxGeometry(0.03, 0.2, 0.012), mats.pants);
+      strap.position.set(side * 0.06, 0.22, 0.11);
+      strap.rotation.x = -0.55;
+      const backStrap = strap.clone();
+      backStrap.position.set(side * 0.06, 0.2, -0.11);
+      backStrap.rotation.x = 0.55;
+      const btn = ball(0.012, mats.button);
+      btn.position.set(side * 0.055, 0.19, 0.147);
+      tops.overalls.add(strap, backStrap, btn);
+    }
+  }
+  // 원피스 — 상의에서 이어지는 넓은 치마, 허리 리본
+  {
+    // 아래에서 위로 그려야 겉면이 바깥을 본다
+    const skirtProfile = [new THREE.Vector2(0.225, -0.13), new THREE.Vector2(0.22, -0.1), new THREE.Vector2(0.18, 0.0), new THREE.Vector2(0.155, 0.06)];
+    const skirt = mesh(new THREE.LatheGeometry(skirtProfile, 22), mats.shirt);
+    skirt.position.y = 0.04;
+    skirt.scale.z = 0.88;
+    const hem = mesh(new THREE.TorusGeometry(0.222, 0.012, 6, 22), mats.trim);
+    hem.rotation.x = Math.PI / 2;
+    hem.scale.y = 0.88;
+    hem.position.y = 0.04 - 0.125;
+    const sash = band(0.1, 0.03, mats.trim, 1.04);
+    const bow = ball(0.03, mats.trim, 1.6, 0.9, 0.6);
+    bow.position.set(0, 0.04 + 0.1, -shirtR(0.1) * 0.85 - 0.02);
+    tops.dress.add(skirt, hem, sash, bow);
+  }
+  for (const g of Object.values(tops)) {
+    g.visible = false;
+    torso.add(g);
+  }
+  tops.tee.visible = true;
 
   // 다리 — 짧고 가늘게, 둥근 신발
   const legs: THREE.Group[] = [];
@@ -202,8 +334,18 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
       mats.skin.color.set(c.skin);
       mats.skin.emissive.set(c.skin);
       mats.shirt.color.set(c.shirt);
+      // 흰 상의면 장식을 회색으로, 아니면 상의 색보다 어둡게
+      const hsl = { h: 0, s: 0, l: 0 };
+      mats.shirt.color.getHSL(hsl);
+      mats.shirtDark.color.setHSL(hsl.h, hsl.s, hsl.l > 0.85 ? 0.62 : hsl.l * 0.72);
+      mats.trim.color.set(hsl.l > 0.85 ? "#7a8796" : "#f6f2ea");
       mats.pants.color.set(c.pants);
       mats.hair.color.set(c.hair);
+    },
+    setTop: (style) => {
+      for (const [k, g] of Object.entries(tops)) g.visible = k === style;
+      // 원피스는 짧은 바지를 가린다
+      shorts.visible = style !== "dress";
     },
     setHair: (style) => {
       longHair.visible = style === "a";

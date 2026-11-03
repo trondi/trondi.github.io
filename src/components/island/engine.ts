@@ -1250,6 +1250,7 @@ export async function createIsland(
       hair: HAIR_COLORS[look.hair ?? 0],
     });
     chibi.setHair(look.body);
+    chibi.setTop(look.top ?? "tee");
     chibi.setHatLine(HAT_LINE[look.hat ?? "none"] ?? null);
     hat?.removeFromParent();
     glasses?.removeFromParent();
