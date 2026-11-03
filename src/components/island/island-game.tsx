@@ -7,14 +7,17 @@ import { useSeasonalContext } from "@/components/blog/seasonal-context";
 import { type Season, getSeason } from "@/lib/season";
 import { cn } from "@/lib/utils";
 
-import type { CatchEvent, FishingPhase, InteractEvent, IslandHandle, Mode } from "./engine";
+import { type Bgm, createBgm, loadSoundOn } from "./bgm";
+import type { CatchEvent, EngineSfx, FishingPhase, InteractEvent, IslandHandle, Mode } from "./engine";
+import type { GiftReward } from "./gifts";
 import { SPECIES, SPECIES_BY_ID } from "./fish";
+import { type Sfx, createSfx } from "./sfx";
 import { WEATHER_PLACE, WEATHER_TTL, type Weather, fetchWeather } from "./weather";
 import {
   type GiftItem, type GiftResult, MAX_HEARTS, RESIDENTS, chatLines, giveGift, greet, npcState, recordTalk, shuffled,
 } from "./residents";
 import {
-  FLOWER_STAGE_LABEL, GLASSES, HAIR_COLORS, HATS, PANTS_COLORS, SHIRT_COLORS,
+  FLOWER_STAGE_LABEL, GLASSES, HAIR_COLORS, HATS, NECKS, PANTS_COLORS, SHIRT_COLORS, canWear,
   type IslandSave, type Look, loadSave, writeSave,
 } from "./save";
 
@@ -42,13 +45,17 @@ type Panel =
   | { kind: "board" }
   | { kind: "house" }
   | { kind: "flower"; stage: number }
+  | { kind: "gift"; reward: GiftReward }
   | { kind: "bag" }
   | { kind: "dex" }
   | { kind: "wardrobe"; draft: Look };
 
+/** 주민 목소리 높이 (0 낮음 ~ 1 높음) */
+const VOICE: Record<string, number> = { mocha: 0.45, danpung: 0.62, mongsil: 0.22, seolgi: 0.32, tori: 0.75, dungi: 0.9 };
+
 const SEASON_EMOJI = { spring: "🌸", summer: "🌿", autumn: "🍂", winter: "❄️" } as const;
 const SKIN_SWATCH = ["#f6d7bd", "#e2b08b", "#a8714a"];
-const DEFAULT_OUTFIT = { shirt: 0, pants: 0, hair: 0, hat: "none", glasses: "none" } as const;
+const DEFAULT_OUTFIT = { shirt: 0, pants: 0, hair: 0, hat: "none", glasses: "none", neck: "none" } as const;
 
 /** 받침 유무로 와/과 */
 function withWa(word: string) {
@@ -67,6 +74,8 @@ function eulReul(word: string) {
 export function IslandGame({ posts }: { posts: IslandPost[] }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<IslandHandle | null>(null);
+  const bgmRef = useRef<Bgm | null>(null);
+  const sfxRef = useRef<Sfx | null>(null);
   const [save, setSave] = useState<IslandSave | null>(null);
   const [progress, setProgress] = useState(0);
   const [ready, setReady] = useState(false);
@@ -120,8 +129,21 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
       handleRef.current?.mutateSave((sv) => recordTalk(r, sv, now));
     }
     else if (e.kind === "flower") setPanel({ kind: "flower", stage: e.stage });
+    else if (e.kind === "gift") setPanel({ kind: "gift", reward: e.reward });
     else setPanel({ kind: e.kind });
   }, [toast]);
+
+  // 엔진이 알려 주는 순간에 효과음
+  const onSfx = useCallback((n: EngineSfx) => {
+    const s = sfxRef.current;
+    if (!s) return;
+    if (n === "nibble") s.play("plop", { rate: 1.35, gain: 0.55 });
+    else if (n === "bite") s.play("splash");
+    else if (n === "catch") {
+      s.play("splash-big");
+      window.setTimeout(() => sfxRef.current?.play("jingle"), 280);
+    } else s.play(n);
+  }, []);
 
   const onCatch = useCallback((e: CatchEvent) => {
     setCaught(e);
@@ -151,6 +173,7 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
           onModeChange: setMode,
           onFishing: setFishPhase,
           onCatch,
+          onSfx,
         }),
       )
       .then((handle) => {
@@ -205,6 +228,72 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
     const id = window.setInterval(() => setNow(new Date()), 15_000);
     return () => window.clearInterval(id);
   }, []);
+
+  // 배경음악·효과음 — 처음 화면을 누르거나 키를 누를 때 시작한다 (브라우저 자동 재생 제한)
+  const [soundOn, setSoundOn] = useState(true);
+  useEffect(() => {
+    const on = loadSoundOn();
+    setSoundOn(on);
+    const bgm = createBgm(on);
+    const sfx = createSfx(on);
+    bgmRef.current = bgm;
+    sfxRef.current = sfx;
+    const unlock = () => {
+      bgm.unlock();
+      const c = bgm.context();
+      if (c) sfx.attach(c);
+    };
+    window.addEventListener("pointerdown", unlock, true);
+    window.addEventListener("keydown", unlock, true);
+    return () => {
+      window.removeEventListener("pointerdown", unlock, true);
+      window.removeEventListener("keydown", unlock, true);
+      bgm.dispose();
+      bgmRef.current = null;
+      sfxRef.current = null;
+    };
+  }, []);
+  useEffect(() => {
+    bgmRef.current?.tick(now);
+  }, [now]);
+  const toggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    bgmRef.current?.setOn(next);
+    sfxRef.current?.setOn(next);
+    if (next) sfxRef.current?.play("toggle");
+  };
+
+  // 창이 열리고 닫힐 때 소리, 주민이 말할 때 말소리
+  const panelBoxRef = useRef<HTMLDivElement>(null);
+  const prevPanelRef = useRef<Panel | null>(null);
+  const lastBabbleRef = useRef("");
+  useEffect(() => {
+    const s = sfxRef.current;
+    const prev = prevPanelRef.current;
+    prevPanelRef.current = panel;
+    if (!s) return;
+    if (!panel) {
+      if (prev) s.play("close");
+      lastBabbleRef.current = "";
+      return;
+    }
+    if (prev?.kind !== panel.kind) {
+      if (panel.kind === "dex") s.play("pages");
+      else if (panel.kind === "bag") s.play("bag");
+      else if (panel.kind === "wardrobe") s.play("bag", { rate: 1.2 });
+      else if (panel.kind === "mail" || panel.kind === "board") s.play("paper");
+      else if (panel.kind === "house") s.knock();
+      else if (panel.kind === "flower") s.play("pop");
+      else if (panel.kind === "gift") s.play("jingle");
+    }
+    if (panel.kind === "npc") {
+      // 화면에 보이는 대사를 읽어 그 길이만큼 말소리를 낸다
+      const text = [...(panelBoxRef.current?.querySelectorAll("p") ?? [])].map((p) => p.textContent ?? "").join(" ");
+      if (text && text !== lastBabbleRef.current) s.babble(text, VOICE[panel.who] ?? 0.5);
+      lastBabbleRef.current = text;
+    } else lastBabbleRef.current = "";
+  }, [panel]);
 
   // 배경 페이지 스크롤 잠금
   useEffect(() => {
@@ -264,7 +353,13 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
   const hudBtn = "relative flex h-12 w-12 flex-col items-center justify-center rounded-2xl bg-[#fff8e7]/95 text-[18px] leading-none shadow-lg transition-transform active:scale-95";
 
   return (
-    <div className="fixed inset-0 z-[55] select-none overflow-hidden bg-[#cfe6f7] text-[#5a4632]">
+    <div
+      className="fixed inset-0 z-[55] select-none overflow-hidden bg-[#cfe6f7] text-[#5a4632]"
+      // 버튼을 누르면 짧게 딸깍
+      onClickCapture={(e) => {
+        if ((e.target as HTMLElement).closest("button")) sfxRef.current?.play("click");
+      }}
+    >
       <div ref={hostRef} className="absolute inset-0 isolate" aria-label="trond 섬 — 3D 산책 게임" role="application" />
 
       {/* 불러오는 중 */}
@@ -314,6 +409,16 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
           {/* 오른쪽 위 버튼 */}
           {panel?.kind !== "wardrobe" && (
             <div className="absolute right-3 top-3 flex gap-1.5 md:right-5 md:top-5 md:gap-2">
+              <button
+                type="button"
+                onClick={toggleSound}
+                className={hudBtn}
+                aria-label={soundOn ? "소리 끄기" : "소리 켜기"}
+                aria-pressed={soundOn}
+              >
+                {soundOn ? "🔊" : "🔇"}
+                <span className="mt-1 text-[9px] font-bold opacity-70">소리</span>
+              </button>
               <button type="button" onClick={() => setPanel({ kind: "dex" })} className={hudBtn} aria-label="도감 열기">
                 📖<span className="mt-1 text-[9px] font-bold opacity-70">도감</span>
               </button>
@@ -401,7 +506,7 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
               // 옷장은 데스크톱에서 오른쪽에 — 가운데의 캐릭터를 가리지 않게
               panel.kind === "wardrobe" && "md:inset-y-0 md:left-auto md:right-0 md:w-[500px] md:items-center",
             )}>
-              <div className={cn(
+              <div ref={panelBoxRef} className={cn(
                 "relative w-full max-w-[460px] rounded-[26px] bg-[#fff8e7] px-5 pb-4 pt-6 text-[14px] leading-6 shadow-2xl",
                 (panel.kind === "dex" || panel.kind === "wardrobe") && "max-h-[62vh] overflow-y-auto pt-4",
               )}>
@@ -492,25 +597,59 @@ function Swatches({
   value,
   onPick,
   label,
+  locked,
 }: {
   colors: readonly string[];
   value: number;
   onPick: (i: number) => void;
   label: string;
+  /** 아직 못 받은 색 — 자물쇠로 보이고 고를 수 없다 */
+  locked?: (i: number) => boolean;
 }) {
   return (
     <div className="flex flex-wrap gap-1.5">
-      {colors.map((c, i) => (
-        <button
-          key={c}
-          type="button"
-          aria-label={`${label} ${i + 1}`}
-          onClick={() => onPick(i)}
-          className={cn("h-8 w-8 rounded-full border-2 shadow-sm", value === i ? "border-[#7d5bb0] ring-2 ring-[#7d5bb0]/30" : "border-white")}
-          style={{ background: c }}
-        />
-      ))}
+      {colors.map((c, i) => {
+        const lock = locked?.(i) ?? false;
+        return (
+          <button
+            key={c}
+            type="button"
+            aria-label={`${label} ${i + 1}${lock ? " (크리스마스 선물에서 나와요)" : ""}`}
+            title={lock ? "크리스마스 선물 상자에서 나와요" : undefined}
+            disabled={lock}
+            onClick={() => onPick(i)}
+            className={cn(
+              "relative h-8 w-8 rounded-full border-2 shadow-sm",
+              value === i ? "border-[#7d5bb0] ring-2 ring-[#7d5bb0]/30" : "border-white",
+              lock && "opacity-40",
+            )}
+            style={{ background: c }}
+          >
+            {lock && <span className="absolute inset-0 grid place-items-center text-[12px]">🔒</span>}
+          </button>
+        );
+      })}
     </div>
+  );
+}
+
+/** 옷장의 고르기 버튼 — 크리스마스 선물 아이템은 받기 전까지 잠겨 있다 */
+function Pick({ on, lock, onClick, children }: { on: boolean; lock: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      disabled={lock}
+      title={lock ? "크리스마스 선물 상자에서 나와요" : undefined}
+      onClick={onClick}
+      className={cn(
+        "rounded-full border-2 px-3 py-1 text-[12px] font-bold",
+        on ? "border-[#7d5bb0] bg-[#7d5bb0]/10" : "border-[#e8dcc4]",
+        lock && "border-dashed opacity-45",
+      )}
+    >
+      {lock ? "🔒 " : ""}
+      {children}
+    </button>
   );
 }
 
@@ -830,6 +969,33 @@ function PanelBody({
     );
   }
 
+  if (panel.kind === "gift") {
+    const { reward } = panel;
+    return (
+      <>
+        <Tag color="#e0453a">🎁 선물 상자</Tag>
+        <div className="flex items-center gap-3">
+          <span className={cn("text-[44px] leading-none", reward.rare && "animate-bounce")}>{reward.emoji}</span>
+          <div>
+            <p className="font-black text-[#7d5bb0]">{reward.title}</p>
+            <p className="text-[13px] opacity-80">{reward.text}</p>
+          </div>
+        </div>
+        <p className="mt-2 text-[12px] opacity-60">상자는 하루에 세 개씩 놓여요. 내일 또 와 보세요!</p>
+        <div className="mt-3 flex justify-end gap-1.5">
+          {reward.wear && (
+            <button type="button" className={secondary} onClick={onWardrobe}>
+              👕 입어 보기
+            </button>
+          )}
+          <button type="button" className={primary} onClick={onClose}>
+            고마워요!
+          </button>
+        </div>
+      </>
+    );
+  }
+
   if (panel.kind === "flower") {
     const msg = [
       "🌱 새싹이 났어요. 조금만 기다려 주세요.",
@@ -912,7 +1078,13 @@ function PanelBody({
         </div>
         <div className={row}>
           <span className={label}>상의</span>
-          <Swatches colors={SHIRT_COLORS} value={d.shirt ?? 0} onPick={(shirt) => update({ shirt })} label="상의 색" />
+          <Swatches
+            colors={SHIRT_COLORS}
+            value={d.shirt ?? 0}
+            onPick={(shirt) => update({ shirt })}
+            label="상의 색"
+            locked={(i) => !canWear(save, `shirt:${i}`)}
+          />
         </div>
         <div className={row}>
           <span className={label}>하의</span>
@@ -930,14 +1102,9 @@ function PanelBody({
           <span className={label}>모자</span>
           <div className="flex flex-wrap gap-1.5">
             {HATS.map((h) => (
-              <button
-                key={h.id}
-                type="button"
-                onClick={() => update({ hat: h.id })}
-                className={cn("rounded-full border-2 px-3 py-1 text-[12px] font-bold", (d.hat ?? "none") === h.id ? "border-[#7d5bb0] bg-[#7d5bb0]/10" : "border-[#e8dcc4]")}
-              >
+              <Pick key={h.id} on={(d.hat ?? "none") === h.id} lock={!canWear(save, `hat:${h.id}`)} onClick={() => update({ hat: h.id })}>
                 {h.name}
-              </button>
+              </Pick>
             ))}
           </div>
         </div>
@@ -945,14 +1112,19 @@ function PanelBody({
           <span className={label}>안경</span>
           <div className="flex flex-wrap gap-1.5">
             {GLASSES.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                onClick={() => update({ glasses: g.id })}
-                className={cn("rounded-full border-2 px-3 py-1 text-[12px] font-bold", (d.glasses ?? "none") === g.id ? "border-[#7d5bb0] bg-[#7d5bb0]/10" : "border-[#e8dcc4]")}
-              >
+              <Pick key={g.id} on={(d.glasses ?? "none") === g.id} lock={!canWear(save, `glasses:${g.id}`)} onClick={() => update({ glasses: g.id })}>
                 {g.name}
-              </button>
+              </Pick>
+            ))}
+          </div>
+        </div>
+        <div className={row}>
+          <span className={label}>목도리</span>
+          <div className="flex flex-wrap gap-1.5">
+            {NECKS.map((n) => (
+              <Pick key={n.id} on={(d.neck ?? "none") === n.id} lock={!canWear(save, `neck:${n.id}`)} onClick={() => update({ neck: n.id })}>
+                {n.name}
+              </Pick>
             ))}
           </div>
         </div>
