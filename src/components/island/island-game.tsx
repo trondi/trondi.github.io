@@ -8,13 +8,14 @@ import { type Season, getSeason } from "@/lib/season";
 import { cn } from "@/lib/utils";
 
 import type { CatchEvent, FishingPhase, InteractEvent, IslandHandle, Mode } from "./engine";
+import type { GiftReward } from "./gifts";
 import { SPECIES, SPECIES_BY_ID } from "./fish";
 import { WEATHER_PLACE, WEATHER_TTL, type Weather, fetchWeather } from "./weather";
 import {
   type GiftItem, type GiftResult, MAX_HEARTS, RESIDENTS, chatLines, giveGift, greet, npcState, recordTalk, shuffled,
 } from "./residents";
 import {
-  FLOWER_STAGE_LABEL, GLASSES, HAIR_COLORS, HATS, PANTS_COLORS, SHIRT_COLORS,
+  FLOWER_STAGE_LABEL, GLASSES, HAIR_COLORS, HATS, NECKS, PANTS_COLORS, SHIRT_COLORS, canWear,
   type IslandSave, type Look, loadSave, writeSave,
 } from "./save";
 
@@ -42,13 +43,14 @@ type Panel =
   | { kind: "board" }
   | { kind: "house" }
   | { kind: "flower"; stage: number }
+  | { kind: "gift"; reward: GiftReward }
   | { kind: "bag" }
   | { kind: "dex" }
   | { kind: "wardrobe"; draft: Look };
 
 const SEASON_EMOJI = { spring: "🌸", summer: "🌿", autumn: "🍂", winter: "❄️" } as const;
 const SKIN_SWATCH = ["#f6d7bd", "#e2b08b", "#a8714a"];
-const DEFAULT_OUTFIT = { shirt: 0, pants: 0, hair: 0, hat: "none", glasses: "none" } as const;
+const DEFAULT_OUTFIT = { shirt: 0, pants: 0, hair: 0, hat: "none", glasses: "none", neck: "none" } as const;
 
 /** 받침 유무로 와/과 */
 function withWa(word: string) {
@@ -120,6 +122,7 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
       handleRef.current?.mutateSave((sv) => recordTalk(r, sv, now));
     }
     else if (e.kind === "flower") setPanel({ kind: "flower", stage: e.stage });
+    else if (e.kind === "gift") setPanel({ kind: "gift", reward: e.reward });
     else setPanel({ kind: e.kind });
   }, [toast]);
 
@@ -492,25 +495,59 @@ function Swatches({
   value,
   onPick,
   label,
+  locked,
 }: {
   colors: readonly string[];
   value: number;
   onPick: (i: number) => void;
   label: string;
+  /** 아직 못 받은 색 — 자물쇠로 보이고 고를 수 없다 */
+  locked?: (i: number) => boolean;
 }) {
   return (
     <div className="flex flex-wrap gap-1.5">
-      {colors.map((c, i) => (
-        <button
-          key={c}
-          type="button"
-          aria-label={`${label} ${i + 1}`}
-          onClick={() => onPick(i)}
-          className={cn("h-8 w-8 rounded-full border-2 shadow-sm", value === i ? "border-[#7d5bb0] ring-2 ring-[#7d5bb0]/30" : "border-white")}
-          style={{ background: c }}
-        />
-      ))}
+      {colors.map((c, i) => {
+        const lock = locked?.(i) ?? false;
+        return (
+          <button
+            key={c}
+            type="button"
+            aria-label={`${label} ${i + 1}${lock ? " (크리스마스 선물에서 나와요)" : ""}`}
+            title={lock ? "크리스마스 선물 상자에서 나와요" : undefined}
+            disabled={lock}
+            onClick={() => onPick(i)}
+            className={cn(
+              "relative h-8 w-8 rounded-full border-2 shadow-sm",
+              value === i ? "border-[#7d5bb0] ring-2 ring-[#7d5bb0]/30" : "border-white",
+              lock && "opacity-40",
+            )}
+            style={{ background: c }}
+          >
+            {lock && <span className="absolute inset-0 grid place-items-center text-[12px]">🔒</span>}
+          </button>
+        );
+      })}
     </div>
+  );
+}
+
+/** 옷장의 고르기 버튼 — 크리스마스 선물 아이템은 받기 전까지 잠겨 있다 */
+function Pick({ on, lock, onClick, children }: { on: boolean; lock: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      disabled={lock}
+      title={lock ? "크리스마스 선물 상자에서 나와요" : undefined}
+      onClick={onClick}
+      className={cn(
+        "rounded-full border-2 px-3 py-1 text-[12px] font-bold",
+        on ? "border-[#7d5bb0] bg-[#7d5bb0]/10" : "border-[#e8dcc4]",
+        lock && "border-dashed opacity-45",
+      )}
+    >
+      {lock ? "🔒 " : ""}
+      {children}
+    </button>
   );
 }
 
@@ -830,6 +867,33 @@ function PanelBody({
     );
   }
 
+  if (panel.kind === "gift") {
+    const { reward } = panel;
+    return (
+      <>
+        <Tag color="#e0453a">🎁 선물 상자</Tag>
+        <div className="flex items-center gap-3">
+          <span className={cn("text-[44px] leading-none", reward.rare && "animate-bounce")}>{reward.emoji}</span>
+          <div>
+            <p className="font-black text-[#7d5bb0]">{reward.title}</p>
+            <p className="text-[13px] opacity-80">{reward.text}</p>
+          </div>
+        </div>
+        <p className="mt-2 text-[12px] opacity-60">상자는 하루에 세 개씩 놓여요. 내일 또 와 보세요!</p>
+        <div className="mt-3 flex justify-end gap-1.5">
+          {reward.wear && (
+            <button type="button" className={secondary} onClick={onWardrobe}>
+              👕 입어 보기
+            </button>
+          )}
+          <button type="button" className={primary} onClick={onClose}>
+            고마워요!
+          </button>
+        </div>
+      </>
+    );
+  }
+
   if (panel.kind === "flower") {
     const msg = [
       "🌱 새싹이 났어요. 조금만 기다려 주세요.",
@@ -912,7 +976,13 @@ function PanelBody({
         </div>
         <div className={row}>
           <span className={label}>상의</span>
-          <Swatches colors={SHIRT_COLORS} value={d.shirt ?? 0} onPick={(shirt) => update({ shirt })} label="상의 색" />
+          <Swatches
+            colors={SHIRT_COLORS}
+            value={d.shirt ?? 0}
+            onPick={(shirt) => update({ shirt })}
+            label="상의 색"
+            locked={(i) => !canWear(save, `shirt:${i}`)}
+          />
         </div>
         <div className={row}>
           <span className={label}>하의</span>
@@ -930,14 +1000,9 @@ function PanelBody({
           <span className={label}>모자</span>
           <div className="flex flex-wrap gap-1.5">
             {HATS.map((h) => (
-              <button
-                key={h.id}
-                type="button"
-                onClick={() => update({ hat: h.id })}
-                className={cn("rounded-full border-2 px-3 py-1 text-[12px] font-bold", (d.hat ?? "none") === h.id ? "border-[#7d5bb0] bg-[#7d5bb0]/10" : "border-[#e8dcc4]")}
-              >
+              <Pick key={h.id} on={(d.hat ?? "none") === h.id} lock={!canWear(save, `hat:${h.id}`)} onClick={() => update({ hat: h.id })}>
                 {h.name}
-              </button>
+              </Pick>
             ))}
           </div>
         </div>
@@ -945,14 +1010,19 @@ function PanelBody({
           <span className={label}>안경</span>
           <div className="flex flex-wrap gap-1.5">
             {GLASSES.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                onClick={() => update({ glasses: g.id })}
-                className={cn("rounded-full border-2 px-3 py-1 text-[12px] font-bold", (d.glasses ?? "none") === g.id ? "border-[#7d5bb0] bg-[#7d5bb0]/10" : "border-[#e8dcc4]")}
-              >
+              <Pick key={g.id} on={(d.glasses ?? "none") === g.id} lock={!canWear(save, `glasses:${g.id}`)} onClick={() => update({ glasses: g.id })}>
                 {g.name}
-              </button>
+              </Pick>
+            ))}
+          </div>
+        </div>
+        <div className={row}>
+          <span className={label}>목도리</span>
+          <div className="flex flex-wrap gap-1.5">
+            {NECKS.map((n) => (
+              <Pick key={n.id} on={(d.neck ?? "none") === n.id} lock={!canWear(save, `neck:${n.id}`)} onClick={() => update({ neck: n.id })}>
+                {n.name}
+              </Pick>
             ))}
           </div>
         </div>
