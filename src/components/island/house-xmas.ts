@@ -157,26 +157,38 @@ export function buildHouseXmas(mat: Mat): HouseXmas {
   };
 }
 
-/** 리스 — 초록 고리에 빨간 열매, 꼭대기에 호랑가시 잎 두 장과 열매 송이, 아래에 리본. 고리 중심이 원점이고 앞(+z)을 본다. 반지름 약 0.11 */
+/** 리스 — 초록 고리 양옆에 빨간 열매, 꼭대기에 호랑가시 잎 두 장과 열매 송이, 아래에 리본(고리·매듭·끈). 고리 중심이 원점이고 앞(+z)을 본다. 반지름 약 0.11 */
 export function buildWreath(mat: Mat) {
   const green = mat("#2f6b3a");
   const red = mat("#d33a35");
   const wreath = new THREE.Group();
   wreath.add(new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.042, 6, 14), green));
+  // 열매는 양옆에만 — 꼭대기(호랑가시)와 아래(리본)는 비워 둔다
   const berryGeo = new THREE.IcosahedronGeometry(0.022, 0);
-  for (let i = 0; i < 7; i++) {
-    const a = (i / 7) * Math.PI * 2 + 0.3;
-    const berry = new THREE.Mesh(berryGeo, red);
-    berry.position.set(Math.cos(a) * 0.11, Math.sin(a) * 0.11, 0.035);
-    wreath.add(berry);
+  for (const a of [0.5, 0, -0.45]) {
+    for (const side of [1, -1]) {
+      const berry = new THREE.Mesh(berryGeo, red);
+      berry.position.set(side * Math.cos(a) * 0.11, Math.sin(a) * 0.11, 0.035);
+      wreath.add(berry);
+    }
   }
-  const bowGeo = new THREE.IcosahedronGeometry(0.045, 0);
+  // 아래 리본 — 납작한 고리 두 개, 가운데 매듭, 아래로 늘어진 끈 두 가닥
+  const bow = new THREE.Group();
+  bow.position.set(0, -0.11, 0.045);
+  const loopGeo = new THREE.TorusGeometry(0.03, 0.011, 4, 10);
+  const tailGeo = new THREE.BoxGeometry(0.018, 0.065, 0.008);
   for (const s of [-1, 1]) {
-    const loop = new THREE.Mesh(bowGeo, red);
-    loop.position.set(s * 0.04, -0.11, 0.04);
-    loop.scale.set(0.9, 0.6, 0.4);
-    wreath.add(loop);
+    const loop = new THREE.Mesh(loopGeo, red);
+    loop.position.set(s * 0.038, 0.004, 0);
+    loop.scale.set(1.35, 0.8, 0.6);
+    loop.rotation.z = s * 0.25;
+    const tail = new THREE.Mesh(tailGeo, red);
+    tail.position.set(s * 0.02, -0.042, 0);
+    tail.rotation.z = s * 0.35;
+    bow.add(loop, tail);
   }
+  bow.add(new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.026, 0.022), red));
+  wreath.add(bow);
   // 꼭대기 호랑가시 — 뾰족한 잎 두 장을 V자로 펼치고 가운데에 열매 세 알
   const leafGeo = hollyLeafGeo();
   const leafMat = mat("#3f8f45");
