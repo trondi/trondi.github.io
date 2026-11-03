@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { CSS2DObject, CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 
 import type { Season } from "@/lib/season";
@@ -10,7 +11,7 @@ import { CHATTER as CHATTER_LIST, type Chatter, pickChatter } from "./chatter";
 import { FISH_MODELS, SPECIES_BY_ID, type Species, rollCatch, shadowScale } from "./fish";
 import { type Chibi, type ChibiAnim, buildChibi } from "./chibi";
 import { buildFishFromAsset, buildFishModel } from "./fish-model";
-import { buildHouseXmas } from "./house-xmas";
+import { buildHouseXmas, buildWreath } from "./house-xmas";
 import { NavGrid, type Point } from "./pathfind";
 import { GIFT_COLORS, GIFT_COUNT, type GiftReward, openGift } from "./gifts";
 import { type TreeKind, type TreeOpts, buildTree } from "./tree-model";
@@ -380,6 +381,71 @@ export async function createIsland(
     cb.onInteract({ kind: "gift", reward });
   };
 
+  /*
+   * 풀 덤불 — 원래 풀 모델은 몇 가닥이 넓게 벌어져 있어 흩뿌리면 듬성듬성해 보인다.
+   * 같은 풀을 좁게 오므려 여러 번 돌려 겹친 뒤 메시 하나로 합쳐 빽빽한 한 포기로 만든다.
+   */
+  type GrassName = "Grass_Common_Short" | "Grass_Common_Tall" | "Grass_Wispy_Short" | "Grass_Wispy_Tall";
+  const toFloat = (g: THREE.BufferGeometry) => {
+    // 압축된(정수) 정점 값을 실수로 풀어야 변환·합치기를 할 수 있다
+    const out = new THREE.BufferGeometry();
+    // (풀 색은 정점 색에 들어 있으므로 위치·법선·UV뿐 아니라 모든 속성을 옮긴다)
+    for (const [name, attr] of Object.entries(g.attributes)) {
+      const a = attr as THREE.BufferAttribute;
+      const f = new Float32Array(a.count * a.itemSize);
+      for (let i = 0; i < a.count; i++) {
+        f[i * a.itemSize] = a.getX(i);
+        if (a.itemSize > 1) f[i * a.itemSize + 1] = a.getY(i);
+        if (a.itemSize > 2) f[i * a.itemSize + 2] = a.getZ(i);
+        if (a.itemSize > 3) f[i * a.itemSize + 3] = a.getW(i);
+      }
+      out.setAttribute(name, new THREE.BufferAttribute(f, a.itemSize));
+    }
+    if (g.index) out.setIndex(Array.from(g.index.array));
+    return out;
+  };
+  const CLUMP: Record<GrassName, { copies: number; squeeze: number }> = {
+    Grass_Common_Short: { copies: 4, squeeze: 0.6 },
+    Grass_Common_Tall: { copies: 4, squeeze: 0.55 },
+    Grass_Wispy_Short: { copies: 4, squeeze: 0.42 },
+    Grass_Wispy_Tall: { copies: 4, squeeze: 0.4 },
+  };
+  const grassClumps = new Map<GrassName, THREE.Group>();
+  for (const [name, { copies, squeeze }] of Object.entries(CLUMP) as [GrassName, (typeof CLUMP)[GrassName]][]) {
+    const src = plants.get(name)!;
+    src.updateMatrixWorld(true);
+    const parts = new Map<THREE.Material, THREE.BufferGeometry[]>();
+    const R = rng(name.length * 97);
+    for (let k = 0; k < copies; k++) {
+      const m = new THREE.Matrix4().compose(
+        new THREE.Vector3((R() - 0.5) * 0.12, 0, (R() - 0.5) * 0.12),
+        new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), (k / copies) * Math.PI + R() * 0.4),
+        new THREE.Vector3(squeeze, 0.8 + R() * 0.3, squeeze),
+      );
+      src.traverse((c) => {
+        const mesh = c as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const g = toFloat(mesh.geometry).applyMatrix4(mesh.matrixWorld).applyMatrix4(m);
+        const mat = mesh.material as THREE.Material;
+        parts.set(mat, [...(parts.get(mat) ?? []), g]);
+      });
+    }
+    const clump = new THREE.Group();
+    for (const [mat, geos] of parts) {
+      const mesh = new THREE.Mesh(mergeGeometries(geos), mat);
+      mesh.receiveShadow = true;
+      clump.add(mesh);
+    }
+    grassClumps.set(name, clump);
+  }
+  const placeGrass = (name: GrassName, x: number, z: number, scale: number, rot: number) => {
+    const o = grassClumps.get(name)!.clone(true);
+    o.position.set(x, groundHeight(x, z), z);
+    o.scale.setScalar(scale);
+    o.rotation.y = rot;
+    return o;
+  };
+
   /** 코드로 만든 나무 (tree-model.ts) */
   const makeTree = (o: TreeOpts, x: number, z: number, scale = 1, rot = 0) => {
     const t = curveAll(buildTree(o, (c) => cachedStd(c)));
@@ -574,6 +640,13 @@ export async function createIsland(
   const flag = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.24, 0.13), std("#f5d26b"));
   flag.position.set(0.22, 1.0, 0.1);
   mailbox.add(mpost, mbox, flag);
+  // 크리스마스 시즌에는 우편함 앞면(+z, 투입구 쪽)에도 리스를 단다
+  if (isHolidaySeason()) {
+    const wreath = buildWreath(cachedStd);
+    wreath.position.set(0, 0.82, 0.27);
+    wreath.scale.setScalar(0.85);
+    mailbox.add(wreath);
+  }
   mailbox.position.set(MAILBOX.x, groundHeight(MAILBOX.x, MAILBOX.z), MAILBOX.z);
   mailbox.rotation.y = 0.3;
   scene.add(curveAll(mailbox));
@@ -818,21 +891,35 @@ export async function createIsland(
     }
     if (!snow) {
       const G = rng(5);
-      for (let i = 0; i < 360; i++) {
+      // 집·바위 등 막힌 자리에는 풀을 두지 않는다 (포치 바닥을 뚫고 나오지 않게)
+      const grassOk = (x: number, z: number) =>
+        terrainWalkable(x, z) && !blocked(x, z) && islandE(x, z) < 0.9 && Math.abs(cliffZ(x) - z) > 0.8;
+      for (let i = 0; i < 230; i++) {
         const x = (G() - 0.5) * ISLAND.rx * 1.9;
         const z = (G() - 0.5) * ISLAND.rz * 1.9 + ISLAND.cz;
-        // 집·바위 등 막힌 자리에는 풀을 두지 않는다 (포치 바닥을 뚫고 나오지 않게)
-        if (!terrainWalkable(x, z) || blocked(x, z) || islandE(x, z) > 0.9 || Math.abs(cliffZ(x) - z) < 0.8) continue;
-        // 짧은 풀이 대부분, 사이사이 키 큰 풀·하늘하늘한 풀·클로버·보라 잎
+        if (!grassOk(x, z)) continue;
         const r = G();
-        const [name, size]: [PlantName, number] =
-          r < 0.34 ? ["Grass_Common_Short", 0.4]
-          : r < 0.54 ? ["Grass_Wispy_Short", 0.42]
-          : r < 0.66 ? ["Grass_Common_Tall", 0.3]
-          : r < 0.74 ? ["Grass_Wispy_Tall", 0.3]
-          : r < 0.92 ? [G() < 0.5 ? "Clover_1" : "Clover_2", 0.4]
-          : ["Plant_7", 0.6];
-        seasonal.add(placePlant(name, x, z, size * (0.85 + G() * 0.35), G() * 6));
+        if (r < 0.78) {
+          // 풀은 덤불 몇 개를 한데 모아 무리로 — 짧은 풀이 대부분, 가끔 키 큰 풀·하늘하늘한 풀
+          const [name, size]: [GrassName, number] =
+            r < 0.4 ? ["Grass_Common_Short", 0.58]
+            : r < 0.6 ? ["Grass_Wispy_Short", 0.58]
+            : r < 0.7 ? ["Grass_Common_Tall", 0.44]
+            : ["Grass_Wispy_Tall", 0.44];
+          const n = 3 + Math.floor(G() * 3);
+          for (let k = 0; k < n; k++) {
+            const a = G() * Math.PI * 2;
+            const d = k === 0 ? 0 : 0.15 + G() * 0.25;
+            const gx = x + Math.cos(a) * d;
+            const gz = z + Math.sin(a) * d;
+            if (k > 0 && !grassOk(gx, gz)) continue;
+            seasonal.add(placeGrass(name, gx, gz, size * (k === 0 ? 1.1 : 0.75 + G() * 0.3), G() * 6));
+          }
+        } else {
+          // 사이사이 클로버·보라 잎
+          const [name, size]: [PlantName, number] = r < 0.93 ? [G() < 0.5 ? "Clover_1" : "Clover_2", 0.4] : ["Plant_7", 0.6];
+          seasonal.add(placePlant(name, x, z, size * (0.85 + G() * 0.35), G() * 6));
+        }
       }
       // 숲 바닥 — 나무 밑동 옆에 버섯·고사리·잎 식물
       TREE_SPOTS.forEach((t, i) => {
