@@ -133,23 +133,9 @@ export function buildHouseXmas(mat: Mat): HouseXmas {
     }
   }
 
-  // 현관문 리스 — 초록 고리에 빨간 열매, 아래에 리본
-  const wreath = new THREE.Group();
+  // 현관문 리스
+  const wreath = buildWreath(mat);
   wreath.position.set(DOOR.x, DOOR.y, DOOR.z);
-  wreath.add(new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.042, 6, 14), green));
-  const berryGeo = new THREE.IcosahedronGeometry(0.022, 0);
-  for (let i = 0; i < 7; i++) {
-    const a = (i / 7) * Math.PI * 2 + 0.3;
-    const berry = new THREE.Mesh(berryGeo, red);
-    berry.position.set(Math.cos(a) * 0.11, Math.sin(a) * 0.11, 0.035);
-    wreath.add(berry);
-  }
-  for (const s of [-1, 1]) {
-    const loop = new THREE.Mesh(bowGeo, red);
-    loop.position.set(s * 0.04, -0.11, 0.04);
-    loop.scale.set(0.9, 0.6, 0.4);
-    wreath.add(loop);
-  }
   g.add(wreath);
 
   // 산타 양말 — 오른쪽 지붕 경사면에 크게 걸쳐 둔다 (발끝은 오른쪽)
@@ -169,6 +155,71 @@ export function buildHouseXmas(mat: Mat): HouseXmas {
       });
     },
   };
+}
+
+/** 리스 — 초록 고리에 빨간 열매, 꼭대기에 호랑가시 잎 두 장과 열매 송이, 그 바로 아래에 버건디 리본(고리·매듭·끈). 고리 중심이 원점이고 앞(+z)을 본다. 반지름 약 0.11 */
+export function buildWreath(mat: Mat) {
+  const green = mat("#2f6b3a");
+  const red = mat("#d33a35");
+  const wreath = new THREE.Group();
+  wreath.add(new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.042, 6, 14), green));
+  // 고리의 열매 — 꼭대기(호랑가시·리본)만 비우고 양옆과 아래에 둔다
+  const berryGeo = new THREE.IcosahedronGeometry(0.022, 0);
+  for (const a of [0.45, -0.05, -0.6, -1.2]) {
+    for (const side of [1, -1]) {
+      const berry = new THREE.Mesh(berryGeo, red);
+      berry.position.set(side * Math.cos(a) * 0.11, Math.sin(a) * 0.11, 0.035);
+      wreath.add(berry);
+    }
+  }
+  // 꼭대기 리본 (버건디) — 호랑가시 잎 바로 아래, 납작한 고리 두 개와 매듭, 고리 위로 늘어진 끈 두 가닥
+  const ribbon = mat("#7b1e2e");
+  const bow = new THREE.Group();
+  bow.position.set(0, 0.1, 0.065);
+  const loopGeo = new THREE.TorusGeometry(0.03, 0.011, 4, 10);
+  const tailGeo = new THREE.BoxGeometry(0.018, 0.065, 0.008);
+  for (const s of [-1, 1]) {
+    const loop = new THREE.Mesh(loopGeo, ribbon);
+    loop.position.set(s * 0.038, 0.004, 0);
+    loop.scale.set(1.35, 0.8, 0.6);
+    loop.rotation.z = s * 0.25;
+    const tail = new THREE.Mesh(tailGeo, ribbon);
+    tail.position.set(s * 0.02, -0.042, 0);
+    tail.rotation.z = s * 0.35;
+    bow.add(loop, tail);
+  }
+  bow.add(new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.026, 0.022), ribbon));
+  wreath.add(bow);
+  // 꼭대기 호랑가시 — 리본 뒤로 뾰족한 잎 두 장을 V자로 펼치고, 매듭 위에 열매 세 알
+  const leafGeo = hollyLeafGeo();
+  const leafMat = mat("#3f8f45");
+  for (const a of [Math.PI - 0.42, 0.42]) {
+    const leaf = new THREE.Mesh(leafGeo, leafMat);
+    leaf.position.set(0, 0.115, 0.05);
+    leaf.rotation.z = a;
+    wreath.add(leaf);
+  }
+  for (const [x, y] of [[-0.017, 0.132], [0.017, 0.132], [0, 0.153]]) {
+    const berry = new THREE.Mesh(berryGeo, red);
+    berry.position.set(x, y, 0.06);
+    wreath.add(berry);
+  }
+  return wreath;
+}
+
+/** 호랑가시 잎 — 가장자리가 뾰족뾰족한 길쭉한 잎. 밑동이 원점이고 +x 쪽으로 뻗는다 (길이 0.13) */
+function hollyLeafGeo() {
+  const top: [number, number][] = [
+    [0.02, 0.022], [0.034, 0.042], [0.05, 0.026], [0.068, 0.044], [0.084, 0.027], [0.1, 0.036], [0.13, 0],
+  ];
+  const s = new THREE.Shape();
+  s.moveTo(0, 0);
+  for (const [x, y] of top) s.lineTo(x, y);
+  for (const [x, y] of [...top].reverse().slice(1)) s.lineTo(x, -y);
+  s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, { depth: 0.012, bevelEnabled: false });
+  g.translate(0, 0, -0.006);
+  return g;
 }
 
 /** 산타 양말 — 빨간 양말에 흰 털 단, 호랑가시 잎과 열매, 거는 고리. 고리 아래(단 윗면)가 원점 */

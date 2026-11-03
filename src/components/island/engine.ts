@@ -11,7 +11,7 @@ import { CHATTER as CHATTER_LIST, type Chatter, pickChatter } from "./chatter";
 import { FISH_MODELS, SPECIES_BY_ID, type Species, rollCatch, shadowScale } from "./fish";
 import { type Chibi, type ChibiAnim, buildChibi } from "./chibi";
 import { buildFishFromAsset, buildFishModel } from "./fish-model";
-import { buildHouseXmas } from "./house-xmas";
+import { buildHouseXmas, buildWreath } from "./house-xmas";
 import { NavGrid, type Point } from "./pathfind";
 import { type TreeKind, type TreeOpts, buildTree } from "./tree-model";
 import type { WeatherKind } from "./weather";
@@ -601,6 +601,13 @@ export async function createIsland(
   const flag = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.24, 0.13), std("#f5d26b"));
   flag.position.set(0.22, 1.0, 0.1);
   mailbox.add(mpost, mbox, flag);
+  // 크리스마스 시즌에는 우편함 앞면(+z, 투입구 쪽)에도 리스를 단다
+  if (isHolidaySeason()) {
+    const wreath = buildWreath(cachedStd);
+    wreath.position.set(0, 0.82, 0.27);
+    wreath.scale.setScalar(0.85);
+    mailbox.add(wreath);
+  }
   mailbox.position.set(MAILBOX.x, groundHeight(MAILBOX.x, MAILBOX.z), MAILBOX.z);
   mailbox.rotation.y = 0.3;
   scene.add(curveAll(mailbox));
