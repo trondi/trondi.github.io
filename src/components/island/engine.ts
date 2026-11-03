@@ -104,15 +104,15 @@ const BENCH = { x: POND.x + 3.6, z: POND.z + 1.4 };
 /**
  * 주민 집 — KayKit 오두막(KayKit_Homes.glb). 문은 +z(남쪽, 카메라 쪽)를 보고 rot만큼 돌린다.
  * 모카·토리·설기는 남쪽 바닷가 꽃밭 마을에 모여 살고, 둥이는 남쪽 다리 옆 강가, 단풍이는 과수원 앞 강가,
- * 몽실이는 연못가 위 단에 산다. home_A는 단층 오두막(폭 2.1·높이 2.5), home_B는 계단 달린 2층 집(폭 2.2·높이 3.2) —
- * 내 집(높이 3.2)보다 조금 작게.
+ * 몽실이는 연못가 위 단에 산다. 모두 돌계단 달린 2층 집(폭 2.0·높이 2.9)으로, 내 집(높이 3.2)보다 조금 작다.
+ * (단층 오두막은 지붕이 땅까지 내려와 위에서 내려다보는 카메라에는 지붕만 보여서 쓰지 않는다)
  */
 const RESIDENT_HOUSES = [
-  { id: "mocha", label: "모카네 집", model: "home_A_red", x: -15, z: 12, rot: 0.1 },
-  { id: "tori", label: "토리네 집", model: "home_A_green", x: -10.5, z: 12.5, rot: 0 },
-  { id: "seolgi", label: "설기네 집", model: "home_A_blue", x: -6, z: 12, rot: -0.1 },
-  { id: "dungi", label: "둥이네 집", model: "home_A_yellow", x: 2.5, z: 6.5, rot: 0.35 },
-  { id: "danpung", label: "단풍이네 집", model: "home_B_yellow", x: 7.5, z: -5, rot: -0.3 },
+  { id: "mocha", label: "모카네 집", model: "home_B_red", x: -15, z: 12, rot: 0.1 },
+  { id: "tori", label: "토리네 집", model: "home_B_green", x: -10.5, z: 12.5, rot: 0 },
+  { id: "seolgi", label: "설기네 집", model: "home_B_blue", x: -6, z: 12, rot: -0.1 },
+  { id: "dungi", label: "둥이네 집", model: "home_B_yellow", x: 2.5, z: 6.5, rot: 0.35 },
+  { id: "danpung", label: "단풍이네 집", model: "home_B_red", x: 7.5, z: -5, rot: -0.3 },
   { id: "mongsil", label: "몽실이네 집", model: "home_B_blue", x: -16.5, z: -14, rot: 0.35 },
 ] as const;
 type HomeModel = (typeof RESIDENT_HOUSES)[number]["model"];
@@ -626,18 +626,18 @@ export async function createIsland(
   // 주민 집 — 탭하면 누구네 집인지 알려 준다. 밤에는 창가에 불빛이 켜진다
   const residentGlows: THREE.Sprite[] = [];
   for (const h of RESIDENT_HOUSES) {
-    const big = h.model.startsWith("home_B");
     const o = new THREE.Group();
     const m = homeModels.get(h.model)!.clone(true);
-    m.scale.setScalar(big ? 2.5 : 2.7);
+    // 위에서 내려다보는 카메라에 벽이 더 보이도록 세로로 조금 늘린다
+    m.scale.set(2.2, 2.75, 2.2);
     o.add(m);
     o.position.set(h.x, groundHeight(h.x, h.z), h.z);
     o.rotation.y = h.rot;
     scene.add(o);
-    colliders.push({ ...houseSpot(h.id, -0.25), r: 1.15 });
-    if (big) colliders.push({ ...houseSpot(h.id, 1.1), r: 0.45 });
-    addTarget({ obj: o, pos: { x: h.x, z: h.z }, reach: 2.0, act: () => cb.onToast(`🏠 ${h.label}이에요`) }, 1.2, big ? 3.2 : 2.5);
-    const glowSpot = houseSpot(h.id, big ? 1.6 : 1.3);
+    // 본채와 앞 돌계단
+    colliders.push({ ...houseSpot(h.id, -0.2), r: 1.1 }, { ...houseSpot(h.id, 1.0), r: 0.42 });
+    addTarget({ obj: o, pos: { x: h.x, z: h.z }, reach: 2.0, act: () => cb.onToast(`🏠 ${h.label}이에요`) }, 1.2, 3.0);
+    const glowSpot = houseSpot(h.id, 1.5);
     const g = glowSprite(0xffc56b, 2.2);
     g.position.set(glowSpot.x, groundHeight(glowSpot.x, glowSpot.z) + 0.9, glowSpot.z);
     scene.add(g);
