@@ -7,6 +7,7 @@ import { useSeasonalContext } from "@/components/blog/seasonal-context";
 import { type Season, getSeason } from "@/lib/season";
 import { cn } from "@/lib/utils";
 
+import { type Bgm, createBgm, loadSoundOn } from "./bgm";
 import type { CatchEvent, FishingPhase, InteractEvent, IslandHandle, Mode } from "./engine";
 import { SPECIES, SPECIES_BY_ID } from "./fish";
 import { WEATHER_PLACE, WEATHER_TTL, type Weather, fetchWeather } from "./weather";
@@ -206,6 +207,33 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
     return () => window.clearInterval(id);
   }, []);
 
+  // 배경음악 — 처음 화면을 누르거나 키를 누를 때 시작한다 (브라우저 자동 재생 제한)
+  const bgmRef = useRef<Bgm | null>(null);
+  const [soundOn, setSoundOn] = useState(true);
+  useEffect(() => {
+    const on = loadSoundOn();
+    setSoundOn(on);
+    const bgm = createBgm(on);
+    bgmRef.current = bgm;
+    const unlock = () => bgm.unlock();
+    window.addEventListener("pointerdown", unlock, true);
+    window.addEventListener("keydown", unlock, true);
+    return () => {
+      window.removeEventListener("pointerdown", unlock, true);
+      window.removeEventListener("keydown", unlock, true);
+      bgm.dispose();
+      bgmRef.current = null;
+    };
+  }, []);
+  useEffect(() => {
+    bgmRef.current?.tick(now);
+  }, [now]);
+  const toggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    bgmRef.current?.setOn(next);
+  };
+
   // 배경 페이지 스크롤 잠금
   useEffect(() => {
     const { body } = document;
@@ -314,6 +342,16 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
           {/* 오른쪽 위 버튼 */}
           {panel?.kind !== "wardrobe" && (
             <div className="absolute right-3 top-3 flex gap-1.5 md:right-5 md:top-5 md:gap-2">
+              <button
+                type="button"
+                onClick={toggleSound}
+                className={hudBtn}
+                aria-label={soundOn ? "소리 끄기" : "소리 켜기"}
+                aria-pressed={soundOn}
+              >
+                {soundOn ? "🔊" : "🔇"}
+                <span className="mt-1 text-[9px] font-bold opacity-70">소리</span>
+              </button>
               <button type="button" onClick={() => setPanel({ kind: "dex" })} className={hudBtn} aria-label="도감 열기">
                 📖<span className="mt-1 text-[9px] font-bold opacity-70">도감</span>
               </button>

@@ -1,0 +1,22 @@
+Background music for the island. All tracks are released under CC0 1.0 Universal
+(Public Domain Dedication): https://creativecommons.org/publicdomain/zero/1.0/
+
+Re-encoded to 96 kbps MP3 with loudness normalized; otherwise unchanged.
+
+Day (06:00–18:00, played at random)
+- day-a-small-fire-will-do.mp3 — "A Small Fire Will Do (Calming Loop)" by Trex0n
+  https://opengameart.org/content/a-small-fire-will-do-calming-loop
+- day-etirwer.mp3 — "Etirwer" by Kistol
+  https://opengameart.org/content/etirwer
+
+Night (18:00–06:00, played at random) — "Happy Lo-Fi (Lofi Collection)" by HoliznaCC0
+  https://opengameart.org/content/happy-lo-fi-lofi-collection
+- night-poor-but-happy.mp3 — "Poor, But Happy"
+- night-blue-skies.mp3 — "Blue Skies"
+- night-letting-go-of-the-past.mp3 — "Letting Go Of The Past"
+- night-puppy-love.mp3 — "Puppy Love"
+- night-clouds.mp3 — "Clouds"
+- night-happy-but-a-little-off.mp3 — "Happy, but a little off"
+- night-new-shoes.mp3 — "New Shoes"
+
+Thank you, Trex0n, Kistol and Holizna!
