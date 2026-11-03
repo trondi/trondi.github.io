@@ -110,7 +110,7 @@ const BENCH = { x: POND.x + 3.6, z: POND.z + 1.4 };
 /**
  * 주민 집 — KayKit 오두막(KayKit_Homes.glb). 문은 +z(남쪽, 카메라 쪽)를 보고 rot만큼 돌린다.
  * 모카·토리·설기는 남쪽 바닷가 꽃밭 마을에 모여 살고, 둥이는 남쪽 다리 옆 강가, 단풍이는 과수원 앞 강가,
- * 몽실이는 연못가 위 단에 산다. 모두 돌계단 달린 2층 집(폭 2.4·지붕 높이 3.1, 굴뚝 3.6)이다.
+ * 몽실이는 연못가 위 단에 산다. 모두 2층 집(폭 2.4, 땅 위로 굴뚝까지 3.1)이다.
  * (단층 오두막은 지붕이 땅까지 내려와 위에서 내려다보는 카메라에는 지붕만 보여서 쓰지 않는다)
  */
 const RESIDENT_HOUSES = [
@@ -672,14 +672,14 @@ export async function createIsland(
   for (const h of RESIDENT_HOUSES) {
     const o = new THREE.Group();
     const m = homeModels.get(h.model)!.clone(true);
-    // 원본(폭 0.87·높이 1.28) 기준 2.8배 — 폭 2.4, 굴뚝까지 높이 3.6
+    // 원본(폭 0.87·높이 1.28) 기준 2.8배 — 폭 2.4, 굴뚝까지 높이 3.6.
+    // 돌 받침과 앞 계단(원본 높이 0.19까지)은 땅에 묻어 문턱이 땅에 닿게 한다
     m.scale.setScalar(2.8);
     o.add(m);
-    o.position.set(h.x, groundHeight(h.x, h.z), h.z);
+    o.position.set(h.x, groundHeight(h.x, h.z) - 0.19 * 2.8, h.z);
     o.rotation.y = h.rot;
     scene.add(o);
-    // 본채와 앞 돌계단
-    colliders.push({ ...houseSpot(h.id, -0.2), r: 1.2 }, { ...houseSpot(h.id, 1.2), r: 0.45 });
+    colliders.push({ ...houseSpot(h.id, -0.2), r: 1.2 });
     addTarget({ obj: o, pos: { x: h.x, z: h.z }, reach: 2.0, act: () => cb.onToast(`🏠 ${h.label}이에요`) }, 1.2, 3.0);
     const glowSpot = houseSpot(h.id, 1.5);
     const g = glowSprite(0xffc56b, 2.2);
