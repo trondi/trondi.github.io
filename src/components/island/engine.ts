@@ -107,15 +107,38 @@ const WELL = { x: -7.4, z: 2.9 };
 const NPC_HOME = { x: -1.6, z: 1.4, r: 2.6 };
 const SPAWN = { x: 0.6, z: 3.2 };
 const BENCH = { x: POND.x + 3.6, z: POND.z + 1.4 };
-/** 주민들 — 모카는 집 앞, 단풍이는 강 건너 과수원, 설기는 남쪽 바닷가, 둥이는 남쪽 다리 옆 강가, 토리는 남서쪽 꽃밭, 몽실이는 위쪽 연못가 벤치 옆 */
+/**
+ * 주민 집 — KayKit 오두막(KayKit_Homes.glb). 문은 +z(남쪽, 카메라 쪽)를 보고 rot만큼 돌린다.
+ * 모카·토리·설기는 남쪽 바닷가 꽃밭 마을에 모여 살고, 둥이는 남쪽 다리 옆 강가, 단풍이는 과수원 앞 강가,
+ * 몽실이는 연못가 위 단에 산다. 모두 돌계단 달린 2층 집(폭 2.0·높이 2.9)으로, 내 집(높이 3.2)보다 조금 작다.
+ * (단층 오두막은 지붕이 땅까지 내려와 위에서 내려다보는 카메라에는 지붕만 보여서 쓰지 않는다)
+ */
+const RESIDENT_HOUSES = [
+  { id: "mocha", label: "모카네 집", model: "home_B_red", x: -15, z: 12, rot: 0.1 },
+  { id: "tori", label: "토리네 집", model: "home_B_green", x: -10.5, z: 12.5, rot: 0 },
+  { id: "seolgi", label: "설기네 집", model: "home_B_blue", x: -6, z: 12, rot: -0.1 },
+  { id: "dungi", label: "둥이네 집", model: "home_B_yellow", x: 2.5, z: 6.5, rot: 0.35 },
+  { id: "danpung", label: "단풍이네 집", model: "home_B_red", x: 7.5, z: -5, rot: -0.3 },
+  { id: "mongsil", label: "몽실이네 집", model: "home_B_blue", x: -16.5, z: -14, rot: 0.35 },
+] as const;
+type HomeModel = (typeof RESIDENT_HOUSES)[number]["model"];
+/** 집 기준으로 앞쪽(문 방향)으로 d, 옆으로 side만큼 떨어진 점 */
+const houseSpot = (id: string, d: number, side = 0) => {
+  const h = RESIDENT_HOUSES.find((x) => x.id === id)!;
+  const s = Math.sin(h.rot), c = Math.cos(h.rot);
+  return { x: h.x + s * d + c * side, z: h.z + c * d - s * side };
+};
+/** 주민이 지내는 곳 — 집 앞마당 */
+const yard = (id: string, r = 1.3) => ({ ...houseSpot(id, 2.6), r });
+/** 주민들 — 모카와 둥이는 내 집 근처를 서성이고, 나머지는 자기 집 앞마당에서 지낸다 */
 const VILLAGERS = [
   { id: "mocha", model: "ShibaInu", scale: 0.24, speed: 0.9, home: NPC_HOME, hit: [0.55, 1.0], talkY: 1.0 },
-  { id: "danpung", model: "Fox", scale: 0.22, speed: 1.0, home: { x: 11.9, z: -1.2, r: 1.4 }, hit: [0.55, 1.0], talkY: 0.9 },
-  { id: "seolgi", model: "Husky", scale: 0.24, speed: 1.15, home: { x: DOCK.x + 2.6, z: DOCK.z0 + 1.2, r: 1.3 }, hit: [0.55, 1.0], talkY: 1.0 },
+  { id: "danpung", model: "Fox", scale: 0.22, speed: 1.0, home: yard("danpung", 1.4), hit: [0.55, 1.0], talkY: 0.9 },
+  { id: "seolgi", model: "Husky", scale: 0.24, speed: 1.15, home: yard("seolgi"), hit: [0.55, 1.0], talkY: 1.0 },
   // 둥이 — Quaternius 고양이에 실제 둥이 무늬를 칠하고 통통하게 다듬은 모델
-  { id: "dungi", model: "Cat", scale: 0.00125, speed: 0.85, home: { x: 3.4, z: 9.0, r: 1.2 }, hit: [0.5, 0.8], talkY: 0.75 },
-  { id: "tori", model: "Deer", scale: 0.2, speed: 0.75, home: { x: -9.4, z: 6.4, r: 1.4 }, hit: [0.6, 1.2], talkY: 1.2 },
-  { id: "mongsil", model: "Alpaca", scale: 0.19, speed: 0.55, talkY: 1.35, home: { x: BENCH.x + 0.8, z: BENCH.z + 1.0, r: 1.2 }, hit: [0.6, 1.4] },
+  { id: "dungi", model: "Cat", scale: 0.00125, speed: 0.85, home: { x: 1.2, z: -0.2, r: 1.3 }, hit: [0.5, 0.8], talkY: 0.75 },
+  { id: "tori", model: "Deer", scale: 0.2, speed: 0.75, home: yard("tori", 1.4), hit: [0.6, 1.2], talkY: 1.2 },
+  { id: "mongsil", model: "Alpaca", scale: 0.19, speed: 0.55, talkY: 1.35, home: yard("mongsil", 1.2), hit: [0.6, 1.4] },
 ] as const;
 const LAMPS: Point[] = [
   { x: -0.6, z: 0.2 }, { x: 2.0, z: 1.7 }, { x: 8.4, z: 1.6 }, { x: -1.6, z: -7.2 },
@@ -132,6 +155,13 @@ const CLEARINGS: { x: number; z: number; r: number }[] = [
     { x: v.home.x, z: v.home.z, r: v.home.r + 1.4 },
     { x: v.home.x, z: v.home.z + 2.6, r: 2.2 },
   ]),
+  // 주민 집과 앞마당
+  ...RESIDENT_HOUSES.flatMap((h) => [
+    { x: h.x, z: h.z, r: 2.4 },
+    { ...houseSpot(h.id, 2.6), r: 2.6 },
+  ]),
+  // 꽃밭 마을 세 집 앞 공터
+  { x: -10.5, z: 15, r: 4.2 },
   ...BRIDGES.flatMap((b) => [
     { x: riverX(b.z) - 2.6, z: b.z, r: 1.6 },
     { x: riverX(b.z) + 2.6, z: b.z, r: 1.6 },
@@ -304,6 +334,7 @@ export async function createIsland(
   loader.setMeshoptDecoder(MeshoptDecoder);
   const gltfs = new Map<ModelName, { scene: THREE.Group; animations: THREE.AnimationClip[] }>();
   const plants = new Map<PlantName, THREE.Group>();
+  const homeModels = new Map<HomeModel, THREE.Object3D>();
   await Promise.all([
     ...MODELS.map(async (name) => {
       const g = await loader.loadAsync(`/island/models/${name}.glb`);
@@ -321,6 +352,14 @@ export async function createIsland(
         const holder = new THREE.Group();
         holder.add(node);
         plants.set(node.name as PlantName, holder);
+      }
+    }),
+    // 주민 집도 한 파일에 모델별 노드로 들어 있다 (텍스처 하나를 함께 쓴다)
+    loader.loadAsync("/island/models/KayKit_Homes.glb").then((g) => {
+      curveAll(g.scene);
+      for (const node of [...g.scene.children]) {
+        node.position.set(0, 0, 0);
+        homeModels.set(node.name as HomeModel, node);
       }
     }),
   ]);
@@ -626,6 +665,27 @@ export async function createIsland(
   const glowAt = houseFront(1.1);
   houseGlow.position.set(glowAt.x, 1.0, glowAt.z);
   scene.add(houseGlow);
+
+  // 주민 집 — 탭하면 누구네 집인지 알려 준다. 밤에는 창가에 불빛이 켜진다
+  const residentGlows: THREE.Sprite[] = [];
+  for (const h of RESIDENT_HOUSES) {
+    const o = new THREE.Group();
+    const m = homeModels.get(h.model)!.clone(true);
+    // 위에서 내려다보는 카메라에 벽이 더 보이도록 세로로 조금 늘린다
+    m.scale.set(2.2, 2.75, 2.2);
+    o.add(m);
+    o.position.set(h.x, groundHeight(h.x, h.z), h.z);
+    o.rotation.y = h.rot;
+    scene.add(o);
+    // 본채와 앞 돌계단
+    colliders.push({ ...houseSpot(h.id, -0.2), r: 1.1 }, { ...houseSpot(h.id, 1.0), r: 0.42 });
+    addTarget({ obj: o, pos: { x: h.x, z: h.z }, reach: 2.0, act: () => cb.onToast(`🏠 ${h.label}이에요`) }, 1.2, 3.0);
+    const glowSpot = houseSpot(h.id, 1.5);
+    const g = glowSprite(0xffc56b, 2.2);
+    g.position.set(glowSpot.x, groundHeight(glowSpot.x, glowSpot.z) + 0.9, glowSpot.z);
+    scene.add(g);
+    residentGlows.push(g);
+  }
   addTarget({ obj: house, pos: { x: HOUSE.x, z: HOUSE.z }, reach: 2.6, act: () => cb.onInteract({ kind: "house" }) }, 2.0, 3.4);
   // 크리스마스 시즌에는 집도 장식 — 지붕·벽·창문·포치 전구, 지붕 위 산타 양말, 포치 갈란드, 현관 리스
   const houseXmas = isHolidaySeason() ? buildHouseXmas(cachedStd) : null;
@@ -860,6 +920,9 @@ export async function createIsland(
         // 선착장 위·바로 옆은 비워 둔다
         if (Math.abs(x - DOCK.x) < DOCK.halfWidth + 1.2 && z > DOCK.z0 - 1.5) continue;
         if (CLEARINGS.slice(0, 2).some((c) => (x - c.x) ** 2 + (z - c.z) ** 2 < (c.r * 0.7) ** 2)) continue;
+        // 주민 집 둘레와 앞마당도 비워 둔다
+        if (RESIDENT_HOUSES.some((h) => (x - h.x) ** 2 + (z - h.z) ** 2 < 2.8 ** 2)) continue;
+        if (RESIDENT_HOUSES.some((h) => { const y = houseSpot(h.id, 2.6); return (x - y.x) ** 2 + (z - y.z) ** 2 < 2.0 ** 2; })) continue;
         if (colliders.some((c) => (x - c.x) ** 2 + (z - c.z) ** 2 < (c.r + minTree) ** 2)) continue;
         if (extra && !extra(x, z)) continue;
         return { x, z };
@@ -2297,6 +2360,7 @@ export async function createIsland(
     glow.intensity = night * GLOW_I;
     for (const g of lampGlows) (g.material as THREE.SpriteMaterial).opacity = night * 0.55;
     (houseGlow.material as THREE.SpriteMaterial).opacity = night * 0.6;
+    for (const g of residentGlows) (g.material as THREE.SpriteMaterial).opacity = night * 0.45;
     waterMat.color.set(night > 0.5 ? 0x3d6f9e : 0x6fd0de);
   };
   applySky();

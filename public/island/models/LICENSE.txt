@@ -32,3 +32,9 @@ from FBX to GLB with textures dropped and recolored in code:
 
 Weather data on the island (Seoul, current conditions) by Open-Meteo.com, CC BY 4.0:
 https://open-meteo.com/
+
+KayKit_Homes.glb (residents' houses) is from "KayKit : Medieval Hexagon Pack" (1.0, free
+version) by Kay Lousberg (www.kaylousberg.com), released under CC0 1.0 Universal:
+https://kaylousberg.itch.io/kaykit-medieval-hexagon
+The two-storey house (home_B) in red, green, blue and yellow, merged into one file
+that shares their single texture, resized to 512px WebP and meshopt-compressed.
