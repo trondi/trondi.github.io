@@ -13,6 +13,8 @@ export type Chibi = {
   root: THREE.Group;
   head: THREE.Object3D;
   hand: THREE.Object3D;
+  /** 목도리를 두르는 자리 (어깨 위) */
+  neck: THREE.Object3D;
   setColors: (c: ChibiColors) => void;
   setHair: (style: "a" | "b") => void;
   /** 모자 밑면 높이(머리 중심 기준) — 앞머리를 그 아래로 눌러 모자를 뚫지 않게 한다. null이면 원래대로 */
@@ -115,6 +117,9 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
   const head = new THREE.Group();
   head.position.y = 0.6;
   torso.add(head);
+  const neck = new THREE.Object3D();
+  neck.position.y = 0.33;
+  torso.add(neck);
   const face = ball(0.31, mats.skin, 1.1, 0.96, 0.97, 32);
   head.add(face);
   for (const side of [-1, 1]) {
@@ -192,6 +197,7 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
     root,
     head,
     hand,
+    neck,
     setColors: (c) => {
       mats.skin.color.set(c.skin);
       mats.skin.emissive.set(c.skin);

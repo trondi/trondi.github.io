@@ -1,5 +1,5 @@
 import { SPECIES, type Species } from "./fish";
-import type { IslandSave } from "./save";
+import { type IslandSave, XMAS_ITEMS } from "./save";
 
 /**
  * 크리스마스 트리 밑 선물 상자 — 하루에 세 개, 열면 랜덤한 선물이 나온다.
@@ -15,6 +15,8 @@ export type GiftReward = {
   text: string;
   /** 큰 선물이면 반짝이는 효과 */
   rare?: boolean;
+  /** 꾸미기 아이템이면 옷장에서 바로 입어 볼 수 있다 */
+  wear?: boolean;
 };
 
 const NOTES = [
@@ -28,6 +30,20 @@ const pick = <T,>(a: T[], rand: () => number) => a[Math.floor(rand() * a.length)
 
 /** 선물을 고르고 저장 데이터에 반영한다 (save를 직접 고친다) */
 export function openGift(save: IslandSave, rand = Math.random): GiftReward {
+  // 아직 못 받은 꾸미기 아이템이 있으면 절반쯤은 그게 나온다 (맨 처음 상자는 꼭 산타 모자)
+  const owned = new Set(save.unlocked ?? []);
+  const left = XMAS_ITEMS.filter((x) => !owned.has(x.id));
+  if (left.length && (!owned.size || rand() < 0.55)) {
+    const item = owned.size ? pick(left, rand) : XMAS_ITEMS[0];
+    save.unlocked = [...owned, item.id];
+    return {
+      emoji: item.emoji,
+      title: item.name,
+      text: `크리스마스에만 받을 수 있는 꾸미기예요. 옷장에서 입어 볼 수 있어요! (${owned.size + 1}/${XMAS_ITEMS.length})`,
+      rare: true,
+      wear: true,
+    };
+  }
   const r = rand();
   if (r < 0.1) {
     save.bag.seed += 5;

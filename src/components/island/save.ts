@@ -6,8 +6,10 @@ export type PlantedFlower = { id: string; x: number; z: number; color: number; a
 export type GroundItem = { id: string; type: ItemType; x: number; z: number };
 export type Hat =
   | "none" | "straw" | "beanie" | "cap" | "bow"
-  | "cloche" | "beret" | "hardhat" | "crown" | "elf" | "grad" | "tophat" | "antler" | "headphones";
-export type Glasses = "none" | "round" | "pixel" | "visor";
+  | "cloche" | "beret" | "hardhat" | "crown" | "elf" | "grad" | "tophat" | "antler" | "headphones"
+  | "santa" | "rudolph";
+export type Glasses = "none" | "round" | "pixel" | "visor" | "star";
+export type Neck = "none" | "scarf_red" | "scarf_green";
 export type Look = {
   body: "a" | "b";
   skin: number;
@@ -17,9 +19,10 @@ export type Look = {
   hair?: number;
   hat?: Hat;
   glasses?: Glasses;
+  neck?: Neck;
 };
 
-export const SHIRT_COLORS = ["#4f4a8a", "#7d5bb0", "#e8707a", "#f0a24a", "#f5d26b", "#6faa4f", "#4f9fd0", "#ffffff", "#3a3a44", "#c96f5a"];
+export const SHIRT_COLORS = ["#4f4a8a", "#7d5bb0", "#e8707a", "#f0a24a", "#f5d26b", "#6faa4f", "#4f9fd0", "#ffffff", "#3a3a44", "#c96f5a", "#c8323a", "#2f7a4a"];
 export const PANTS_COLORS = ["#1f2a44", "#3b4a6b", "#5a4632", "#7a8796", "#2f2f35", "#d9c7a6", "#6f5aa8", "#4a6b4a"];
 export const HAIR_COLORS = ["#4a1f1a", "#2a1f1a", "#7a4a2a", "#c98f4a", "#e8d6a8", "#d66fa0", "#6f8fd0", "#9a9aa6"];
 export const HATS: { id: Hat; name: string }[] = [
@@ -37,13 +40,38 @@ export const HATS: { id: Hat; name: string }[] = [
   { id: "crown", name: "왕관" },
   { id: "antler", name: "사슴뿔" },
   { id: "headphones", name: "헤드폰" },
+  { id: "santa", name: "산타 모자" },
+  { id: "rudolph", name: "루돌프 머리띠" },
 ];
 export const GLASSES: { id: Glasses; name: string }[] = [
   { id: "none", name: "없음" },
   { id: "round", name: "동그란 선글라스" },
   { id: "visor", name: "고글 선글라스" },
   { id: "pixel", name: "도트 선글라스" },
+  { id: "star", name: "별 안경" },
 ];
+export const NECKS: { id: Neck; name: string }[] = [
+  { id: "none", name: "없음" },
+  { id: "scarf_red", name: "빨간 목도리" },
+  { id: "scarf_green", name: "초록 목도리" },
+];
+
+/**
+ * 크리스마스 선물 상자에서만 나오는 꾸미기 아이템 — 받기 전에는 옷장에서 잠겨 있다.
+ * id는 "종류:값" (상의는 색 번호)
+ */
+export const XMAS_ITEMS: { id: string; name: string; emoji: string }[] = [
+  { id: "hat:santa", name: "산타 모자", emoji: "🎅" },
+  { id: "hat:rudolph", name: "루돌프 머리띠", emoji: "🦌" },
+  { id: "neck:scarf_red", name: "빨간 목도리", emoji: "🧣" },
+  { id: "neck:scarf_green", name: "초록 목도리", emoji: "🧣" },
+  { id: "glasses:star", name: "별 안경", emoji: "🌟" },
+  { id: "shirt:10", name: "빨간 크리스마스 스웨터", emoji: "🧶" },
+  { id: "shirt:11", name: "초록 크리스마스 스웨터", emoji: "🧶" },
+];
+const XMAS_IDS = new Set(XMAS_ITEMS.map((x) => x.id));
+/** 이 꾸미기를 쓸 수 있나 — 선물 아이템이 아니거나 이미 받았으면 true */
+export const canWear = (save: IslandSave | null, id: string) => !XMAS_IDS.has(id) || !!save?.unlocked?.includes(id);
 
 export type DexEntry = { count: number; best: number; first: number };
 /** 모카와의 사이 — 수다 횟수, 하트(선물로 오른다), 마지막 수다·선물 날짜 */
@@ -70,6 +98,8 @@ export type IslandSave = {
   npcs?: Record<string, NpcState>;
   /** 크리스마스 트리 밑 선물 — 오늘 연 상자 번호 */
   xmasGifts?: { day: string; opened: number[] };
+  /** 선물로 받은 꾸미기 아이템 (XMAS_ITEMS의 id) */
+  unlocked?: string[];
 };
 
 const KEY = "trond-island:v1";

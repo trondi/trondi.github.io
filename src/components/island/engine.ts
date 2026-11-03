@@ -18,7 +18,7 @@ import { type TreeKind, type TreeOpts, buildTree } from "./tree-model";
 import type { WeatherKind } from "./weather";
 import {
   HAIR_COLORS, PANTS_COLORS, SHIRT_COLORS,
-  type Glasses, type Hat, type IslandSave, type ItemType, type Look, flowerStage, today,
+  type Glasses, type Hat, type IslandSave, type Neck, type ItemType, type Look, flowerStage, today,
 } from "./save";
 import { skyAt, skyTexture } from "./sky";
 import {
@@ -1047,7 +1047,7 @@ export async function createIsland(
   };
   /** 모자 앞쪽 테두리 높이 — 앞머리를 이 아래로 눌러 모자를 뚫지 않게 한다 (왕관·사슴뿔·헤드폰·리본은 그대로) */
   const HAT_LINE: Partial<Record<Hat, number>> = {
-    beanie: 0.18, cap: 0.18, straw: 0.17, cloche: 0.19, beret: 0.15, hardhat: 0.15, elf: 0.14, grad: 0.17, tophat: 0.27,
+    beanie: 0.18, cap: 0.18, santa: 0.18, straw: 0.17, cloche: 0.19, beret: 0.15, hardhat: 0.15, elf: 0.14, grad: 0.17, tophat: 0.27,
   };
   const wearCache = new Map<string, Promise<THREE.Object3D | null>>();
   const loadWear = (fit: WearFit) => {
@@ -1112,6 +1112,46 @@ export async function createIsland(
       const button = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), cachedStd("#3a7fb0"));
       button.position.y = 0.1 + R * 0.95;
       g.add(dome("#4f9fd0"), visor, button);
+    } else if (kind === "santa") {
+      // 산타 모자 — 머리를 덮는 빨간 모자에서 고깔이 위로 솟았다가 옆으로 축 늘어지고, 하얀 털 테두리와 방울
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(rimR, 0.055, 10, 28), cachedStd("#f7f5f0"));
+      rim.rotation.x = Math.PI / 2;
+      rim.scale.set(1.1, 1.06, 1);
+      rim.position.set(0, rimY, -0.03);
+      const red = cachedStd("#d0353d");
+      const lower = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.26, 0.2, 18), red);
+      lower.position.set(0, 0.42, -0.05);
+      lower.rotation.z = 0.15;
+      const upper = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.3, 16), red);
+      upper.position.set(0.12, 0.54, -0.05);
+      upper.rotation.z = -1.0;
+      const pom = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), cachedStd("#f7f5f0"));
+      pom.position.set(0.27, 0.46, -0.05);
+      g.add(dome("#d0353d"), lower, upper, rim, pom);
+    } else if (kind === "rudolph") {
+      // 루돌프 머리띠 — 갈색 뿔 두 개와 빨간 코
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.018, 6, 24, Math.PI), cachedStd("#7a4a2a"));
+      band.position.set(0, 0.1, -0.02);
+      band.scale.set(1.1, 1.0, 1);
+      g.add(band);
+      for (const side of [-1, 1]) {
+        const antler = new THREE.Group();
+        const main = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.026, 0.2, 6), cachedStd("#a0703f"));
+        main.position.y = 0.1;
+        const tine1 = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.018, 0.1, 6), cachedStd("#a0703f"));
+        tine1.position.set(side * 0.04, 0.14, 0);
+        tine1.rotation.z = -side * 0.9;
+        const tine2 = tine1.clone();
+        tine2.position.set(-side * 0.03, 0.18, 0);
+        tine2.rotation.z = side * 0.7;
+        antler.add(main, tine1, tine2);
+        antler.position.set(side * 0.2, 0.36, -0.02);
+        antler.rotation.z = -side * 0.35;
+        g.add(antler);
+      }
+      const nose = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 10), new THREE.MeshStandardMaterial({ color: "#e0302f", emissive: "#e0302f", emissiveIntensity: 0.35, roughness: 0.4 }));
+      nose.position.set(0, -0.045, 0.315);
+      g.add(nose);
     } else {
       const knot = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), cachedStd("#f28bb3"));
       for (const s of [-1, 1]) {
@@ -1127,6 +1167,56 @@ export async function createIsland(
     }
     return curveAll(g);
   };
+
+  /** 별 안경 — 노란 별 두 개를 다리로 잇는다 */
+  const buildStarGlasses = () => {
+    const g = new THREE.Group();
+    const shape = new THREE.Shape();
+    for (let s = 0; s < 10; s++) {
+      const a = (s / 10) * Math.PI * 2 + Math.PI / 2;
+      const rr = s % 2 ? 0.045 : 0.095;
+      if (s) shape.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      else shape.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    }
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.02, bevelEnabled: false });
+    const mat = new THREE.MeshStandardMaterial({ color: "#f5c542", emissive: "#f5c542", emissiveIntensity: 0.25, roughness: 0.35 });
+    for (const side of [-1, 1]) {
+      const star = new THREE.Mesh(geo, mat);
+      star.position.set(side * 0.115, 0.0, 0.3);
+      star.rotation.y = side * 0.25;
+      g.add(star);
+    }
+    const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.07, 6), mat);
+    bridge.rotation.z = Math.PI / 2;
+    bridge.position.set(0, 0.02, 0.315);
+    g.add(bridge);
+    return curveAll(g);
+  };
+  /** 목도리 — 목에 한 바퀴 두르고 앞으로 한 자락 늘어뜨린다 */
+  const buildScarf = (kind: Neck) => {
+    if (kind === "none") return null;
+    const [c, stripe] = kind === "scarf_red" ? ["#c8323a", "#f4efe6"] : ["#2f7a4a", "#e0453a"];
+    const g = new THREE.Group();
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.055, 10, 24), cachedStd(c));
+    ring.rotation.x = Math.PI / 2;
+    ring.scale.set(1.05, 1, 1);
+    g.add(ring);
+    for (const y of [-0.06, -0.14]) {
+      const band = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 0.05), cachedStd(stripe));
+      band.position.set(0.09, y, 0.15);
+      band.rotation.z = 0.15;
+      g.add(band);
+    }
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.2, 0.04), cachedStd(c));
+    tail.position.set(0.09, -0.1, 0.14);
+    tail.rotation.z = 0.15;
+    const fringe = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 0.035), cachedStd(stripe));
+    fringe.position.set(0.105, -0.205, 0.14);
+    fringe.rotation.z = 0.15;
+    g.add(tail, fringe);
+    return curveAll(g);
+  };
+  let scarf: THREE.Object3D | null = null;
 
   const applyLook = (look: Look) => {
     if (!chibi) {
@@ -1160,8 +1250,12 @@ export async function createIsland(
     hat?.removeFromParent();
     glasses?.removeFromParent();
     hat = buildHat(look.hat ?? "none");
-    glasses = null;
+    glasses = look.glasses === "star" ? buildStarGlasses() : null;
     if (hat) chibi.head.add(hat);
+    if (glasses) chibi.head.add(glasses);
+    scarf?.removeFromParent();
+    scarf = buildScarf(look.neck ?? "none");
+    if (scarf) chibi.neck.add(scarf);
     // 모델 모자·안경은 불러온 뒤에 씌운다 (그 사이 다른 걸 고르면 버린다)
     const token = ++wearToken;
     const hatFit = WEAR[look.hat ?? "none"];
