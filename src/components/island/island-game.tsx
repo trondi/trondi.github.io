@@ -8,6 +8,7 @@ import { type Season, getSeason } from "@/lib/season";
 import { cn } from "@/lib/utils";
 
 import type { CatchEvent, FishingPhase, InteractEvent, IslandHandle, Mode } from "./engine";
+import type { GiftReward } from "./gifts";
 import { SPECIES, SPECIES_BY_ID } from "./fish";
 import { WEATHER_PLACE, WEATHER_TTL, type Weather, fetchWeather } from "./weather";
 import {
@@ -42,6 +43,7 @@ type Panel =
   | { kind: "board" }
   | { kind: "house" }
   | { kind: "flower"; stage: number }
+  | { kind: "gift"; reward: GiftReward }
   | { kind: "bag" }
   | { kind: "dex" }
   | { kind: "wardrobe"; draft: Look };
@@ -120,6 +122,7 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
       handleRef.current?.mutateSave((sv) => recordTalk(r, sv, now));
     }
     else if (e.kind === "flower") setPanel({ kind: "flower", stage: e.stage });
+    else if (e.kind === "gift") setPanel({ kind: "gift", reward: e.reward });
     else setPanel({ kind: e.kind });
   }, [toast]);
 
@@ -824,6 +827,28 @@ function PanelBody({
           </Link>
           <button type="button" className={secondary} onClick={onClose}>
             닫기
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  if (panel.kind === "gift") {
+    const { reward } = panel;
+    return (
+      <>
+        <Tag color="#e0453a">🎁 선물 상자</Tag>
+        <div className="flex items-center gap-3">
+          <span className={cn("text-[44px] leading-none", reward.rare && "animate-bounce")}>{reward.emoji}</span>
+          <div>
+            <p className="font-black text-[#7d5bb0]">{reward.title}</p>
+            <p className="text-[13px] opacity-80">{reward.text}</p>
+          </div>
+        </div>
+        <p className="mt-2 text-[12px] opacity-60">상자는 하루에 세 개씩 놓여요. 내일 또 와 보세요!</p>
+        <div className="mt-3 flex justify-end">
+          <button type="button" className={primary} onClick={onClose}>
+            고마워요!
           </button>
         </div>
       </>

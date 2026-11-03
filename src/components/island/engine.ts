@@ -12,6 +12,7 @@ import { type Chibi, type ChibiAnim, buildChibi } from "./chibi";
 import { buildFishFromAsset, buildFishModel } from "./fish-model";
 import { buildHouseXmas } from "./house-xmas";
 import { NavGrid, type Point } from "./pathfind";
+import { GIFT_COLORS, GIFT_COUNT, type GiftReward, openGift } from "./gifts";
 import { type TreeKind, type TreeOpts, buildTree } from "./tree-model";
 import type { WeatherKind } from "./weather";
 import {
@@ -32,7 +33,8 @@ export type InteractEvent =
   | { kind: "board" }
   | { kind: "house" }
   | { kind: "flower"; stage: number }
-  | { kind: "tree"; dropped: ItemType[] };
+  | { kind: "tree"; dropped: ItemType[] }
+  | { kind: "gift"; reward: GiftReward };
 
 export type CatchEvent = {
   species: Species;
@@ -341,6 +343,43 @@ export async function createIsland(
     return o;
   };
 
+  /** 선물 상자 — 상자, 십자 리본, 위에 나비 리본 */
+  type GiftBox = { obj: THREE.Object3D; shake: number };
+  const giftBoxes: GiftBox[] = [];
+  const makeGiftBox = (i: number) => {
+    const [c, rc] = GIFT_COLORS[i % GIFT_COLORS.length];
+    const g = new THREE.Group();
+    const s = 0.34 + (i % 2) * 0.08;
+    const box = new THREE.Mesh(new THREE.BoxGeometry(s, s * 0.8, s), cachedStd(c));
+    box.position.y = s * 0.4;
+    const r1 = new THREE.Mesh(new THREE.BoxGeometry(s + 0.01, s * 0.8 + 0.01, 0.07), cachedStd(rc));
+    r1.position.y = s * 0.4;
+    const r2 = r1.clone();
+    r2.rotation.y = Math.PI / 2;
+    g.add(box, r1, r2);
+    for (const side of [-1, 1]) {
+      const loop = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.022, 6, 12), cachedStd(rc));
+      loop.position.set(side * 0.055, s * 0.8 + 0.05, 0);
+      loop.rotation.set(0, Math.PI / 2, side * 0.5);
+      g.add(loop);
+    }
+    return curveAll(g);
+  };
+  const openGiftBox = (i: number, gift: GiftBox) => {
+    const day = today();
+    if (save.xmasGifts?.day !== day) save.xmasGifts = { day, opened: [] };
+    if (save.xmasGifts.opened.includes(i)) return;
+    save.xmasGifts.opened.push(i);
+    const reward = openGift(save);
+    if (player) play(player, "PickUp", true);
+    burstLeaves(gift.obj.position);
+    removeTarget(gift.obj);
+    seasonal.remove(gift.obj);
+    giftBoxes.splice(giftBoxes.indexOf(gift), 1);
+    persist();
+    cb.onInteract({ kind: "gift", reward });
+  };
+
   /** 코드로 만든 나무 (tree-model.ts) */
   const makeTree = (o: TreeOpts, x: number, z: number, scale = 1, rot = 0) => {
     const t = curveAll(buildTree(o, (c) => cachedStd(c)));
@@ -644,6 +683,8 @@ export async function createIsland(
 
   const buildSeason = () => {
     for (const t of trees) removeTarget(t.obj);
+    for (const g of giftBoxes) removeTarget(g.obj);
+    giftBoxes.length = 0;
     seasonal.clear();
     trees.length = 0;
     for (const c of seasonColliders) colliders.splice(colliders.indexOf(c), 1);
@@ -683,12 +724,29 @@ export async function createIsland(
     // 크리스마스 시즌에는 집 오른쪽(현관 앞 마당)에 잘 보이는 큰 트리를 하나 더 세운다
     if (holiday) {
       const at = houseFront(0.1, 3.3);
-      const obj = makeTree({ kind: "pine", variant: 1, season, xmas: true }, at.x, at.z, 1.15, 0.4);
+      const obj = makeTree({ kind: "pine", variant: 1, season, xmas: true, noPresents: true }, at.x, at.z, 1.15, 0.4);
       seasonal.add(obj);
       addCollider({ x: at.x, z: at.z, r: 0.75 });
       const t: TreeState = { id: "xmas-house", obj, shake: 0 };
       trees.push(t);
       addTarget({ obj, pos: { x: at.x, z: at.z }, reach: 1.2, act: () => shakeTree(t) }, 1.0, 3.2);
+      // 트리 앞에 놓인 선물 상자 — 하루에 세 개, 탭해서 열어 볼 수 있다
+      const day = today();
+      const opened = save.xmasGifts?.day === day ? save.xmasGifts.opened : [];
+      for (let i = 0; i < GIFT_COUNT; i++) {
+        if (opened.includes(i)) continue;
+        // 트리 앞쪽(카메라 쪽)에 나란히
+        const ang = (i - 1) * 0.62;
+        const gx = at.x + Math.sin(ang) * 1.2;
+        const gz = at.z + Math.cos(ang) * 1.2;
+        const box = makeGiftBox(i);
+        box.position.set(gx, groundHeight(gx, gz), gz);
+        box.rotation.y = i * 0.7;
+        seasonal.add(box);
+        const gift = { obj: box, shake: 0 };
+        giftBoxes.push(gift);
+        addTarget({ obj: box, pos: { x: gx, z: gz }, reach: 0.8, act: () => openGiftBox(i, gift) }, 0.45, 0.7);
+      }
     }
     FRUIT_TREES.forEach(([id, x, z, fruit]) => {
       const picked = save.harvested[id] === today();
@@ -1914,7 +1972,10 @@ export async function createIsland(
       }
       // 주민이 나무 밑에 있어도 주민을 먼저 고른다
       const hits = raycaster.intersectObjects(hitProxies, false);
-      const hit = hits.find((h) => villagers.some((v) => v.proxy === h.object)) ?? hits[0];
+      const hit =
+        hits.find((h) => villagers.some((v) => v.proxy === h.object)) ??
+        hits.find((h) => giftBoxes.some((g) => g.obj === (h.object.userData.target as Target).obj)) ??
+        hits[0];
       if (hit) {
         const t = hit.object.userData.target as Target;
         const v = villagers.find((x) => x.actor.root === t.obj);

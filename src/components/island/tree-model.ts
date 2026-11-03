@@ -19,6 +19,8 @@ export type TreeOpts = {
   picked?: boolean;
   /** 크리스마스 장식 (전나무) */
   xmas?: boolean;
+  /** 장식용 선물 상자를 빼고 꾸민다 (진짜로 열 수 있는 상자를 따로 놓을 때) */
+  noPresents?: boolean;
 };
 
 type Mat = (color: string) => THREE.Material;
@@ -94,7 +96,7 @@ export function buildTree(o: TreeOpts, mat: Mat): THREE.Group {
         g.add(cap);
       }
     });
-    if (o.xmas) decorate(g, tiers);
+    if (o.xmas) decorate(g, tiers, !o.noPresents);
     g.scale.set(scale, scale, scale);
     return g;
   }
@@ -155,7 +157,7 @@ export function buildTree(o: TreeOpts, mat: Mat): THREE.Group {
 }
 
 /** 전나무를 크리스마스 트리로 — 오너먼트, 나선 전구, 꼭대기 별, 선물 상자 */
-function decorate(g: THREE.Group, tiers: [number, number, number][]) {
+function decorate(g: THREE.Group, tiers: [number, number, number][], presents = true) {
   const cols = ["#e0453a", "#f2c94c", "#4f8fe0", "#f28bb3", "#ffffff"];
   const ballGeo = cached("orn", () => new THREE.IcosahedronGeometry(0.075, 1));
   let k = 0;
@@ -193,6 +195,7 @@ function decorate(g: THREE.Group, tiers: [number, number, number][]) {
   );
   star.position.set(0, 2.6, -0.03);
   g.add(star);
+  if (!presents) return;
   for (const [x, z, c, rc] of [[0.62, 0.55, "#e0453a", "#f2c94c"], [-0.55, 0.6, "#4f8fe0", "#ffffff"]] as const) {
     const box = new THREE.Mesh(cached("gift", () => new THREE.BoxGeometry(0.26, 0.2, 0.26)), new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }));
     box.position.set(x, 0.1, z);

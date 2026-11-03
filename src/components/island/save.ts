@@ -68,6 +68,8 @@ export type IslandSave = {
   npc?: NpcState;
   /** 모카 말고 다른 주민들 (주민 id → 사이) */
   npcs?: Record<string, NpcState>;
+  /** 크리스마스 트리 밑 선물 — 오늘 연 상자 번호 */
+  xmasGifts?: { day: string; opened: number[] };
 };
 
 const KEY = "trond-island:v1";
