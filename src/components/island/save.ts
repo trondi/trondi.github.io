@@ -20,7 +20,18 @@ export type Look = {
   hat?: Hat;
   glasses?: Glasses;
   neck?: Neck;
+  top?: TopStyle;
 };
+export type TopStyle = "tee" | "stripe" | "hoodie" | "collar" | "knit" | "overalls" | "dress";
+export const TOPS: { id: TopStyle; name: string }[] = [
+  { id: "tee", name: "티셔츠" },
+  { id: "stripe", name: "줄무늬 티" },
+  { id: "hoodie", name: "후드티" },
+  { id: "collar", name: "셔츠·넥타이" },
+  { id: "knit", name: "터틀넥 니트" },
+  { id: "overalls", name: "멜빵바지" },
+  { id: "dress", name: "원피스" },
+];
 
 export const SHIRT_COLORS = ["#4f4a8a", "#7d5bb0", "#e8707a", "#f0a24a", "#f5d26b", "#6faa4f", "#4f9fd0", "#ffffff", "#3a3a44", "#c96f5a", "#c8323a", "#2f7a4a"];
 export const PANTS_COLORS = ["#1f2a44", "#3b4a6b", "#5a4632", "#7a8796", "#2f2f35", "#d9c7a6", "#6f5aa8", "#4a6b4a"];

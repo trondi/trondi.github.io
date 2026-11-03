@@ -15,7 +15,7 @@ import {
   type GiftItem, type GiftResult, MAX_HEARTS, RESIDENTS, chatLines, giveGift, greet, npcState, recordTalk, shuffled,
 } from "./residents";
 import {
-  FLOWER_STAGE_LABEL, GLASSES, HAIR_COLORS, HATS, NECKS, PANTS_COLORS, SHIRT_COLORS, canWear,
+  FLOWER_STAGE_LABEL, GLASSES, HAIR_COLORS, HATS, NECKS, PANTS_COLORS, SHIRT_COLORS, TOPS, canWear,
   type IslandSave, type Look, loadSave, writeSave,
 } from "./save";
 
@@ -50,7 +50,7 @@ type Panel =
 
 const SEASON_EMOJI = { spring: "🌸", summer: "🌿", autumn: "🍂", winter: "❄️" } as const;
 const SKIN_SWATCH = ["#f6d7bd", "#e2b08b", "#a8714a"];
-const DEFAULT_OUTFIT = { shirt: 0, pants: 0, hair: 0, hat: "none", glasses: "none", neck: "none" } as const;
+const DEFAULT_OUTFIT = { shirt: 0, pants: 0, hair: 0, hat: "none", glasses: "none", neck: "none", top: "tee" } as const;
 
 /** 받침 유무로 와/과 */
 function withWa(word: string) {
@@ -975,7 +975,17 @@ function PanelBody({
           </div>
         </div>
         <div className={row}>
-          <span className={label}>상의</span>
+          <span className={label}>상의 종류</span>
+          <div className="flex flex-wrap gap-1.5">
+            {TOPS.map((t) => (
+              <Pick key={t.id} on={(d.top ?? "tee") === t.id} lock={false} onClick={() => update({ top: t.id })}>
+                {t.name}
+              </Pick>
+            ))}
+          </div>
+        </div>
+        <div className={row}>
+          <span className={label}>상의 색</span>
           <Swatches
             colors={SHIRT_COLORS}
             value={d.shirt ?? 0}
