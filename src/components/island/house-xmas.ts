@@ -133,23 +133,9 @@ export function buildHouseXmas(mat: Mat): HouseXmas {
     }
   }
 
-  // 현관문 리스 — 초록 고리에 빨간 열매, 아래에 리본
-  const wreath = new THREE.Group();
+  // 현관문 리스
+  const wreath = buildWreath(mat);
   wreath.position.set(DOOR.x, DOOR.y, DOOR.z);
-  wreath.add(new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.042, 6, 14), green));
-  const berryGeo = new THREE.IcosahedronGeometry(0.022, 0);
-  for (let i = 0; i < 7; i++) {
-    const a = (i / 7) * Math.PI * 2 + 0.3;
-    const berry = new THREE.Mesh(berryGeo, red);
-    berry.position.set(Math.cos(a) * 0.11, Math.sin(a) * 0.11, 0.035);
-    wreath.add(berry);
-  }
-  for (const s of [-1, 1]) {
-    const loop = new THREE.Mesh(bowGeo, red);
-    loop.position.set(s * 0.04, -0.11, 0.04);
-    loop.scale.set(0.9, 0.6, 0.4);
-    wreath.add(loop);
-  }
   g.add(wreath);
 
   // 산타 양말 — 오른쪽 지붕 경사면에 크게 걸쳐 둔다 (발끝은 오른쪽)
@@ -169,6 +155,29 @@ export function buildHouseXmas(mat: Mat): HouseXmas {
       });
     },
   };
+}
+
+/** 리스 — 초록 고리에 빨간 열매, 아래에 리본. 고리 중심이 원점이고 앞(+z)을 본다. 반지름 약 0.11 */
+export function buildWreath(mat: Mat) {
+  const green = mat("#2f6b3a");
+  const red = mat("#d33a35");
+  const wreath = new THREE.Group();
+  wreath.add(new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.042, 6, 14), green));
+  const berryGeo = new THREE.IcosahedronGeometry(0.022, 0);
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2 + 0.3;
+    const berry = new THREE.Mesh(berryGeo, red);
+    berry.position.set(Math.cos(a) * 0.11, Math.sin(a) * 0.11, 0.035);
+    wreath.add(berry);
+  }
+  const bowGeo = new THREE.IcosahedronGeometry(0.045, 0);
+  for (const s of [-1, 1]) {
+    const loop = new THREE.Mesh(bowGeo, red);
+    loop.position.set(s * 0.04, -0.11, 0.04);
+    loop.scale.set(0.9, 0.6, 0.4);
+    wreath.add(loop);
+  }
+  return wreath;
 }
 
 /** 산타 양말 — 빨간 양말에 흰 털 단, 호랑가시 잎과 열매, 거는 고리. 고리 아래(단 윗면)가 원점 */
