@@ -8,8 +8,9 @@ import { type Season, getSeason } from "@/lib/season";
 import { cn } from "@/lib/utils";
 
 import { type Bgm, createBgm, loadSoundOn } from "./bgm";
-import type { CatchEvent, FishingPhase, InteractEvent, IslandHandle, Mode } from "./engine";
+import type { CatchEvent, EngineSfx, FishingPhase, InteractEvent, IslandHandle, Mode } from "./engine";
 import { SPECIES, SPECIES_BY_ID } from "./fish";
+import { type Sfx, createSfx } from "./sfx";
 import { WEATHER_PLACE, WEATHER_TTL, type Weather, fetchWeather } from "./weather";
 import {
   type GiftItem, type GiftResult, MAX_HEARTS, RESIDENTS, chatLines, giveGift, greet, npcState, recordTalk, shuffled,
@@ -47,6 +48,9 @@ type Panel =
   | { kind: "dex" }
   | { kind: "wardrobe"; draft: Look };
 
+/** 주민 목소리 높이 (0 낮음 ~ 1 높음) */
+const VOICE: Record<string, number> = { mocha: 0.45, danpung: 0.62, mongsil: 0.22, seolgi: 0.32, tori: 0.75, dungi: 0.9 };
+
 const SEASON_EMOJI = { spring: "🌸", summer: "🌿", autumn: "🍂", winter: "❄️" } as const;
 const SKIN_SWATCH = ["#f6d7bd", "#e2b08b", "#a8714a"];
 const DEFAULT_OUTFIT = { shirt: 0, pants: 0, hair: 0, hat: "none", glasses: "none" } as const;
@@ -68,6 +72,8 @@ function eulReul(word: string) {
 export function IslandGame({ posts }: { posts: IslandPost[] }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<IslandHandle | null>(null);
+  const bgmRef = useRef<Bgm | null>(null);
+  const sfxRef = useRef<Sfx | null>(null);
   const [save, setSave] = useState<IslandSave | null>(null);
   const [progress, setProgress] = useState(0);
   const [ready, setReady] = useState(false);
@@ -124,6 +130,18 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
     else setPanel({ kind: e.kind });
   }, [toast]);
 
+  // 엔진이 알려 주는 순간에 효과음
+  const onSfx = useCallback((n: EngineSfx) => {
+    const s = sfxRef.current;
+    if (!s) return;
+    if (n === "nibble") s.play("plop", { rate: 1.35, gain: 0.55 });
+    else if (n === "bite") s.play("splash");
+    else if (n === "catch") {
+      s.play("splash-big");
+      window.setTimeout(() => sfxRef.current?.play("jingle"), 280);
+    } else s.play(n);
+  }, []);
+
   const onCatch = useCallback((e: CatchEvent) => {
     setCaught(e);
     window.setTimeout(() => setCaught((c) => (c === e ? null : c)), 2800);
@@ -152,6 +170,7 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
           onModeChange: setMode,
           onFishing: setFishPhase,
           onCatch,
+          onSfx,
         }),
       )
       .then((handle) => {
@@ -207,15 +226,20 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
     return () => window.clearInterval(id);
   }, []);
 
-  // 배경음악 — 처음 화면을 누르거나 키를 누를 때 시작한다 (브라우저 자동 재생 제한)
-  const bgmRef = useRef<Bgm | null>(null);
+  // 배경음악·효과음 — 처음 화면을 누르거나 키를 누를 때 시작한다 (브라우저 자동 재생 제한)
   const [soundOn, setSoundOn] = useState(true);
   useEffect(() => {
     const on = loadSoundOn();
     setSoundOn(on);
     const bgm = createBgm(on);
+    const sfx = createSfx(on);
     bgmRef.current = bgm;
-    const unlock = () => bgm.unlock();
+    sfxRef.current = sfx;
+    const unlock = () => {
+      bgm.unlock();
+      const c = bgm.context();
+      if (c) sfx.attach(c);
+    };
     window.addEventListener("pointerdown", unlock, true);
     window.addEventListener("keydown", unlock, true);
     return () => {
@@ -223,6 +247,7 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
       window.removeEventListener("keydown", unlock, true);
       bgm.dispose();
       bgmRef.current = null;
+      sfxRef.current = null;
     };
   }, []);
   useEffect(() => {
@@ -232,7 +257,39 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
     const next = !soundOn;
     setSoundOn(next);
     bgmRef.current?.setOn(next);
+    sfxRef.current?.setOn(next);
+    if (next) sfxRef.current?.play("toggle");
   };
+
+  // 창이 열리고 닫힐 때 소리, 주민이 말할 때 말소리
+  const panelBoxRef = useRef<HTMLDivElement>(null);
+  const prevPanelRef = useRef<Panel | null>(null);
+  const lastBabbleRef = useRef("");
+  useEffect(() => {
+    const s = sfxRef.current;
+    const prev = prevPanelRef.current;
+    prevPanelRef.current = panel;
+    if (!s) return;
+    if (!panel) {
+      if (prev) s.play("close");
+      lastBabbleRef.current = "";
+      return;
+    }
+    if (prev?.kind !== panel.kind) {
+      if (panel.kind === "dex") s.play("pages");
+      else if (panel.kind === "bag") s.play("bag");
+      else if (panel.kind === "wardrobe") s.play("bag", { rate: 1.2 });
+      else if (panel.kind === "mail" || panel.kind === "board") s.play("paper");
+      else if (panel.kind === "house") s.knock();
+      else if (panel.kind === "flower") s.play("pop");
+    }
+    if (panel.kind === "npc") {
+      // 화면에 보이는 대사를 읽어 그 길이만큼 말소리를 낸다
+      const text = [...(panelBoxRef.current?.querySelectorAll("p") ?? [])].map((p) => p.textContent ?? "").join(" ");
+      if (text && text !== lastBabbleRef.current) s.babble(text, VOICE[panel.who] ?? 0.5);
+      lastBabbleRef.current = text;
+    } else lastBabbleRef.current = "";
+  }, [panel]);
 
   // 배경 페이지 스크롤 잠금
   useEffect(() => {
@@ -292,7 +349,13 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
   const hudBtn = "relative flex h-12 w-12 flex-col items-center justify-center rounded-2xl bg-[#fff8e7]/95 text-[18px] leading-none shadow-lg transition-transform active:scale-95";
 
   return (
-    <div className="fixed inset-0 z-[55] select-none overflow-hidden bg-[#cfe6f7] text-[#5a4632]">
+    <div
+      className="fixed inset-0 z-[55] select-none overflow-hidden bg-[#cfe6f7] text-[#5a4632]"
+      // 버튼을 누르면 짧게 딸깍
+      onClickCapture={(e) => {
+        if ((e.target as HTMLElement).closest("button")) sfxRef.current?.play("click");
+      }}
+    >
       <div ref={hostRef} className="absolute inset-0 isolate" aria-label="trond 섬 — 3D 산책 게임" role="application" />
 
       {/* 불러오는 중 */}
@@ -439,7 +502,7 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
               // 옷장은 데스크톱에서 오른쪽에 — 가운데의 캐릭터를 가리지 않게
               panel.kind === "wardrobe" && "md:inset-y-0 md:left-auto md:right-0 md:w-[500px] md:items-center",
             )}>
-              <div className={cn(
+              <div ref={panelBoxRef} className={cn(
                 "relative w-full max-w-[460px] rounded-[26px] bg-[#fff8e7] px-5 pb-4 pt-6 text-[14px] leading-6 shadow-2xl",
                 (panel.kind === "dex" || panel.kind === "wardrobe") && "max-h-[62vh] overflow-y-auto pt-4",
               )}>

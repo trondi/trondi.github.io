@@ -46,6 +46,8 @@ export type Bgm = {
   setOn: (on: boolean) => void;
   /** 시계가 바뀔 때마다 — 낮↔밤이 바뀌었으면 목록을 바꾼다 */
   tick: (now: Date) => void;
+  /** unlock 뒤에 만들어진 AudioContext — 효과음도 같이 쓴다 (못 만들었으면 null) */
+  context: () => AudioContext | null;
   dispose: () => void;
 };
 
@@ -172,6 +174,7 @@ export function createBgm(initialOn: boolean): Bgm {
       }
       rampTo(0, playNext);
     },
+    context: () => ctx,
     dispose() {
       cancelAnimationFrame(fade);
       window.clearTimeout(fadeDone);

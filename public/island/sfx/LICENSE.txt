@@ -1,0 +1,20 @@
+Sound effects for the island. All are released under CC0 1.0 Universal
+(Public Domain Dedication): https://creativecommons.org/publicdomain/zero/1.0/
+Converted to mono 80 kbps MP3; otherwise unchanged.
+
+- step1–6.mp3 — "Fantozzi's Footsteps (Grass/Sand & Stone)" by Fantozzi (sand steps)
+  https://opengameart.org/content/fantozzis-footsteps-grasssand-stone
+- splash.mp3, splash-big.mp3, plop.mp3 — "6 short water splashes" by ezwa (cut by qubodup)
+  https://opengameart.org/content/6-short-water-splashes
+- rustle1–2.mp3 (cloth1, cloth2), drop.mp3 (dropLeather), plant.mp3 (handleSmallLeather),
+  pages.mp3 (bookFlip1), paper.mp3 (bookFlip2), bag.mp3 (clothBelt)
+  — "50 RPG sound effects" by Kenney
+  https://opengameart.org/content/50-rpg-sound-effects
+- pickup.mp3 (pluck_001), pop.mp3 (pluck_002), click.mp3 (click_001), open.mp3 (open_001),
+  close.mp3 (close_001), toggle.mp3 (toggle_001), jingle.mp3 (confirmation_002)
+  — "Interface Sounds" by Kenney
+  https://opengameart.org/content/interface-sounds
+
+The villagers' voices and the door knock are synthesized in code (src/components/island/sfx.ts).
+
+Thank you, Fantozzi, ezwa, qubodup and Kenney!
