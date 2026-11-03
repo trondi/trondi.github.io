@@ -157,25 +157,25 @@ export function buildHouseXmas(mat: Mat): HouseXmas {
   };
 }
 
-/** 리스 — 초록 고리 양옆에 빨간 열매, 꼭대기에 호랑가시 잎 두 장과 열매 송이, 아래에 버건디 리본(고리·매듭·끈). 고리 중심이 원점이고 앞(+z)을 본다. 반지름 약 0.11 */
+/** 리스 — 초록 고리에 빨간 열매, 꼭대기에 호랑가시 잎 두 장과 열매 송이, 그 바로 아래에 버건디 리본(고리·매듭·끈). 고리 중심이 원점이고 앞(+z)을 본다. 반지름 약 0.11 */
 export function buildWreath(mat: Mat) {
   const green = mat("#2f6b3a");
   const red = mat("#d33a35");
   const wreath = new THREE.Group();
   wreath.add(new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.042, 6, 14), green));
-  // 열매는 양옆에만 — 꼭대기(호랑가시)와 아래(리본)는 비워 둔다
+  // 고리의 열매 — 꼭대기(호랑가시·리본)만 비우고 양옆과 아래에 둔다
   const berryGeo = new THREE.IcosahedronGeometry(0.022, 0);
-  for (const a of [0.5, 0, -0.45]) {
+  for (const a of [0.45, -0.05, -0.6, -1.2]) {
     for (const side of [1, -1]) {
       const berry = new THREE.Mesh(berryGeo, red);
       berry.position.set(side * Math.cos(a) * 0.11, Math.sin(a) * 0.11, 0.035);
       wreath.add(berry);
     }
   }
-  // 아래 리본 (버건디) — 납작한 고리 두 개, 가운데 매듭, 아래로 늘어진 끈 두 가닥
+  // 꼭대기 리본 (버건디) — 호랑가시 잎 바로 아래, 납작한 고리 두 개와 매듭, 고리 위로 늘어진 끈 두 가닥
   const ribbon = mat("#7b1e2e");
   const bow = new THREE.Group();
-  bow.position.set(0, -0.11, 0.045);
+  bow.position.set(0, 0.1, 0.065);
   const loopGeo = new THREE.TorusGeometry(0.03, 0.011, 4, 10);
   const tailGeo = new THREE.BoxGeometry(0.018, 0.065, 0.008);
   for (const s of [-1, 1]) {
@@ -190,7 +190,7 @@ export function buildWreath(mat: Mat) {
   }
   bow.add(new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.026, 0.022), ribbon));
   wreath.add(bow);
-  // 꼭대기 호랑가시 — 뾰족한 잎 두 장을 V자로 펼치고 가운데에 열매 세 알
+  // 꼭대기 호랑가시 — 리본 뒤로 뾰족한 잎 두 장을 V자로 펼치고, 매듭 위에 열매 세 알
   const leafGeo = hollyLeafGeo();
   const leafMat = mat("#3f8f45");
   for (const a of [Math.PI - 0.42, 0.42]) {
@@ -199,9 +199,9 @@ export function buildWreath(mat: Mat) {
     leaf.rotation.z = a;
     wreath.add(leaf);
   }
-  for (const [x, y] of [[-0.02, 0.112], [0.02, 0.112], [0, 0.135]]) {
+  for (const [x, y] of [[-0.017, 0.132], [0.017, 0.132], [0, 0.153]]) {
     const berry = new THREE.Mesh(berryGeo, red);
-    berry.position.set(x, y, 0.075);
+    berry.position.set(x, y, 0.06);
     wreath.add(berry);
   }
   return wreath;
