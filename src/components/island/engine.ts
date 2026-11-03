@@ -680,6 +680,16 @@ export async function createIsland(
       trees.push(t);
       addTarget({ obj, pos: { x, z }, reach: 0.95, act: () => shakeTree(t) }, 0.9, 3);
     });
+    // 크리스마스 시즌에는 집 오른쪽(현관 앞 마당)에 잘 보이는 큰 트리를 하나 더 세운다
+    if (holiday) {
+      const at = houseFront(0.1, 3.3);
+      const obj = makeTree({ kind: "pine", variant: 1, season, xmas: true }, at.x, at.z, 1.15, 0.4);
+      seasonal.add(obj);
+      addCollider({ x: at.x, z: at.z, r: 0.75 });
+      const t: TreeState = { id: "xmas-house", obj, shake: 0 };
+      trees.push(t);
+      addTarget({ obj, pos: { x: at.x, z: at.z }, reach: 1.2, act: () => shakeTree(t) }, 1.0, 3.2);
+    }
     FRUIT_TREES.forEach(([id, x, z, fruit]) => {
       const picked = save.harvested[id] === today();
       const obj = makeTree({ kind: fruit, variant: 1, season, picked }, x, z, 1, (x * 7) % 6);
