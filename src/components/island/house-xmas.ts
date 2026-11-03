@@ -157,7 +157,7 @@ export function buildHouseXmas(mat: Mat): HouseXmas {
   };
 }
 
-/** 리스 — 초록 고리 양옆에 빨간 열매, 꼭대기에 호랑가시 잎 두 장과 열매 송이, 아래에 리본(고리·매듭·끈). 고리 중심이 원점이고 앞(+z)을 본다. 반지름 약 0.11 */
+/** 리스 — 초록 고리 양옆에 빨간 열매, 꼭대기에 호랑가시 잎 두 장과 열매 송이, 아래에 버건디 리본(고리·매듭·끈). 고리 중심이 원점이고 앞(+z)을 본다. 반지름 약 0.11 */
 export function buildWreath(mat: Mat) {
   const green = mat("#2f6b3a");
   const red = mat("#d33a35");
@@ -172,22 +172,23 @@ export function buildWreath(mat: Mat) {
       wreath.add(berry);
     }
   }
-  // 아래 리본 — 납작한 고리 두 개, 가운데 매듭, 아래로 늘어진 끈 두 가닥
+  // 아래 리본 (버건디) — 납작한 고리 두 개, 가운데 매듭, 아래로 늘어진 끈 두 가닥
+  const ribbon = mat("#7b1e2e");
   const bow = new THREE.Group();
   bow.position.set(0, -0.11, 0.045);
   const loopGeo = new THREE.TorusGeometry(0.03, 0.011, 4, 10);
   const tailGeo = new THREE.BoxGeometry(0.018, 0.065, 0.008);
   for (const s of [-1, 1]) {
-    const loop = new THREE.Mesh(loopGeo, red);
+    const loop = new THREE.Mesh(loopGeo, ribbon);
     loop.position.set(s * 0.038, 0.004, 0);
     loop.scale.set(1.35, 0.8, 0.6);
     loop.rotation.z = s * 0.25;
-    const tail = new THREE.Mesh(tailGeo, red);
+    const tail = new THREE.Mesh(tailGeo, ribbon);
     tail.position.set(s * 0.02, -0.042, 0);
     tail.rotation.z = s * 0.35;
     bow.add(loop, tail);
   }
-  bow.add(new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.026, 0.022), red));
+  bow.add(new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.026, 0.022), ribbon));
   wreath.add(bow);
   // 꼭대기 호랑가시 — 뾰족한 잎 두 장을 V자로 펼치고 가운데에 열매 세 알
   const leafGeo = hollyLeafGeo();
