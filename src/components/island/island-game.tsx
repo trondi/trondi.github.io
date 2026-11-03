@@ -106,8 +106,9 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
 
   const onInteract = useCallback((e: InteractEvent) => {
     if (e.kind === "tree") {
-      const fruit = e.dropped.filter((d) => d !== "seed");
-      if (fruit.length) toast(`${fruit[0] === "apple" ? "🍎 사과" : "🍊 오렌지"} ${fruit.length}개가 떨어졌어요!`);
+      const fruit = e.dropped.filter((d) => d === "apple" || d === "orange");
+      if (e.dropped.includes("coin")) toast("💰 돈주머니가 떨어졌어요! 주워 보세요");
+      else if (fruit.length) toast(`${fruit[0] === "apple" ? "🍎 사과" : "🍊 오렌지"} ${fruit.length}개가 떨어졌어요!`);
       else if (e.dropped.includes("seed")) toast("🌱 꽃씨가 떨어졌어요!");
       else toast("바스락… 아무것도 떨어지지 않았어요");
       return;
@@ -139,7 +140,10 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
     if (!s) return;
     if (n === "nibble") s.play("plop", { rate: 1.35, gain: 0.55 });
     else if (n === "bite") s.play("splash");
-    else if (n === "catch") {
+    else if (n === "coin") {
+      s.play("pickup");
+      s.chime();
+    } else if (n === "catch") {
       s.play("splash-big");
       window.setTimeout(() => sfxRef.current?.play("jingle"), 280);
     } else s.play(n);
@@ -1146,6 +1150,10 @@ function PanelBody({
   return (
     <>
       <Tag color="#7d5bb0">가방</Tag>
+      <div className="mb-2 flex items-center justify-between rounded-2xl bg-[#fbeec3] px-4 py-2">
+        <span className="text-[13px] font-bold">🪙 코인</span>
+        <span className="text-[15px] font-black tabular-nums">{(save?.coins ?? 0).toLocaleString()}</span>
+      </div>
       <div className="grid grid-cols-3 gap-2">
         {([["apple", "🍎", "사과"], ["orange", "🍊", "오렌지"], ["seed", "🌱", "꽃씨"]] as const).map(([k, icon, name]) => (
           <div key={k} className="flex flex-col items-center rounded-2xl bg-[#f3e9d2] py-3">

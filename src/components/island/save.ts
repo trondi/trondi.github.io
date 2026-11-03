@@ -1,9 +1,11 @@
 /** 섬 진행 상황 — 방문자 브라우저(localStorage)에만 저장된다 */
 
 export type ItemType = "apple" | "orange" | "seed";
+/** 땅에 떨어지는 것 — 가방 아이템과 돈주머니(코인) */
+export type GroundType = ItemType | "coin";
 
 export type PlantedFlower = { id: string; x: number; z: number; color: number; at: number };
-export type GroundItem = { id: string; type: ItemType; x: number; z: number };
+export type GroundItem = { id: string; type: GroundType; x: number; z: number; /** 돈주머니에 든 코인 */ amount?: number };
 export type Hat =
   | "none" | "straw" | "beanie" | "cap" | "bow"
   | "cloche" | "beret" | "hardhat" | "crown" | "elf" | "grad" | "tophat" | "antler" | "headphones"
@@ -100,6 +102,8 @@ export type IslandSave = {
   xmasGifts?: { day: string; opened: number[] };
   /** 선물로 받은 꾸미기 아이템 (XMAS_ITEMS의 id) */
   unlocked?: string[];
+  /** 모은 코인 — 크리스마스 트리를 흔들면 떨어지는 돈주머니에서 */
+  coins?: number;
 };
 
 const KEY = "trond-island:v1";
