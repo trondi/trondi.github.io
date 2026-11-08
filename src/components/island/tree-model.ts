@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import type { Season } from "@/lib/season";
 
@@ -157,31 +158,52 @@ export function buildTree(o: TreeOpts, mat: Mat): THREE.Group {
 }
 
 /** 전나무를 크리스마스 트리로 — 오너먼트, 나선 전구, 꼭대기 별, 선물 상자 */
+/*
+ * 크리스마스 장식 — 트리마다 오너먼트·전구 수십 개를 따로 그리면 트리가 많을 때 무거워서,
+ * 같은 색끼리 메시 하나로 합치고 재질은 모든 트리가 함께 쓴다 (트리 하나에 메시 열 개 남짓).
+ */
+const ORNAMENT_COLORS = ["#e0453a", "#f2c94c", "#4f8fe0", "#f28bb3", "#ffffff"];
+const decoMats = new Map<string, THREE.Material>();
+const decoMat = (key: string, make: () => THREE.Material) => {
+  let m = decoMats.get(key);
+  if (!m) {
+    m = make();
+    decoMats.set(key, m);
+  }
+  return m;
+};
+/** 트리 전구 재질 — 섬에서 반짝이게 할 수 있도록 내보낸다 */
+export const xmasTreeBulbMat = () => decoMat("bulb", () => new THREE.MeshBasicMaterial({ color: "#ffe38a" })) as THREE.MeshBasicMaterial;
+/** 같은 도형을 여러 자리에 놓은 것을 메시 하나로 합친다 */
+const scatter = (geo: THREE.BufferGeometry, spots: THREE.Vector3[]) =>
+  mergeGeometries(spots.map((p) => geo.clone().translate(p.x, p.y, p.z)));
+
 function decorate(g: THREE.Group, tiers: [number, number, number][], presents = true) {
-  const cols = ["#e0453a", "#f2c94c", "#4f8fe0", "#f28bb3", "#ffffff"];
   const ballGeo = cached("orn", () => new THREE.IcosahedronGeometry(0.075, 1));
+  const byColor = new Map<string, THREE.Vector3[]>();
   let k = 0;
   tiers.forEach(([rb, h, y], i) => {
     const n = 6 - i;
     for (let j = 0; j < n; j++) {
       const a = (j / n) * Math.PI * 2 + i * 0.5;
-      const c = cols[k++ % cols.length];
-      const o = new THREE.Mesh(ballGeo, new THREE.MeshStandardMaterial({ color: c, roughness: 0.3, metalness: 0.3, emissive: c, emissiveIntensity: 0.15 }));
-      o.position.set(Math.cos(a) * rb * 0.82, y - h * 0.38, Math.sin(a) * rb * 0.82);
-      g.add(o);
+      const c = ORNAMENT_COLORS[k++ % ORNAMENT_COLORS.length];
+      byColor.set(c, [...(byColor.get(c) ?? []), new THREE.Vector3(Math.cos(a) * rb * 0.82, y - h * 0.38, Math.sin(a) * rb * 0.82)]);
     }
   });
-  const bulb = new THREE.MeshBasicMaterial({ color: "#ffe38a" });
+  for (const [c, spots] of byColor) {
+    const m = decoMat(`orn-${c}`, () => new THREE.MeshStandardMaterial({ color: c, roughness: 0.3, metalness: 0.3, emissive: c, emissiveIntensity: 0.15 }));
+    g.add(new THREE.Mesh(cached(`orns-${c}-${spots.length}-${spots[0].x.toFixed(3)}`, () => scatter(ballGeo, spots)), m));
+  }
+  // 나선으로 감은 전구 줄
   const bulbGeo = cached("bulb", () => new THREE.SphereGeometry(0.03, 6, 4));
+  const bulbs: THREE.Vector3[] = [];
   for (let t = 0; t < 30; t++) {
     const u = t / 30;
-    const y = 0.5 + u * 1.75;
     const rr = 0.9 * (1 - u) + 0.12;
     const a = u * Math.PI * 7;
-    const l = new THREE.Mesh(bulbGeo, bulb);
-    l.position.set(Math.cos(a) * rr, y, Math.sin(a) * rr);
-    g.add(l);
+    bulbs.push(new THREE.Vector3(Math.cos(a) * rr, 0.5 + u * 1.75, Math.sin(a) * rr));
   }
+  g.add(new THREE.Mesh(cached("bulbs", () => scatter(bulbGeo, bulbs)), xmasTreeBulbMat()));
   const shape = new THREE.Shape();
   for (let s = 0; s < 10; s++) {
     const a = (s / 10) * Math.PI * 2 + Math.PI / 2;
@@ -191,15 +213,15 @@ function decorate(g: THREE.Group, tiers: [number, number, number][], presents = 
   }
   const star = new THREE.Mesh(
     cached("star", () => new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: false })),
-    new THREE.MeshStandardMaterial({ color: "#f5c542", emissive: "#f5c542", emissiveIntensity: 0.5 }),
+    decoMat("star", () => new THREE.MeshStandardMaterial({ color: "#f5c542", emissive: "#f5c542", emissiveIntensity: 0.5 })),
   );
   star.position.set(0, 2.6, -0.03);
   g.add(star);
   if (!presents) return;
   for (const [x, z, c, rc] of [[0.62, 0.55, "#e0453a", "#f2c94c"], [-0.55, 0.6, "#4f8fe0", "#ffffff"]] as const) {
-    const box = new THREE.Mesh(cached("gift", () => new THREE.BoxGeometry(0.26, 0.2, 0.26)), new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }));
+    const box = new THREE.Mesh(cached("gift", () => new THREE.BoxGeometry(0.26, 0.2, 0.26)), decoMat(`gift-${c}`, () => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 })));
     box.position.set(x, 0.1, z);
-    const rib = new THREE.Mesh(cached("rib", () => new THREE.BoxGeometry(0.27, 0.21, 0.05)), new THREE.MeshStandardMaterial({ color: rc, roughness: 0.6 }));
+    const rib = new THREE.Mesh(cached("rib", () => new THREE.BoxGeometry(0.27, 0.21, 0.05)), decoMat(`rib-${rc}`, () => new THREE.MeshStandardMaterial({ color: rc, roughness: 0.6 })));
     rib.position.copy(box.position);
     box.castShadow = true;
     g.add(box, rib);

@@ -12,9 +12,10 @@ import { FISH_MODELS, SPECIES_BY_ID, type Species, rollCatch, shadowScale } from
 import { type Chibi, type ChibiAnim, buildChibi } from "./chibi";
 import { buildFishFromAsset, buildFishModel } from "./fish-model";
 import { buildHouseXmas, buildWreath } from "./house-xmas";
+import { buildSnowman } from "./xmas-decor";
 import { NavGrid, type Point } from "./pathfind";
 import { GIFT_COLORS, GIFT_COUNT, type GiftReward, openGift } from "./gifts";
-import { type TreeKind, type TreeOpts, buildTree } from "./tree-model";
+import { type TreeKind, type TreeOpts, buildTree, xmasTreeBulbMat } from "./tree-model";
 import type { WeatherKind } from "./weather";
 import {
   HAIR_COLORS, PANTS_COLORS, SHIRT_COLORS,
@@ -810,6 +811,70 @@ export async function createIsland(
     colliders.push({ x: l.x, z: l.z, r: 0.18 });
   }
 
+  /* ───────────── 크리스마스 장식 (11월 ~ 1월 6일) ─────────────
+   * 주민 집 처마와 다리 난간에 반짝이는 전구 줄, 주민 집 문과 가로등에 리스, 마을과 꽃밭 마을에 눈사람.
+   * 전구는 색마다 메시 하나로 합쳐 그리고, 색이 번갈아 깜빡인다. */
+  const HOLIDAY = isHolidaySeason();
+  const XMAS_TREE_BULB = new THREE.Color("#ffe38a");
+  const BULB_COLORS = ["#ff5a4f", "#ffd34f", "#5fd1ff", "#7dff8a"].map((c) => new THREE.Color(c));
+  const bulbMats = BULB_COLORS.map((c) => curve(new THREE.MeshBasicMaterial({ color: c.clone() })) as THREE.MeshBasicMaterial);
+  if (HOLIDAY) {
+    const bulbSpots: THREE.Vector3[][] = BULB_COLORS.map(() => []);
+    let nb = 0;
+    const lightString = (a: THREE.Vector3, b: THREE.Vector3, count: number, sag: number) => {
+      for (let i = 0; i < count; i++) {
+        const u = i / (count - 1);
+        const p = a.clone().lerp(b, u);
+        p.y -= Math.sin(u * Math.PI) * sag;
+        bulbSpots[nb++ % BULB_COLORS.length].push(p);
+      }
+    };
+    const wreath = (x: number, y: number, z: number, rot: number, scale: number) => {
+      const w = curveAll(buildWreath(cachedStd));
+      w.position.set(x, y, z);
+      w.rotation.y = rot;
+      w.scale.setScalar(scale);
+      w.traverse((c) => (c.castShadow = false));
+      scene.add(w);
+    };
+    // 주민 집 — 원본 좌표(폭 ±0.44, 처마 높이 0.80, 문 중심 (0.14, 0.42))를 집 크기·방향에 맞춰 옮긴다
+    for (const h of RESIDENT_HOUSES) {
+      const at = (x: number, y: number, z: number) => {
+        const s = Math.sin(h.rot), c = Math.cos(h.rot);
+        const lx = x * 2.8, lz = z * 2.8;
+        return new THREE.Vector3(h.x + c * lx + s * lz, groundHeight(h.x, h.z) - 0.19 * 2.8 + y * 2.8, h.z - s * lx + c * lz);
+      };
+      lightString(at(-0.43, 0.79, 0.5), at(0, 0.79, 0.5), 7, 0.08);
+      lightString(at(0.07, 0.79, 0.5), at(0.43, 0.79, 0.5), 6, 0.08);
+      const door = at(0.14, 0.45, 0.43);
+      wreath(door.x, door.y, door.z, h.rot, 1.7);
+    }
+    // 다리 난간 위
+    for (const b of BRIDGES) {
+      const base = b.tier ? TIER : LOW;
+      for (const side of [-1, 1]) {
+        const z = b.z + side * (b.halfWidth + 0.12);
+        lightString(new THREE.Vector3(riverX(b.z) - b.halfLength, base + 0.63, z), new THREE.Vector3(riverX(b.z) + b.halfLength, base + 0.63, z), 10, 0);
+      }
+    }
+    // 가로등 기둥에 작은 리스
+    for (const l of LAMPS) wreath(l.x, groundHeight(l.x, l.z) + 1.15, l.z + 0.07, 0, 1.25);
+    const bulbGeo = new THREE.SphereGeometry(0.045, 6, 4);
+    bulbSpots.forEach((ps, i) => {
+      if (!ps.length) return;
+      scene.add(new THREE.Mesh(mergeGeometries(ps.map((p) => bulbGeo.clone().translate(p.x, p.y, p.z))), bulbMats[i]));
+    });
+    // 눈사람 — 마을 광장 서쪽, 꽃밭 마을
+    for (const [x, z, rot] of [[-5.4, 1.2, 0.25], [-13.4, 16.6, 0.2]] as const) {
+      const man = curveAll(buildSnowman(cachedStd));
+      man.position.set(x, groundHeight(x, z), z);
+      man.rotation.y = rot;
+      scene.add(man);
+      colliders.push({ x, z, r: 0.35 });
+      props.push(man);
+    }
+  }
+
   const nav = new NavGrid(walkable);
 
   /* ───────────── 계절에 따라 바뀌는 것 ───────────── */
@@ -841,18 +906,25 @@ export async function createIsland(
     const cherry = season === "spring";
     // 11월부터 1월 6일까지 마을 가까운 전나무 세 그루가 크리스마스 트리가 된다
     const holiday = isHolidaySeason();
-    const xmas = new Set(
-      holiday
-        ? TREE_SPOTS.filter((t) => t.kind === "pine")
-            .map((t) => ({ id: t.id, d: Math.hypot(t.x - NPC_HOME.x, t.z - NPC_HOME.z) }))
-            .filter((t) => t.d < 16)
-            .sort((a, b) => a.d - b.d)
-            .slice(0, 3)
-            .map((t) => t.id)
-        : [],
-    );
+    const pines = TREE_SPOTS.filter((t) => t.kind === "pine");
+    const byDistance = (p: Point) => pines.map((t) => ({ id: t.id, d: Math.hypot(t.x - p.x, t.z - p.z) })).sort((a, b) => a.d - b.d);
+    const xmas = new Set(holiday ? byDistance(NPC_HOME).filter((t) => t.d < 16).slice(0, 3).map((t) => t.id) : []);
+    // 장식만 한 트리 (흔들어도 돈주머니는 없다) — 마을 둘레 몇 그루 더, 그리고 주민 집·벤치·선착장·과수원·위쪽 다리 곁에 한 그루씩
+    const xmasDeco = new Set<string>();
+    if (holiday) {
+      for (const t of byDistance(NPC_HOME).filter((t) => t.d < 22 && !xmas.has(t.id)).slice(0, 5)) xmasDeco.add(t.id);
+      const anchors: Point[] = [
+        ...RESIDENT_HOUSES.map((h) => ({ x: h.x, z: h.z })), BENCH, { x: DOCK.x, z: DOCK.z0 }, { x: 12, z: 0 },
+        { x: riverX(-13.5), z: -13.5 },
+      ];
+      for (const a of anchors) {
+        const t = byDistance(a).find((t) => t.d < 9 && !xmas.has(t.id) && !xmasDeco.has(t.id));
+        if (t) xmasDeco.add(t.id);
+      }
+    }
     TREE_SPOTS.forEach(({ id, x, z, kind, variant, scale }, i) => {
-      const obj = makeTree({ kind, variant, season, cherry: cherry && kind === "common" && i % 2 === 0, xmas: xmas.has(id) }, x, z, scale, R() * Math.PI * 2);
+      const dressed = xmas.has(id) || xmasDeco.has(id);
+      const obj = makeTree({ kind, variant, season, cherry: cherry && kind === "common" && i % 2 === 0, xmas: dressed }, x, z, scale, R() * Math.PI * 2);
       seasonal.add(obj);
       addCollider({ x, z, r: 0.5 * scale });
       const t: TreeState = { id, obj, shake: 0, xmas: xmas.has(id) };
@@ -884,6 +956,15 @@ export async function createIsland(
         const gift = { obj: box, shake: 0 };
         giftBoxes.push(gift);
         addTarget({ obj: box, pos: { x: gx, z: gz }, reach: 0.8, act: () => openGiftBox(i, gift) }, 0.45, 0.7);
+      }
+      // 꽃밭 마을 앞마당의 큰 트리(장식 선물 상자), 선착장 입구 모래밭의 작은 트리
+      for (const [id, x, z, s, presents] of [["xmas-hamlet", -10.5, 17.8, 1.1, true], ["xmas-dock", -8.6, 19.0, 0.85, false]] as const) {
+        const obj = makeTree({ kind: "pine", variant: 1, season, xmas: true, noPresents: !presents }, x, z, s, 0.3);
+        seasonal.add(obj);
+        addCollider({ x, z, r: 0.6 * s });
+        const t: TreeState = { id, obj, shake: 0 };
+        trees.push(t);
+        addTarget({ obj, pos: { x, z }, reach: 1.1, act: () => shakeTree(t) }, 0.9 * s, 3 * s);
       }
     }
     FRUIT_TREES.forEach(([id, x, z, fruit]) => {
@@ -2496,6 +2577,11 @@ export async function createIsland(
     timer.update();
     const dt = Math.min(timer.getDelta(), 0.05) * timeScale;
     const time = timer.getElapsed();
+    // 크리스마스 전구 — 색마다 박자를 달리해 은은하게 깜빡인다
+    if (HOLIDAY) {
+      bulbMats.forEach((m, i) => m.color.copy(BULB_COLORS[i]).multiplyScalar(0.55 + 0.45 * (0.5 + 0.5 * Math.sin(time * 2.2 + i * 1.7))));
+      xmasTreeBulbMat().color.setScalar(0.85 + 0.15 * Math.sin(time * 3.1)).multiply(XMAS_TREE_BULB);
+    }
     houseXmas?.update(time, night);
 
     if (player) {
