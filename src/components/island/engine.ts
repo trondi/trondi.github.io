@@ -969,7 +969,8 @@ export async function createIsland(
     }
     FRUIT_TREES.forEach(([id, x, z, fruit]) => {
       const picked = save.harvested[id] === today();
-      const obj = makeTree({ kind: fruit, variant: 1, season, picked }, x, z, 1, (x * 7) % 6);
+      // 열매는 나무 앞(+z, 카메라 쪽)에 달려 있으니 크게 돌리지 않고 살짝만 비튼다
+      const obj = makeTree({ kind: fruit, variant: 1, season, picked }, x, z, 1, Math.sin(x * 7) * 0.35);
       seasonal.add(obj);
       addCollider({ x, z, r: 0.45 });
       const t: TreeState = { id, obj, shake: 0, fruit };
