@@ -12,6 +12,7 @@ import type { CatchEvent, EngineSfx, FishingPhase, InteractEvent, IslandHandle, 
 import type { GiftReward } from "./gifts";
 import { SPECIES, SPECIES_BY_ID } from "./fish";
 import { type Sfx, createSfx } from "./sfx";
+import { SNOWMAN_QUESTIONS, SNOWMEN, type SnowmanId, snowmanLines } from "./snowman";
 import { WEATHER_PLACE, WEATHER_TTL, type Weather, fetchWeather } from "./weather";
 import {
   type GiftItem, type GiftResult, MAX_HEARTS, RESIDENTS, chatLines, giveGift, greet, npcState, recordTalk, shuffled,
@@ -45,6 +46,8 @@ type Panel =
   | { kind: "board" }
   | { kind: "house" }
   | { kind: "flower"; stage: number }
+  /** 눈사람과 이야기 — n번째 말 (세 번에 한 번은 질문) */
+  | { kind: "snowman"; who: SnowmanId; seed: number; n: number; line: string; q?: number; answer?: string }
   | { kind: "gift"; reward: GiftReward }
   | { kind: "bag" }
   | { kind: "dex" }
@@ -131,6 +134,9 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
       handleRef.current?.mutateSave((sv) => recordTalk(r, sv, now));
     }
     else if (e.kind === "flower") setPanel({ kind: "flower", stage: e.stage });
+    else if (e.kind === "snowman") {
+      setPanel({ kind: "snowman", who: e.id, seed: 1 + Math.floor(Math.random() * 100000), n: 0, line: SNOWMEN[e.id].greet });
+    }
     else if (e.kind === "gift") setPanel({ kind: "gift", reward: e.reward });
     else setPanel({ kind: e.kind });
   }, [toast]);
@@ -290,12 +296,14 @@ export function IslandGame({ posts }: { posts: IslandPost[] }) {
       else if (panel.kind === "mail" || panel.kind === "board") s.play("paper");
       else if (panel.kind === "house") s.knock();
       else if (panel.kind === "flower") s.play("pop");
+      else if (panel.kind === "snowman") s.play("jingle");
       else if (panel.kind === "gift") s.play("jingle");
     }
-    if (panel.kind === "npc") {
-      // 화면에 보이는 대사를 읽어 그 길이만큼 말소리를 낸다
+    if (panel.kind === "npc" || panel.kind === "snowman") {
+      // 화면에 보이는 대사를 읽어 그 길이만큼 말소리를 낸다 (눈사람은 조금 높은 목소리)
       const text = [...(panelBoxRef.current?.querySelectorAll("p") ?? [])].map((p) => p.textContent ?? "").join(" ");
-      if (text && text !== lastBabbleRef.current) s.babble(text, VOICE[panel.who] ?? 0.5);
+      const voice = panel.kind === "npc" ? VOICE[panel.who] ?? 0.5 : panel.who === "village" ? 0.68 : 0.58;
+      if (text && text !== lastBabbleRef.current) s.babble(text, voice);
       lastBabbleRef.current = text;
     } else lastBabbleRef.current = "";
   }, [panel]);
@@ -995,6 +1003,58 @@ function PanelBody({
           )}
           <button type="button" className={primary} onClick={onClose}>
             고마워요!
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  if (panel.kind === "snowman") {
+    const sm = SNOWMEN[panel.who];
+    const go = (patch: Partial<typeof panel>) => setPanel({ ...panel, ...patch });
+    const next = () => {
+      const n = panel.n;
+      // 세 번에 한 번은 눈사람이 질문을 던진다
+      if (n % 3 === 2) {
+        const order = shuffled(SNOWMAN_QUESTIONS.map((_, i) => i), panel.seed);
+        go({ n: n + 1, q: order[Math.floor(n / 3) % order.length], answer: undefined, line: "" });
+        return;
+      }
+      const { first, general } = snowmanLines(panel.who, { now: new Date(), save, weather: weather?.kind ?? null });
+      const lines = [...first, ...shuffled(general, panel.seed)];
+      const k = n - Math.floor((n + 1) / 3);
+      go({ n: n + 1, line: lines[k % lines.length], q: undefined, answer: undefined });
+    };
+    const q = panel.q !== undefined ? SNOWMAN_QUESTIONS[panel.q] : null;
+    return (
+      <>
+        <Tag color={sm.color}>⛄ {sm.name}</Tag>
+        {q ? (
+          <>
+            <p>{q[0]}</p>
+            {panel.answer ? (
+              <p className="mt-1">{panel.answer}</p>
+            ) : (
+              <div className="mt-3 flex flex-wrap justify-end gap-2">
+                {[q[1], q[2]].map(([a, reply]) => (
+                  <button key={a} type="button" className={secondary} onClick={() => go({ answer: reply })}>
+                    {a}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <p>{panel.line}</p>
+        )}
+        <div className="mt-3 flex justify-end gap-2">
+          {(!q || panel.answer) && (
+            <button type="button" className={primary} onClick={next}>
+              더 얘기하기
+            </button>
+          )}
+          <button type="button" className={secondary} onClick={onClose}>
+            안녕!
           </button>
         </div>
       </>
