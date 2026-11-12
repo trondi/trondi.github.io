@@ -12,6 +12,7 @@ import { FISH_MODELS, SPECIES_BY_ID, type Species, rollCatch, shadowScale } from
 import { type Chibi, type ChibiAnim, buildChibi } from "./chibi";
 import { buildFishFromAsset, buildFishModel } from "./fish-model";
 import { buildHouseXmas, buildWreath } from "./house-xmas";
+import type { SnowmanId } from "./snowman";
 import { buildSnowman } from "./xmas-decor";
 import { NavGrid, type Point } from "./pathfind";
 import { GIFT_COLORS, GIFT_COUNT, type GiftReward, openGift } from "./gifts";
@@ -36,6 +37,7 @@ export type InteractEvent =
   | { kind: "house" }
   | { kind: "flower"; stage: number }
   | { kind: "tree"; dropped: GroundType[] }
+  | { kind: "snowman"; id: SnowmanId }
   | { kind: "gift"; reward: GiftReward };
 
 export type CatchEvent = {
@@ -865,13 +867,15 @@ export async function createIsland(
       scene.add(new THREE.Mesh(mergeGeometries(ps.map((p) => bulbGeo.clone().translate(p.x, p.y, p.z))), bulbMats[i]));
     });
     // 눈사람 — 마을 광장 서쪽, 꽃밭 마을
-    for (const [x, z, rot] of [[-5.4, 1.2, 0.25], [-13.4, 16.6, 0.2]] as const) {
+    for (const [id, x, z, rot] of [["village", -5.4, 1.2, 0.25], ["hamlet", -13.4, 16.6, 0.2]] as const) {
       const man = curveAll(buildSnowman(cachedStd));
       man.position.set(x, groundHeight(x, z), z);
       man.rotation.y = rot;
       scene.add(man);
       colliders.push({ x, z, r: 0.35 });
       props.push(man);
+      // 탭하면 말을 건다
+      addTarget({ obj: man, pos: { x, z }, reach: 1.1, act: () => cb.onInteract({ kind: "snowman", id }) }, 0.45, 1.3);
     }
   }
 
@@ -969,7 +973,8 @@ export async function createIsland(
     }
     FRUIT_TREES.forEach(([id, x, z, fruit]) => {
       const picked = save.harvested[id] === today();
-      const obj = makeTree({ kind: fruit, variant: 1, season, picked }, x, z, 1, (x * 7) % 6);
+      // 열매는 나무 앞(+z, 카메라 쪽)에 달려 있으니 크게 돌리지 않고 살짝만 비튼다
+      const obj = makeTree({ kind: fruit, variant: 1, season, picked }, x, z, 1, Math.sin(x * 7) * 0.35);
       seasonal.add(obj);
       addCollider({ x, z, r: 0.45 });
       const t: TreeState = { id, obj, shake: 0, fruit };
