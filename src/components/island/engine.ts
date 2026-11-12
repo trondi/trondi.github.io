@@ -12,6 +12,7 @@ import { FISH_MODELS, SPECIES_BY_ID, type Species, rollCatch, shadowScale } from
 import { type Chibi, type ChibiAnim, buildChibi } from "./chibi";
 import { buildFishFromAsset, buildFishModel } from "./fish-model";
 import { buildHouseXmas, buildWreath } from "./house-xmas";
+import { SHELLS_PER_DAY, SHELL_BY_ID, type ShellKind, buildLantern, buildShell, daySeed, pickShellKind } from "./shells";
 import type { SnowmanId } from "./snowman";
 import { buildSnowman } from "./xmas-decor";
 import { NavGrid, type Point } from "./pathfind";
@@ -1104,21 +1105,6 @@ export async function createIsland(
         seasonal.add(place("Lilypad", POND.x + Math.cos(a) * 1.5, POND.z + Math.sin(a) * 1.4, 0.4, a, HIGH_WATER_Y + 0.01));
       }
     }
-    // 바닷가 조개껍데기
-    const SH = rng(77);
-    for (let i = 0; i < 28; i++) {
-      for (let k = 0; k < 40; k++) {
-        const x = (SH() - 0.5) * ISLAND.rx * 1.7;
-        const z = 4 + SH() * (ISLAND.cz + ISLAND.rz - 4);
-        const e = islandE(x, z);
-        if (e < 0.9 || e > 0.95 || !terrainWalkable(x, z)) continue;
-        const shell = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 4, 0, Math.PI * 2, 0, Math.PI / 2), cachedStd(SH() < 0.5 ? "#f6d0d4" : "#fff4e0"));
-        shell.position.set(x, groundHeight(x, z), z);
-        shell.scale.set(1, 0.5, 1.2);
-        seasonal.add(shell);
-        break;
-      }
-    }
     // 울타리
     for (const [x, z, r] of [[-7.3, -5.4, 0.2], [-1.6, -5.6, -0.1]] as const) {
       seasonal.add(place("Fence", x, z, 0.42, r));
@@ -1389,7 +1375,7 @@ export async function createIsland(
           play: (name) => c.play(name as ChibiAnim),
           current: () => c.current(),
           busy: () => c.busy(),
-          update: (dt) => c.update(dt, holdingRod),
+          update: (dt) => c.update(dt, holdingRod, lanternOn),
         },
       };
     }
@@ -1640,6 +1626,68 @@ export async function createIsland(
     itemObjs.set(id, o);
   };
   save.ground.forEach((g) => spawnItem(g.id, g.type, g.x, g.z));
+
+  /*
+   * 바닷가 조개 — 날마다 모래사장 여기저기에 새로 놓인다 (자리·종류는 날짜로 정해져 다시 열어도 같다).
+   * 걸어서 지나가거나 탭하면 줍는다. 주운 번호는 저장해 두어 같은 날엔 다시 놓이지 않는다.
+   */
+  let shellDay = "";
+  const syncShells = () => {
+    const day = today();
+    if (day === shellDay) return;
+    shellDay = day;
+    for (const [id, o] of [...itemObjs]) {
+      if (!id.startsWith("shell-")) continue;
+      scene.remove(o);
+      itemObjs.delete(id);
+    }
+    if (save.beach?.day !== day) save.beach = { day, picked: [] };
+    const R = rng(daySeed(day));
+    for (let i = 0; i < SHELLS_PER_DAY; i++) {
+      let spot: Point | null = null;
+      for (let k = 0; k < 600 && !spot; k++) {
+        const x = (R() - 0.5) * ISLAND.rx * 2;
+        const z = (R() - 0.5) * ISLAND.rz * 2 + ISLAND.cz;
+        const e = islandE(x, z);
+        // 모래사장(섬 가장자리의 모래색 띠) 안쪽, 걸어갈 수 있는 곳에만
+        if (e < 0.932 || e > 0.95 || !terrainWalkable(x, z) || blocked(x, z) || tierT(x, z) > 0.3) continue;
+        if (Math.abs(x - DOCK.x) < DOCK.halfWidth + 0.6 && z > DOCK.z0 - 0.5) continue;
+        spot = { x, z };
+      }
+      const kind = pickShellKind(R());
+      const rot = R() * Math.PI * 2;
+      if (!spot || save.beach.picked.includes(i)) continue;
+      const o = curveAll(buildShell(kind, cachedStd));
+      o.position.set(spot.x, groundHeight(spot.x, spot.z) + 0.01, spot.z);
+      o.rotation.y = rot;
+      o.scale.setScalar(1.7);
+      // 멀리서도 보이게 반짝이는 빛
+      const sparkle = glowSprite(0xffffff, 0.5);
+      sparkle.position.y = 0.12;
+      o.add(sparkle);
+      o.userData.sparkle = sparkle;
+      o.userData.item = { id: `shell-${i}`, type: "shell", kind };
+      scene.add(o);
+      itemObjs.set(`shell-${i}`, o);
+    }
+  };
+  syncShells();
+  const pickShell = (id: string) => {
+    const o = itemObjs.get(id);
+    if (!o) return;
+    const kind = (o.userData.item as { kind: ShellKind }).kind;
+    const info = SHELL_BY_ID.get(kind)!;
+    save.shells = { ...save.shells, [kind]: (save.shells?.[kind] ?? 0) + 1 };
+    const day = today();
+    if (save.beach?.day !== day) save.beach = { day, picked: [] };
+    save.beach.picked.push(Number(id.slice("shell-".length)));
+    scene.remove(o);
+    itemObjs.delete(id);
+    if (player && mode !== "fish") play(player, "PickUp", true);
+    cb.onSfx?.("pickup");
+    cb.onToast(`${info.emoji} ${info.name}를 주웠어요 · 오늘 ${save.beach.picked.length}/${SHELLS_PER_DAY}`);
+    persist();
+  };
 
   const flowerObjs = new Map<string, { obj: THREE.Object3D; stage: number }>();
   /**
@@ -1893,6 +1941,10 @@ export async function createIsland(
   };
 
   const pickUp = (id: string) => {
+    if (id.startsWith("shell-")) {
+      pickShell(id);
+      return;
+    }
     const g = save.ground.find((x) => x.id === id);
     const o = itemObjs.get(id);
     if (!g || !o) return;
@@ -2406,6 +2458,19 @@ export async function createIsland(
   /* ───────────── 하늘·빛 ───────────── */
   let skyTex: THREE.CanvasTexture | undefined;
   let night = 0;
+  /** 밤이라 등불을 들고 있는지 */
+  let lanternOn = false;
+  /* 등불 — 밤이면 캐릭터가 왼손에 들고 다니고, 캐릭터를 비추던 빛이 등불에서 나온다 */
+  // 유리는 빛을 받지 않고 스스로 밝게 (밤에 또렷이 보이게)
+  const lanternGlass = curve(new THREE.MeshBasicMaterial({ color: "#ffd27a" })) as THREE.MeshBasicMaterial;
+  const lantern = curveAll(buildLantern(cachedStd, lanternGlass));
+  lantern.scale.setScalar(2.0);
+  lantern.visible = false;
+  scene.add(lantern);
+  const lanternHalo = glowSprite(0xffc56b, 0.45);
+  lanternHalo.position.y = -0.14;
+  lantern.add(lanternHalo);
+  const handPos = new THREE.Vector3();
   let baseHemi = 1;
   const GLOW_I = 7;
   const stars = (() => {
@@ -2442,6 +2507,7 @@ export async function createIsland(
     baseHemi = hemi.intensity;
     sun.userData.dir = s.sunDir;
     night = s.night;
+    lanternOn = night > 0.3;
     (stars.material as THREE.PointsMaterial).opacity = night;
     lampMat.emissiveIntensity = night * 1.6;
     glow.intensity = night * GLOW_I;
@@ -2454,6 +2520,8 @@ export async function createIsland(
   const skyTimer = window.setInterval(() => {
     applySky();
     syncFlowers();
+    // 자정이 지나면 바닷가에 조개가 새로 놓인다
+    syncShells();
   }, 30_000);
 
   /* ───────────── 계절 입자 (꽃잎·낙엽·눈·반딧불) + 날씨 (비·눈) ───────────── */
@@ -2582,6 +2650,11 @@ export async function createIsland(
     timer.update();
     const dt = Math.min(timer.getDelta(), 0.05) * timeScale;
     const time = timer.getElapsed();
+    // 바닷가 조개가 반짝인다
+    for (const [id, o] of itemObjs) {
+      const sp = o.userData.sparkle as THREE.Sprite | undefined;
+      if (sp) (sp.material as THREE.SpriteMaterial).opacity = Math.max(0, Math.sin(time * 2.4 + Number(id.slice(6)) * 1.9)) * 0.55;
+    }
     // 크리스마스 전구 — 색마다 박자를 달리해 은은하게 깜빡인다
     if (HOLIDAY) {
       bulbMats.forEach((m, i) => m.color.copy(BULB_COLORS[i]).multiplyScalar(0.55 + 0.45 * (0.5 + 0.5 * Math.sin(time * 2.2 + i * 1.7))));
@@ -2658,7 +2731,19 @@ export async function createIsland(
       player.anim.update(dt);
 
       updateFishing(dt, time);
-      glow.position.set(player.root.position.x, player.root.position.y + 2.1, player.root.position.z + 1.3);
+      // 밤에는 등불을 들고, 빛도 등불에서 나온다 (조금 위·앞에서 비춰 얼굴도 어둡지 않게)
+      const lit = lanternOn && !!chibi;
+      lantern.visible = lit;
+      if (lit && chibi) {
+        chibi.handL.updateWorldMatrix(true, false);
+        chibi.handL.getWorldPosition(handPos);
+        lantern.position.copy(handPos);
+        lantern.rotation.set(0, player.root.rotation.y, moving ? Math.sin(time * 9) * 0.22 : Math.sin(time * 1.4) * 0.05);
+        (lanternHalo.material as THREE.SpriteMaterial).opacity = night * 0.4;
+        glow.position.set(handPos.x, handPos.y + 0.55, handPos.z + 0.35);
+      } else {
+        glow.position.set(player.root.position.x, player.root.position.y + 2.1, player.root.position.z + 1.3);
+      }
 
       // 카메라
       const pr = player.root.position;
@@ -2917,6 +3002,7 @@ export async function createIsland(
       },
       fishing: () => fishing.phase,
       sit: () => (sit ? sit.phase : null),
+      shells: () => [...itemObjs].filter(([id]) => id.startsWith("shell-")).map(([id, o]) => ({ id, x: o.position.x, z: o.position.z, kind: o.userData.item.kind })),
       look: () => ({ ...look, cam: { x: camera.position.x, y: camera.position.y, z: camera.position.z } }),
       rodTip: () => {
         const v = new THREE.Vector3();

@@ -12,6 +12,7 @@ import type { CatchEvent, EngineSfx, FishingPhase, InteractEvent, IslandHandle, 
 import type { GiftReward } from "./gifts";
 import { SPECIES, SPECIES_BY_ID } from "./fish";
 import { type Sfx, createSfx } from "./sfx";
+import { SHELL_KINDS } from "./shells";
 import { SNOWMAN_QUESTIONS, SNOWMEN, type SnowmanId, snowmanLines } from "./snowman";
 import { WEATHER_PLACE, WEATHER_TTL, type Weather, fetchWeather } from "./weather";
 import {
@@ -1218,6 +1219,7 @@ function PanelBody({
   // 가방
   const bag = save?.bag ?? { apple: 0, orange: 0, seed: 0 };
   const fish = Object.entries(save?.fish ?? {}).filter(([, n]) => n > 0);
+  const shells = SHELL_KINDS.map((k) => [k, save?.shells?.[k.id] ?? 0] as const).filter(([, n]) => n > 0);
   return (
     <>
       <Tag color="#7d5bb0">가방</Tag>
@@ -1234,6 +1236,18 @@ function PanelBody({
           </div>
         ))}
       </div>
+      {shells.length > 0 && (
+        <div className="mt-3">
+          <p className="mb-1.5 text-[12px] font-bold opacity-70">바닷가에서 주운 것</p>
+          <div className="flex flex-wrap gap-1.5">
+            {shells.map(([k, n]) => (
+              <span key={k.id} className="flex items-center gap-1 rounded-full bg-[#fbeee6] px-3 py-1 text-[12px] font-bold">
+                {k.emoji} {k.name} × {n}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
       {fish.length > 0 && (
         <div className="mt-3">
           <p className="mb-1.5 text-[12px] font-bold opacity-70">낚은 것</p>
@@ -1257,7 +1271,7 @@ function PanelBody({
         </div>
       )}
       <p className="mt-3 text-[12px] opacity-70">
-        꽃 {save?.flowers.length ?? 0}송이를 심었어요 · 꽃씨는 나무를 흔들면 가끔 떨어져요
+        꽃 {save?.flowers.length ?? 0}송이를 심었어요 · 꽃씨는 나무를 흔들면 가끔 떨어져요 · 조개는 날마다 바닷가에 새로 밀려와요
       </p>
       <div className="mt-3 flex flex-wrap justify-end gap-1.5">
         <button type="button" className={primary} onClick={onRod}>
