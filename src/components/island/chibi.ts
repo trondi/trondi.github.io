@@ -15,6 +15,8 @@ export type Chibi = {
   root: THREE.Group;
   head: THREE.Object3D;
   hand: THREE.Object3D;
+  /** 다른 쪽 손 — 밤에 등불을 든다 */
+  handL: THREE.Object3D;
   /** 목도리를 두르는 자리 (어깨 위) */
   neck: THREE.Object3D;
   setColors: (c: ChibiColors) => void;
@@ -27,7 +29,8 @@ export type Chibi = {
   play: (anim: ChibiAnim) => void;
   current: () => ChibiAnim;
   busy: () => boolean;
-  update: (dt: number, holdingRod: boolean) => void;
+  /** holdingLantern — 밤에 왼손으로 등불을 몸 앞쪽으로 들어 올린다 */
+  update: (dt: number, holdingRod: boolean, holdingLantern?: boolean) => void;
 };
 
 const SKIN_GLOW = 0.32;
@@ -227,6 +230,7 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
   // 팔 — 가는 팔, 장갑 같은 둥근 손
   const arms: THREE.Group[] = [];
   const hand = new THREE.Object3D();
+  const handL = new THREE.Object3D();
   for (const side of [-1, 1]) {
     const pivot = new THREE.Group();
     pivot.position.set(side * 0.13, 0.26, 0);
@@ -237,10 +241,9 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
     const mitt = ball(0.05, mats.skin, 1, 1.05, 0.9);
     mitt.position.y = -0.18;
     pivot.add(sleeve, arm, mitt);
-    if (side === 1) {
-      hand.position.y = -0.18;
-      pivot.add(hand);
-    }
+    const anchor = side === 1 ? hand : handL;
+    anchor.position.y = -0.18;
+    pivot.add(anchor);
     torso.add(pivot);
     arms.push(pivot);
   }
@@ -329,6 +332,7 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
     root,
     head,
     hand,
+    handL,
     neck,
     setColors: (c) => {
       mats.skin.color.set(c.skin);
@@ -376,7 +380,7 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
     },
     current: () => anim,
     busy: () => oneShotEnd > 0 && t < oneShotEnd,
-    update: (dt, holdingRod) => {
+    update: (dt, holdingRod, holdingLantern = false) => {
       t += dt;
       if (oneShotEnd && t >= oneShotEnd) {
         anim = "Idle";
@@ -444,6 +448,8 @@ export function buildChibi(wrapMaterial: (m: THREE.Material) => THREE.Material =
       arms[0].rotation.set(arm0, 0, -armZ);
       arms[1].rotation.set(arm1, 0, armZ);
       if (holdingRod && anim !== "Victory") arms[1].rotation.set(-1.0, 0, 0.3);
+      // 등불 — 팔을 앞·바깥으로 살짝 들어 등불이 몸 앞에서 흔들리게 (앉아 있을 땐 무릎 위 그대로)
+      if (holdingLantern && anim !== "Victory" && sit < 0.5) arms[0].rotation.set(-0.75 + Math.sin(t * 1.3) * 0.03, 0, -0.5);
       head.rotation.x = headTilt;
       head.rotation.y = headTurn;
     },

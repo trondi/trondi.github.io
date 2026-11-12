@@ -115,6 +115,10 @@ export type IslandSave = {
   unlocked?: string[];
   /** 모은 코인 — 크리스마스 트리를 흔들면 떨어지는 돈주머니에서 */
   coins?: number;
+  /** 바닷가에서 주운 조개 (SHELL_KINDS의 id → 개수) */
+  shells?: Record<string, number>;
+  /** 오늘 바닷가에 놓인 조개 중 이미 주운 것의 번호 — 날이 바뀌면 새로 놓인다 */
+  beach?: { day: string; picked: number[] };
 };
 
 const KEY = "trond-island:v1";
