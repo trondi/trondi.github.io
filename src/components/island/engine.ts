@@ -2739,8 +2739,11 @@ export async function createIsland(
         chibi.handL.getWorldPosition(handPos);
         lantern.position.copy(handPos);
         lantern.rotation.set(0, player.root.rotation.y, moving ? Math.sin(time * 9) * 0.22 : Math.sin(time * 1.4) * 0.05);
-        (lanternHalo.material as THREE.SpriteMaterial).opacity = night * 0.4;
-        glow.position.set(handPos.x, handPos.y + 0.55, handPos.z + 0.35);
+        (lanternHalo.material as THREE.SpriteMaterial).opacity = night * 0.3;
+        // 빛은 캐릭터에서 조금 떨어진 위·앞에 두고 등불 쪽으로만 살짝 치우친다
+        // (등불 바로 옆에 두면 캐릭터가 하얗게 날아가 잘 안 보인다)
+        const pr0 = player.root.position;
+        glow.position.set(pr0.x + (handPos.x - pr0.x) * 1.5, pr0.y + 2.0, pr0.z + 1.3 + (handPos.z - pr0.z) * 1.5);
       } else {
         glow.position.set(player.root.position.x, player.root.position.y + 2.1, player.root.position.z + 1.3);
       }
